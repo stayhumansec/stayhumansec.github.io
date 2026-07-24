@@ -1,0 +1,338 @@
+// site.js — shared behavior for every page on stay(human).sec
+// Loaded by index.html and post.html so there's one copy of this logic, not one per page.
+
+/**
+ * Wires up scroll-reveal animation on all elements with the .reveal class.
+ * Works identically on touch scroll (phone/tablet) and mouse/trackpad scroll (desktop)
+ * because IntersectionObserver reacts to viewport position, not input method.
+ * Respects prefers-reduced-motion by skipping the animation entirely.
+ *
+ * @param {Object} [opts]
+ * @param {boolean} [opts.stagger=false] - cascade elements within the same parent container
+ * @param {number} [opts.delayStep=70] - ms between staggered elements
+ */
+function initScrollReveal(opts) {
+  opts = opts || {};
+  var stagger = !!opts.stagger;
+  var delayStep = opts.delayStep || 70;
+
+  var els = document.querySelectorAll('.reveal');
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReduced) {
+    els.forEach(function (el) { el.classList.add('is-visible'); });
+    return;
+  }
+
+  var counters = new Map();
+
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        var el = entry.target;
+        var delay = 0;
+        if (stagger) {
+          var parentKey = el.parentElement;
+          var n = counters.get(parentKey) || 0;
+          counters.set(parentKey, n + 1);
+          delay = n * delayStep;
+        }
+        setTimeout(function () { el.classList.add('is-visible'); }, delay);
+        observer.unobserve(el);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  els.forEach(function (el) { observer.observe(el); });
+}
+
+/** Small helper: fetch and parse posts.json once, reused by both index and post pages. */
+async function loadPosts() {
+  var res = await fetch('posts.json');
+  if (!res.ok) throw new Error('Could not load posts.json (' + res.status + ')');
+  return res.json();
+}
+
+/** Brand icon + wordmark SVG, so it's defined once instead of pasted into every HTML file. */
+function brandIconSVG(size) {
+  size = size || 64;
+  return '<svg width="' + size + '" viewBox="0 0 150 100" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M38 16C29 25 20 33 20 50C20 67 29 75 38 84" stroke="#f4f1e8" stroke-width="7" stroke-linecap="round"/>' +
+    '<path d="M112 16C121 25 130 33 130 50C130 67 121 75 112 84" stroke="#f4f1e8" stroke-width="7" stroke-linecap="round"/>' +
+    '<circle cx="75" cy="38" r="13" fill="#ff7a3d"/>' +
+    '<path d="M58 78C58 68 65 61 75 61C85 61 92 68 92 78" stroke="#ff7a3d" stroke-width="5" stroke-linecap="round" fill="none"/>' +
+    '</svg>';
+}
+
+/** Escapes text before it's inserted as HTML, since post content comes from a JSON data file. */
+function escapeHTML(str) {
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+/** Fades the whole page in on load instead of popping in unstyled. No-op under reduced-motion (handled in CSS). */
+function initPageFade() {
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { document.body.classList.add('loaded'); });
+  });
+}
+
+/** Adds/removes a `.scrolled` class on the sticky nav so it can compact itself once the page scrolls. */
+function setupNavScroll() {
+  var nav = document.getElementById('topnav');
+  if (!nav) return;
+  function onScroll() {
+    nav.classList.toggle('scrolled', window.scrollY > 12);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+}
+
+/**
+ * Ambient cursor glow + a small trailing outline block that reacts to hoverable elements.
+ * Skipped entirely on touch devices and under prefers-reduced-motion (handled by CSS + this check).
+ */
+function initCursorFX() {
+  var isFine = window.matchMedia('(pointer: fine)').matches;
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!isFine || prefersReduced) return;
+
+  var glow = document.createElement('div');
+  glow.className = 'cursor-glow';
+  var block = document.createElement('div');
+  block.className = 'cursor-block';
+  document.body.appendChild(glow);
+  document.body.appendChild(block);
+
+  var raf = null;
+  function onMove(e) {
+    glow.classList.add('active');
+    block.classList.add('active');
+    document.documentElement.style.setProperty('--mx', e.clientX + 'px');
+    document.documentElement.style.setProperty('--my', e.clientY + 'px');
+    document.documentElement.style.setProperty('--cx', e.clientX + 'px');
+    document.documentElement.style.setProperty('--cy', e.clientY + 'px');
+
+    if (raf) return;
+    raf = requestAnimationFrame(function () {
+      var target = e.target.closest('a, button, .file-row, .pillar-card, .path-step');
+      block.classList.toggle('hover-target', !!target);
+      raf = null;
+    });
+  }
+  window.addEventListener('mousemove', onMove, { passive: true });
+  window.addEventListener('mouseleave', function () {
+    glow.classList.remove('active');
+    block.classList.remove('active');
+  });
+}
+
+/**
+ * Command palette (⌘K / Ctrl+K): fuzzy-searches all posts plus a fixed set of site pages.
+ * Builds its own DOM on first use so no markup needs to be duplicated across pages.
+ * Any page that calls this just needs a trigger element with id="cmdkTrigger".
+ */
+function initCommandPalette() {
+  var trigger = document.getElementById('cmdkTrigger');
+  var staticPages = [
+    { title: 'Home', sub: 'index.html', href: 'index.html', color: 'var(--orange)' },
+    { title: 'Glossary', sub: 'glossary.html — plain-language terms', href: 'glossary.html', color: 'var(--blue)' }
+  ];
+  var items = staticPages.slice();
+  var selectedIndex = 0;
+  var filtered = items;
+
+  var overlay = document.createElement('div');
+  overlay.className = 'palette-overlay';
+  overlay.innerHTML =
+    '<div class="palette-box">' +
+      '<div class="palette-input-row">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>' +
+        '<input type="text" placeholder="Search posts, pages…" id="paletteInput" autocomplete="off" />' +
+        '<span class="palette-esc">ESC</span>' +
+      '</div>' +
+      '<div class="palette-results" id="paletteResults"></div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  var input = overlay.querySelector('#paletteInput');
+  var resultsEl = overlay.querySelector('#paletteResults');
+
+  loadPosts().then(function (data) {
+    var posts = data.posts.map(function (p) {
+      return { title: p.title, sub: p.filename + ' — ' + (p.pillarLabel || ''), href: 'post.html?slug=' + p.slug, color: p.pillarColor || p.stripeColor || 'var(--orange)' };
+    });
+    items = staticPages.concat(posts);
+    render(items);
+  }).catch(function () { render(items); });
+
+  function render(list) {
+    filtered = list;
+    selectedIndex = 0;
+    if (!list.length) {
+      resultsEl.innerHTML = '<div class="palette-empty">No matches. Try a different filename or keyword.</div>';
+      return;
+    }
+    resultsEl.innerHTML = list.map(function (it, i) {
+      return '<a href="' + it.href + '" class="palette-item' + (i === 0 ? ' selected' : '') + '" data-index="' + i + '">' +
+        '<span class="p-dot" style="background:' + it.color + ';"></span>' +
+        '<span class="p-meta"><span class="p-title">' + escapeHTML(it.title) + '</span><span class="p-sub">' + escapeHTML(it.sub) + '</span></span>' +
+      '</a>';
+    }).join('');
+  }
+
+  function updateSelection() {
+    resultsEl.querySelectorAll('.palette-item').forEach(function (el, i) {
+      el.classList.toggle('selected', i === selectedIndex);
+    });
+    var sel = resultsEl.querySelector('.palette-item.selected');
+    if (sel) sel.scrollIntoView({ block: 'nearest' });
+  }
+
+  function open() {
+    overlay.classList.add('open');
+    input.value = '';
+    render(items);
+    setTimeout(function () { input.focus(); }, 50);
+  }
+  function close() {
+    overlay.classList.remove('open');
+  }
+
+  if (trigger) trigger.addEventListener('click', open);
+
+  document.addEventListener('keydown', function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      overlay.classList.contains('open') ? close() : open();
+    }
+    if (e.key === 'Escape' && overlay.classList.contains('open')) close();
+  });
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) close();
+  });
+
+  input.addEventListener('input', function () {
+    var q = input.value.trim().toLowerCase();
+    if (!q) { render(items); return; }
+    render(items.filter(function (it) {
+      return it.title.toLowerCase().indexOf(q) !== -1 || it.sub.toLowerCase().indexOf(q) !== -1;
+    }));
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); selectedIndex = Math.min(selectedIndex + 1, filtered.length - 1); updateSelection(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); selectedIndex = Math.max(selectedIndex - 1, 0); updateSelection(); }
+    if (e.key === 'Enter' && filtered[selectedIndex]) { window.location.href = filtered[selectedIndex].href; }
+  });
+}
+
+/** Turns a post object back into a real markdown document, for the "Copy as .md" button on articles. */
+function generateMarkdown(post) {
+  var lines = [];
+  lines.push('# ' + post.title, '');
+  lines.push('_' + post.intro + '_', '');
+  post.sections.forEach(function (sec) {
+    lines.push('## ' + sec.num + '. ' + sec.title, '');
+    sec.blocks.forEach(function (block) {
+      if (block.type === 'step') {
+        if (block.platform) lines.push('**' + block.platform + '**', '');
+        block.paragraphs.forEach(function (p) { lines.push(p.replace(/<[^>]+>/g, ''), ''); });
+      } else if (block.type === 'compare') {
+        lines.push('- ' + block.bad.label + ': ' + block.bad.text);
+        lines.push('- ' + block.good.label + ': ' + block.good.text, '');
+      } else if (block.type === 'pattern-list') {
+        block.items.forEach(function (it) { lines.push('- **' + it.tag + '**: ' + it.text); });
+        lines.push('');
+      }
+    });
+  });
+  lines.push('> ' + post.warn.label + ' — ' + post.warn.text, '');
+  lines.push('## Checklist', '');
+  post.checklist.forEach(function (c) { lines.push('- [ ] ' + c); });
+  lines.push('', '---', 'stay(human).sec — for human. for privacy.');
+  return lines.join('\n');
+}
+
+/** Wires up a "Copy as .md" button: copies markdown to clipboard with a brief confirmation state. */
+function setupCopyMdButton(btn, post) {
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    var md = generateMarkdown(post);
+    var done = function () {
+      btn.classList.add('copied');
+      var original = btn.querySelector('span').textContent;
+      btn.querySelector('span').textContent = 'Copied!';
+      setTimeout(function () {
+        btn.classList.remove('copied');
+        btn.querySelector('span').textContent = original;
+      }, 1800);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(md).then(done).catch(function () { fallbackCopy(md, done); });
+    } else {
+      fallbackCopy(md, done);
+    }
+  });
+}
+
+function fallbackCopy(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+/** Fills a thin fixed bar across the top of the viewport as the person scrolls down the page. */
+function initScrollProgress() {
+  var bar = document.getElementById('scrollProgress');
+  if (!bar) return;
+  function onScroll() {
+    var doc = document.documentElement;
+    var scrollable = doc.scrollHeight - doc.clientHeight;
+    var pct = scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0;
+    bar.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+}
+
+/** Animates every [data-countup] number from 0 to its target once it scrolls into view. */
+function animateCounters() {
+  var els = document.querySelectorAll('[data-countup]');
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReduced) {
+    els.forEach(function (el) { el.textContent = el.getAttribute('data-countup'); });
+    return;
+  }
+
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      var el = entry.target;
+      var target = parseInt(el.getAttribute('data-countup'), 10) || 0;
+      var duration = 900;
+      var startTime = null;
+
+      function step(ts) {
+        if (!startTime) startTime = ts;
+        var progress = Math.min((ts - startTime) / duration, 1);
+        el.textContent = Math.floor(progress * target);
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = target;
+      }
+      requestAnimationFrame(step);
+      observer.unobserve(el);
+    });
+  }, { threshold: 0.4 });
+
+  els.forEach(function (el) { observer.observe(el); });
+}

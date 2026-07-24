@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glossary — stay(human).sec</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<nav class="topnav" id="topnav">
+  <a href="index.html" class="nav-brand">
+    <span id="navIcon"></span>
+    <span>stay<span class="b-accent">(human)</span>.sec</span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html#what-we-are">About</a>
+    <a href="index.html#building">Pillars</a>
+    <a href="index.html#posts">Posts</a>
+    <a href="glossary.html">Glossary</a>
+  </div>
+  <div class="nav-right">
+    <button class="nav-search-btn" id="cmdkTrigger" aria-label="Search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <span>Search</span><span class="kbd">⌘K</span>
+    </button>
+    <a href="#" class="nav-cta">Follow @stayhumansec</a>
+  </div>
+</nav>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">// GLOSSARY.md</div>
+    <h2 class="reveal">Plain-language definitions, no jargon left unexplained.</h2>
+    <p style="color:var(--cream-dim); font-size:16px; max-width:600px;" class="reveal">Every term used across the site, defined the way we'd explain it to a friend — not a textbook.</p>
+
+    <div class="glossary-grid" id="glossaryGrid"></div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand-col">
+      <div class="footer-brand"><span id="footerIcon"></span><span>stay<span>(human)</span>.sec</span></div>
+      <p class="footer-tagline">Cybersecurity, AI, and privacy explained properly — one fact, one fix, every day.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="index.html#what-we-are">What we are</a>
+      <a href="index.html#building">Content pillars</a>
+      <a href="index.html#posts">All posts</a>
+    </div>
+    <div class="footer-col">
+      <h4>Follow</h4>
+      <div class="social-row">
+        <a href="#" title="Instagram" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+        </a>
+        <a href="#" title="Telegram" aria-label="Telegram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </a>
+        <a href="#" title="Email" aria-label="Email">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>new file added every day — <a href="#">follow @stayhumansec</a></div>
+    <div>stay(human).sec</div>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+<script>
+  if (typeof brandIconSVG !== 'function') {
+    document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
+    throw new Error('site.js not loaded.');
+  }
+
+  document.getElementById('navIcon').innerHTML = brandIconSVG(26);
+  document.getElementById('footerIcon').innerHTML = brandIconSVG(24);
+  initPageFade();
+  setupNavScroll();
+  initScrollProgress();
+  initCursorFX();
+  initCommandPalette();
+
+  var TERMS = [
+    { term: 'MFA / 2FA', color: 'var(--green)', def: 'Multi-factor (or two-factor) authentication. A second proof of identity beyond your password — usually a code, an app tap, or a security key. The single biggest upgrade you can make to any account.' },
+    { term: 'Phishing', color: 'var(--pink)', def: 'A fake email, message, or website designed to trick you into handing over a password, card number, or one-time code by impersonating someone you trust.' },
+    { term: 'Smishing', color: 'var(--pink)', def: 'Phishing delivered by text message instead of email — usually a fake delivery notice, bank alert, or prize claim with a link.' },
+    { term: 'Credential Stuffing', color: 'var(--orange)', def: 'An automated attack where a password leaked from one breached site gets tried against hundreds of other sites, betting that you reused it.' },
+    { term: 'VPN', color: 'var(--blue)', def: 'Virtual private network. Encrypts your internet traffic and hides your IP address from the network you\'re connected to — useful on public Wi-Fi, not a cure-all for privacy.' },
+    { term: 'Zero-Day', color: 'var(--violet)', def: 'A software vulnerability that\'s being exploited before the company that makes the software knows about it or has released a fix.' },
+    { term: 'Ransomware', color: 'var(--pink)', def: 'Malicious software that encrypts your files and demands payment to unlock them. Prevention (backups, patching) matters far more than any cure.' },
+    { term: 'Social Engineering', color: 'var(--gold)', def: 'Manipulating a person — not a system — into giving up access or information. Most real-world breaches start here, not with clever code.' },
+    { term: 'Password Manager', color: 'var(--green)', def: 'An app that generates and remembers a unique, strong password for every site, so you only need to remember one master password.' },
+    { term: 'End-to-End Encryption', color: 'var(--blue)', def: 'A message is scrambled on your device and only unscrambled on the recipient\'s — not even the app in the middle can read it.' },
+    { term: 'Data Breach', color: 'var(--orange)', def: 'An incident where an organization\'s data — often including passwords or personal info — is accessed or leaked without authorization.' },
+    { term: 'Malware', color: 'var(--pink)', def: 'An umbrella term for any software designed to damage, spy on, or gain unauthorized access to a device — viruses, spyware, and ransomware are all types.' }
+  ];
+
+  var grid = document.getElementById('glossaryGrid');
+  grid.innerHTML = TERMS.map(function (t) {
+    return '<div class="glossary-card reveal">' +
+      '<div class="g-term" style="color:' + t.color + ';">// ' + t.term.toUpperCase().replace(/[^A-Z0-9]/g, '_') + '.md</div>' +
+      '<h3>' + t.term + '</h3>' +
+      '<p>' + t.def + '</p>' +
+    '</div>';
+  }).join('');
+
+  initScrollReveal({ stagger: true });
+</script>
+
+</body>
+</html>
