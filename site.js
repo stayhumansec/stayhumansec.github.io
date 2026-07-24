@@ -158,7 +158,9 @@ function initMobileNav() {
   backdrop.className = 'mobile-nav-backdrop';
   var panel = document.createElement('div');
   panel.className = 'mobile-nav-panel';
-  panel.innerHTML = navLinks.innerHTML;
+  var ctaLink = document.querySelector('.nav-cta');
+  panel.innerHTML = navLinks.innerHTML +
+    (ctaLink ? '<div class="mobile-nav-cta"><a href="' + ctaLink.getAttribute('href') + '" class="btn-primary" style="width:100%; text-align:center;">' + ctaLink.textContent + '</a></div>' : '');
   document.body.appendChild(backdrop);
   document.body.appendChild(panel);
 
