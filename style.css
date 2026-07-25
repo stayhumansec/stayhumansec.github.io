@@ -339,6 +339,21 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .next-box .eyebrow{font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--cream-dim); letter-spacing:1px; margin-bottom:8px;}
 .next-box .next-title{font-weight:700; font-size:19px; margin-bottom:6px;}
 .next-box .next-desc{color:var(--cream-dim); font-size:14.5px;}
+
+/* ============ TL;DR STRIP ============ */
+.tldr-box{background:rgba(76,141,255,0.08); border:1px solid var(--blue); border-radius:16px; padding:20px 24px; margin:0 0 28px;}
+.tldr-box .label{font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px;}
+.tldr-box p{color:var(--cream-dim); font-size:15px; line-height:1.65;}
+
+/* ============ GLOSSARY NUDGE (inline, per-article) ============ */
+.glossary-nudge{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:var(--card); border:1px dashed var(--line); border-radius:12px; padding:14px 18px; margin:0 0 30px; font-size:13.5px; color:var(--cream-dim);}
+.glossary-nudge a{color:var(--orange); text-decoration:none; font-family:'JetBrains Mono', monospace; font-size:12.5px; white-space:nowrap; flex-shrink:0;}
+.glossary-nudge a:hover{text-decoration:underline;}
+
+/* ============ RELATED READS ============ */
+.related-reads{margin:0 0 24px;}
+.related-reads-label{font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--cream-dim); letter-spacing:1px; margin-bottom:14px; text-transform:uppercase;}
+.related-reads-label::before{content:"$"; color:var(--orange); margin-right:8px;}
 .compare{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:30px;}
 .compare .col{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px;}
 .compare .col.bad{border-color:var(--pink);}

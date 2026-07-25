@@ -12,6 +12,7 @@
       "titleAccent": "your phone?",
       "listDesc": "The 5-minute check that tells you for sure — session lists, unknown devices, and what to do if you find something.",
       "intro": "Right now, on the exact phone in your hand, there could be a device logged into your account that isn't yours. Maybe there isn't — but you don't actually know, because most people never check. This is the real 5-minute check, not a hypothetical: no app to install, nothing to buy, just open a settings menu and look.",
+      "tldr": "Check which devices are signed into your Apple ID / Google account, scan your app list for anything unfamiliar, and look for configuration profiles or device admin apps you didn't set up yourself. All 5 minutes, all built into your phone already.",
       "statLine": "$ context — <b>292 days</b>. That's the average time it takes someone to realize their login was stolen, according to IBM. Nearly a year of someone else quietly having access, before anyone notices.",
       "sections": [
         {
@@ -119,6 +120,7 @@
       "titleAccent": "a big deal",
       "listDesc": "Why reusing one password anywhere is worse than you think, and how a password manager actually fixes it.",
       "intro": "Here's the spoiler: it's reusing the same password on more than one site. It feels completely harmless — until it's the reason your email, your bank, and half your other accounts all get hit on the same afternoon.",
+      "tldr": "Run a password checkup to see what's reused or compromised, turn on your phone's built-in password manager, and fix your email, banking, and payment-linked accounts first — the manager handles the rest as you go.",
       "statLine": "$ context — one password, leaked from any random site you signed up for years ago, can unlock every other account where you reused it. It's called <b>credential stuffing</b>, and a machine does it in seconds, not a person.",
       "sections": [
         {
@@ -219,6 +221,7 @@
       "titleAccent": "smishing?",
       "listDesc": "The exact texts scammers send, why they work, and how to tell a real message from a fake one in seconds.",
       "intro": "Smishing is just SMS phishing — a scam text engineered to look official enough that you click before your brain catches up. The wording changes every time. The pattern underneath almost never does, and once you can see it, these texts stop working on you.",
+      "tldr": "Scam texts always follow the same pattern: a trusted name, a fake urgent problem, and a link. Never tap the link — go to the official app or type the website yourself. That one habit defeats almost all of them.",
       "statLine": "$ context — smishing works because a text feels more urgent and more \"official\" than an email ever does, and almost nobody's ever been taught to question one.",
       "sections": [
         {
