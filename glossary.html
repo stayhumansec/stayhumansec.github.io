@@ -93,10 +93,11 @@
   initCursorFX();
   initCommandPalette();
   initMobileNav();
+  initScrambleReveal('.section-eyebrow');
 
   var grid = document.getElementById('glossaryGrid');
   grid.innerHTML = GLOSSARY_TERMS.map(function (t) {
-    return '<div class="glossary-card reveal">' +
+    return '<div class="glossary-card declass">' +
       '<div class="g-term" style="color:' + t.color + ';">// ' + t.term.toUpperCase().replace(/[^A-Z0-9]/g, '_') + '.md</div>' +
       '<h3>' + t.term + '</h3>' +
       '<p>' + t.def + '</p>' +
@@ -104,6 +105,7 @@
   }).join('');
 
   initScrollReveal({ stagger: true });
+  initDeclassify({ stagger: true });
 </script>
 
 </body>
