@@ -414,6 +414,13 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .tool-col li::before{content:"—"; position:absolute; left:0; color:var(--line);}
 @media (max-width:760px){ .tool-cols{grid-template-columns:1fr; gap:16px;} }
 
+/* ============ AI PASSWORD COACH ============ */
+.pw-display{font-family:'JetBrains Mono', monospace; font-size:19px; font-weight:700; color:var(--cream); background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:14px 16px; letter-spacing:0.5px; word-break:break-all; margin:14px 0;}
+.pw-actions{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;}
+.pw-actions .copy-md-btn, .pw-actions .btn-secondary{margin-bottom:0;}
+.tool-card.pw-recommended{position:relative; border-color:var(--orange); border-style:dashed;}
+.pw-recommended-badge{position:absolute; top:-11px; right:20px; background:var(--bg); padding:0 8px; font-family:'JetBrains Mono', monospace; font-size:10px; font-weight:700; letter-spacing:0.5px; color:var(--orange);}
+
 /* ============ 404 PAGE ============ */
 .page-404{min-height:60vh; display:flex; align-items:center; justify-content:center; padding:100px 24px; position:relative; z-index:1;}
 .page-404-inner{text-align:center; max-width:520px;}

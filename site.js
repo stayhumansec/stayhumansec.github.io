@@ -321,6 +321,7 @@ function initCommandPalette() {
     { title: 'Home', sub: 'index.html', href: 'index.html', color: 'var(--orange)' },
     { title: 'You, Check.', sub: 'index.html#youcheck — the quick gut-check quiz', href: 'index.html#youcheck', color: 'var(--pink)' },
     { title: 'Toolkit', sub: 'toolkit.html — recommended tools', href: 'toolkit.html', color: 'var(--gold)' },
+    { title: 'AI Password Coach', sub: 'password-coach.html — memorable, genuinely strong passwords', href: 'password-coach.html', color: 'var(--violet)' },
     { title: 'Glossary', sub: 'glossary.html — plain-language terms', href: 'glossary.html', color: 'var(--blue)' }
   ];
   var items = staticPages.slice();
