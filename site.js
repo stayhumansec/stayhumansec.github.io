@@ -488,39 +488,6 @@ function initScrollProgress() {
   onScroll();
 }
 
-/** Animates every [data-countup] number from 0 to its target once it scrolls into view. */
-function animateCounters() {
-  var els = document.querySelectorAll('[data-countup]');
-  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  if (prefersReduced) {
-    els.forEach(function (el) { el.textContent = el.getAttribute('data-countup'); });
-    return;
-  }
-
-  var observer = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (!entry.isIntersecting) return;
-      var el = entry.target;
-      var target = parseInt(el.getAttribute('data-countup'), 10) || 0;
-      var duration = 900;
-      var startTime = null;
-
-      function step(ts) {
-        if (!startTime) startTime = ts;
-        var progress = Math.min((ts - startTime) / duration, 1);
-        el.textContent = Math.floor(progress * target);
-        if (progress < 1) requestAnimationFrame(step);
-        else el.textContent = target;
-      }
-      requestAnimationFrame(step);
-      observer.unobserve(el);
-    });
-  }, { threshold: 0.4 });
-
-  els.forEach(function (el) { observer.observe(el); });
-}
-
 /**
  * Plays once per browser session, on whichever page the person lands on first (since most
  * traffic arrives on a specific post, not the homepage). Runs a genuinely true privacy check
