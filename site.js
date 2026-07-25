@@ -53,6 +53,10 @@ function initScrollReveal(opts) {
  * + stagger pattern as initScrollReveal, kept separate so the two effects never fight over
  * the same element's transition.
  *
+ * IMPORTANT: threshold must stay 0. The `.declass` base state clips the element to 0%
+ * visible area, so any non-zero threshold can never be satisfied — the CSS hiding it
+ * permanently prevents the JS from ever detecting it as "visible enough" to reveal it.
+ *
  * @param {Object} [opts]
  * @param {boolean} [opts.stagger=false]
  * @param {number} [opts.delayStep=80]
@@ -88,7 +92,7 @@ function initDeclassify(opts) {
         observer.unobserve(el);
       }
     });
-  }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+  }, { threshold: 0, rootMargin: '0px 0px -30px 0px' });
 
   els.forEach(function (el) { observer.observe(el); });
 }
