@@ -71,12 +71,15 @@ body::after{
 .cursor-glow.active{opacity:1;}
 @media (pointer:coarse), (prefers-reduced-motion: reduce){ .cursor-glow{display:none;} }
 
-/* ============ NAV SEARCH / COMMAND PALETTE TRIGGER ============ */
-.nav-search-btn{display:flex; align-items:center; gap:8px; background:transparent; border:1px solid var(--line); color:var(--cream-dim); padding:9px 14px; border-radius:10px; cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:12px; transition:border-color .2s ease, color .2s ease;}
-.nav-search-btn:hover{border-color:var(--orange); color:var(--cream);}
-.nav-search-btn svg{width:15px; height:15px; flex-shrink:0;}
+/* ============ NAV PROMPT (command-palette trigger, styled as a live terminal prompt) ============ */
+.nav-prompt-btn{display:flex; align-items:center; gap:7px; background:transparent; border:1px solid var(--line); color:var(--cream-dim); padding:9px 16px; border-radius:10px; cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:12.5px; transition:border-color .2s ease, color .2s ease;}
+.nav-prompt-btn:hover{border-color:var(--orange); color:var(--cream);}
+.nav-prompt-btn .prompt-lead{color:var(--cream-dim); opacity:0.75; transition:color .2s ease, opacity .2s ease;}
+.nav-prompt-btn:hover .prompt-lead{color:var(--orange); opacity:1;}
+.nav-prompt-btn .prompt-text{color:var(--cream);}
+.nav-prompt-btn .prompt-cursor{color:var(--orange); animation:blink .85s step-end infinite;}
 .nav-right{display:flex; align-items:center; gap:14px;}
-@media (max-width:600px){ .nav-search-btn span{display:none;} }
+@media (max-width:600px){ .nav-prompt-btn .prompt-lead{display:none;} }
 
 /* ============ TOP NAV ============ */
 .topnav{
@@ -216,6 +219,23 @@ body::after{
 .pillar-card .pname{font-weight:700; font-size:15px; margin-bottom:3px;}
 .pillar-card .pfreq{font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase; color:var(--pillar-color, var(--orange));}
 @media (max-width:900px){ .pillar-grid{grid-template-columns:repeat(2, 1fr);} }
+
+/* ============ GUIDED ROUTER (homepage "what are you here for?") ============ */
+.router-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:18px; margin-top:36px;}
+.router-card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px 24px 24px; text-decoration:none; color:inherit; position:relative; display:block; transition:border-color .25s ease, transform .25s var(--ease), box-shadow .25s var(--ease);}
+.router-card:hover{border-color:var(--router-color, var(--orange)); transform:translateY(-5px); box-shadow:0 20px 40px rgba(0,0,0,0.4);}
+.router-icon{font-size:26px; margin-bottom:14px;}
+.router-card h3{font-size:16.5px; font-weight:700; margin-bottom:8px; line-height:1.3; padding-right:20px;}
+.router-card p{color:var(--cream-dim); font-size:13.5px; line-height:1.55;}
+.router-arrow{position:absolute; top:26px; right:22px; color:var(--router-color, var(--orange)); font-size:18px; opacity:0; transform:translateX(-4px); transition:opacity .25s ease, transform .25s ease;}
+.router-card:hover .router-arrow{opacity:1; transform:translateX(0);}
+@media (max-width:900px){ .router-grid{grid-template-columns:repeat(2, 1fr);} }
+@media (max-width:560px){ .router-grid{grid-template-columns:1fr;} }
+
+/* ============ DECLASSIFY WIPE (clip-path reveal for file/tool/glossary card grids) ============ */
+.declass{clip-path:inset(0 100% 0 0); transition:clip-path .7s var(--ease);}
+.declass.is-visible{clip-path:inset(0 0 0 0);}
+@media (prefers-reduced-motion: reduce){ .declass{clip-path:none !important; transition:none !important;} }
 
 /* ============ STATS BAND ============ */
 .stats-section{position:relative; z-index:1; border-top:1px dashed var(--line); border-bottom:1px dashed var(--line); background:var(--card-t);}

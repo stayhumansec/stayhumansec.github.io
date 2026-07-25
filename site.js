@@ -46,6 +46,104 @@ function initScrollReveal(opts) {
   els.forEach(function (el) { observer.observe(el); });
 }
 
+/**
+ * "Declassify" reveal — a clip-path wipe (like a redaction bar sliding off a document)
+ * for elements with class `.declass`, used on file/tool/glossary card grids instead of
+ * the plain fade-and-rise `.reveal` treats headings and CTAs with. Same IntersectionObserver
+ * + stagger pattern as initScrollReveal, kept separate so the two effects never fight over
+ * the same element's transition.
+ *
+ * @param {Object} [opts]
+ * @param {boolean} [opts.stagger=false]
+ * @param {number} [opts.delayStep=80]
+ */
+function initDeclassify(opts) {
+  opts = opts || {};
+  var stagger = !!opts.stagger;
+  var delayStep = opts.delayStep || 80;
+
+  var els = document.querySelectorAll('.declass');
+  if (!els.length) return;
+
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) {
+    els.forEach(function (el) { el.classList.add('is-visible'); });
+    return;
+  }
+
+  var counters = new Map();
+
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        var el = entry.target;
+        var delay = 0;
+        if (stagger) {
+          var parentKey = el.parentElement;
+          var n = counters.get(parentKey) || 0;
+          counters.set(parentKey, n + 1);
+          delay = n * delayStep;
+        }
+        setTimeout(function () { el.classList.add('is-visible'); }, delay);
+        observer.unobserve(el);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
+  els.forEach(function (el) { observer.observe(el); });
+}
+
+/**
+ * Scrambles an element's plain text into random characters, then resolves it back to the
+ * real text as it scrolls into view — a "decrypting" effect for short text-only labels like
+ * section eyebrows. Only safe on elements whose entire content is plain text (no child tags),
+ * since it overwrites textContent directly. Skipped entirely under reduced-motion.
+ *
+ * @param {string} selector
+ */
+function initScrambleReveal(selector) {
+  var els = document.querySelectorAll(selector);
+  if (!els.length) return;
+
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) return;
+
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*';
+
+  function scramble(el) {
+    var final = el.textContent;
+    if (!final) return;
+    var len = final.length;
+    var revealed = 0;
+    var frame = 0;
+    var timer = setInterval(function () {
+      var out = '';
+      for (var i = 0; i < len; i++) {
+        if (i < revealed || final[i] === ' ') out += final[i];
+        else out += chars[Math.floor(Math.random() * chars.length)];
+      }
+      el.textContent = out;
+      frame++;
+      if (frame % 2 === 0) revealed++;
+      if (revealed >= len) {
+        el.textContent = final;
+        clearInterval(timer);
+      }
+    }, 30);
+  }
+
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        scramble(entry.target);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.4 });
+
+  els.forEach(function (el) { observer.observe(el); });
+}
+
 /** Small helper: fetch and parse posts.json once, reused by both index and post pages. */
 async function loadPosts() {
   var res = await fetch('posts.json');
@@ -218,6 +316,7 @@ function initCommandPalette() {
   var staticPages = [
     { title: 'Home', sub: 'index.html', href: 'index.html', color: 'var(--orange)' },
     { title: 'You, Check.', sub: 'index.html#youcheck — the quick gut-check quiz', href: 'index.html#youcheck', color: 'var(--pink)' },
+    { title: 'Toolkit', sub: 'toolkit.html — recommended tools', href: 'toolkit.html', color: 'var(--gold)' },
     { title: 'Glossary', sub: 'glossary.html — plain-language terms', href: 'glossary.html', color: 'var(--blue)' }
   ];
   var items = staticPages.slice();
