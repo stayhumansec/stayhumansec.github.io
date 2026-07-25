@@ -120,7 +120,7 @@ body::after{
 @media (max-width:600px){ .topnav{padding:16px 20px;} .topnav.scrolled{padding:12px 20px;} }
 
 /* ============ PATH BAR (post.html breadcrumb) ============ */
-.path-bar{border-bottom:1px dashed var(--line); background:linear-gradient(135deg, rgba(255,122,61,0.07), rgba(13,12,10,0.5)); backdrop-filter:blur(16px) saturate(150%); -webkit-backdrop-filter:blur(16px) saturate(150%);}
+.path-bar{border-bottom:1px solid rgba(244,241,232,0.08); background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015)); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%);}
 .path-bar-inner{max-width:var(--content-max); margin:0 auto; padding:16px 48px; display:flex; align-items:center; justify-content:space-between; gap:16px;}
 .path-bar-text{font-family:'JetBrains Mono', monospace; font-size:13.5px; color:var(--cream-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
 .path-bar-text a{text-decoration:none; color:var(--cream-dim); transition:color .2s ease;}
@@ -157,7 +157,7 @@ body::after{
 @keyframes livepulse{0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.45; transform:scale(.7);}}
 
 /* hero terminal mock — CSS-only entrance, no JS needed */
-.hero-terminal{position:relative; z-index:1; background:linear-gradient(135deg, rgba(255,122,61,0.10), rgba(13,12,10,0.6)); backdrop-filter:blur(18px) saturate(150%); -webkit-backdrop-filter:blur(18px) saturate(150%); border:1px solid rgba(244,241,232,0.12); border-radius:18px; overflow:hidden; box-shadow:0 40px 80px rgba(0,0,0,0.55); opacity:0; animation:termIn .7s var(--ease) .15s forwards;}
+.hero-terminal{position:relative; z-index:1; background:linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015)); backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%); border:1px solid rgba(255,255,255,0.12); border-radius:18px; overflow:hidden; box-shadow:0 40px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08); opacity:0; animation:termIn .7s var(--ease) .15s forwards;}
 @keyframes termIn{ from{opacity:0; transform:translateY(18px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);} }
 .hero-terminal .term-bar{display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px dashed var(--line);}
 .term-bar-label{font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--cream-dim);}
@@ -451,7 +451,7 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .boot-overlay.leaving{opacity:0;}
 .boot-skip{position:absolute; top:22px; right:24px; font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--cream-dim); background:transparent; border:1px solid var(--line); padding:7px 16px; border-radius:20px; cursor:pointer; transition:border-color .2s ease, color .2s ease;}
 .boot-skip:hover{border-color:var(--orange); color:var(--cream);}
-.boot-terminal{width:100%; max-width:480px; background:linear-gradient(135deg, rgba(255,122,61,0.10), rgba(13,12,10,0.6)); backdrop-filter:blur(18px) saturate(150%); -webkit-backdrop-filter:blur(18px) saturate(150%); border:1px solid rgba(244,241,232,0.12); border-radius:18px; overflow:hidden; box-shadow:0 40px 90px rgba(0,0,0,0.55);}
+.boot-terminal{width:100%; max-width:480px; background:linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015)); backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%); border:1px solid rgba(255,255,255,0.12); border-radius:18px; overflow:hidden; box-shadow:0 40px 90px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);}
 .boot-terminal .term-body{padding:26px 26px 30px; min-height:170px;}
 @media (max-width:420px){ .boot-terminal .term-body{padding:20px 18px 24px;} .boot-skip{top:16px; right:16px;} }
 .boot-line{opacity:0; transform:translateY(6px); transition:opacity .3s ease, transform .3s ease; font-family:'JetBrains Mono', monospace; font-size:13.5px; color:var(--cream-dim); margin-bottom:11px; line-height:1.5;}
