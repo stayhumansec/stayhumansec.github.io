@@ -57,6 +57,41 @@
   </div>
 </section>
 
+<section class="section" id="router" style="padding-top:70px; padding-bottom:70px;">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">// WHAT ARE YOU HERE FOR?</div>
+    <h2 class="reveal">Pick one. We'll take it from there.</h2>
+    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:560px;">No need to hunt through a menu — tell us what you're after and we'll point you straight at it.</p>
+
+    <div class="router-grid">
+      <a href="#youcheck" class="router-card declass" style="--router-color:var(--pink);">
+        <div class="router-icon" aria-hidden="true">🔍</div>
+        <h3>Am I safe right now?</h3>
+        <p>Answer a few honest questions, get the exact posts that close your gaps.</p>
+        <span class="router-arrow">→</span>
+      </a>
+      <a href="glossary.html" class="router-card declass" style="--router-color:var(--blue);">
+        <div class="router-icon" aria-hidden="true">📖</div>
+        <h3>Teach me a term</h3>
+        <p>Every piece of jargon on this site, explained like a friend would.</p>
+        <span class="router-arrow">→</span>
+      </a>
+      <a href="#posts" class="router-card declass" style="--router-color:var(--green);">
+        <div class="router-icon" aria-hidden="true">🗂️</div>
+        <h3>Show me the files</h3>
+        <p>Browse every post, filterable by how often it drops.</p>
+        <span class="router-arrow">→</span>
+      </a>
+      <a href="toolkit.html" class="router-card declass" style="--router-color:var(--gold);">
+        <div class="router-icon" aria-hidden="true">🧰</div>
+        <h3>What should I install?</h3>
+        <p>The password managers, VPNs, and apps actually worth using.</p>
+        <span class="router-arrow">→</span>
+      </a>
+    </div>
+  </div>
+</section>
+
 <section class="section section-alt" id="intro">
   <div class="section-inner">
     <div class="section-eyebrow reveal">// WHAT WE ARE</div>
@@ -207,6 +242,7 @@
   initCursorFX();
   initCommandPalette();
   initMobileNav();
+  initScrambleReveal('.section-eyebrow');
 
   var STRIPE_MAP = { 'var(--orange)':'orange', 'var(--blue)':'blue', 'var(--violet)':'violet', 'var(--green)':'green', 'var(--pink)':'pink', 'var(--gold)':'gold' };
 
@@ -221,7 +257,7 @@
     posts.forEach(function (post) {
       var row = document.createElement('a');
       row.href = 'post.html?slug=' + post.slug;
-      row.className = 'file-row reveal';
+      row.className = 'file-row declass';
       row.setAttribute('data-freq', post.freq);
       row.setAttribute('data-pillar', post.pillar || '');
       if (post.badge !== 'live') {
@@ -252,6 +288,7 @@
 
     // now that rows exist, wire up reveal + tab filtering + counters
     initScrollReveal({ stagger: true });
+    initDeclassify({ stagger: true });
     animateCounters();
     setupTabs();
     initYouCheck(posts);
