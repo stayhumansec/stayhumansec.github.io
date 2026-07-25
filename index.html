@@ -151,18 +151,6 @@
   <div class="stats-strip" id="statsStrip">
     <div class="stat-cell reveal"><span class="num" id="statCount">0</span><span class="label">files live now</span></div>
     <div class="stat-cell reveal"><span class="num" data-countup="8">0</span><span class="label">content pillars</span></div>
-    <div class="stat-cell reveal"><span class="num" data-countup="292">0</span><span class="label">days avg. breach detection</span></div>
-  </div>
-</section>
-
-<section class="section section-alt">
-  <div class="section-inner">
-    <div class="section-eyebrow reveal">// ACTIVITY</div>
-    <h2 class="reveal">Posted, not just planned.</h2>
-    <div class="heatmap-wrap reveal">
-      <div class="heatmap-grid" id="heatmapGrid"></div>
-      <div class="heatmap-stats" id="heatmapStats"></div>
-    </div>
   </div>
 </section>
 
@@ -305,7 +293,6 @@
     initScrollReveal({ stagger: true });
     animateCounters();
     setupTabs();
-    renderHeatmap(posts, document.getElementById('heatmapGrid'), document.getElementById('heatmapStats'));
   }).catch(function (err) {
     document.getElementById('fileList').innerHTML =
       '<p style="color:var(--pink); font-family:\'JetBrains Mono\',monospace; font-size:13px;">Could not load posts.json — ' + escapeHTML(err.message) +

@@ -493,45 +493,6 @@ function initBootSequence(onDone) {
   timers.push(setTimeout(next, 350));
 }
 
-/** Renders a GitHub-style contribution heatmap of publish dates, plus streak/total stats. */
-function renderHeatmap(posts, gridEl, statsEl) {
-  if (!gridEl) return;
-  var byDate = {};
-  posts.forEach(function (p) {
-    if (p.publishDate) byDate[p.publishDate] = (byDate[p.publishDate] || 0) + 1;
-  });
-
-  var today = new Date();
-  today.setHours(0, 0, 0, 0);
-  var days = [];
-  for (var i = 83; i >= 0; i--) {
-    var d = new Date(today);
-    d.setDate(d.getDate() - i);
-    days.push(d);
-  }
-
-  gridEl.innerHTML = days.map(function (d) {
-    var iso = d.toISOString().slice(0, 10);
-    var count = byDate[iso] || 0;
-    var level = count === 0 ? 0 : Math.min(count, 3);
-    var label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    var tip = count > 0 ? (count + ' file' + (count > 1 ? 's' : '') + ' — ' + label) : label;
-    return '<div class="heatmap-cell" data-level="' + level + '"><span class="heatmap-tip">' + escapeHTML(tip) + '</span></div>';
-  }).join('');
-
-  if (statsEl) {
-    var total = posts.length;
-    var streak = 0;
-    for (var j = days.length - 1; j >= 0; j--) {
-      var iso2 = days[j].toISOString().slice(0, 10);
-      if (byDate[iso2]) streak++; else break;
-    }
-    statsEl.innerHTML =
-      '<div class="heatmap-stat"><span class="hnum">' + streak + '</span><span class="hlabel">Day streak</span></div>' +
-      '<div class="heatmap-stat"><span class="hnum">' + total + '</span><span class="hlabel">Total files</span></div>';
-  }
-}
-
 /** Escapes text before it's inserted as HTML, since post content comes from a JSON data file. */
 function escapeHTML(str) {
   var div = document.createElement('div');

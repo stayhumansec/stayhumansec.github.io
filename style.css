@@ -402,21 +402,6 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .gloss-pop{position:absolute; bottom:calc(100% + 10px); left:50%; transform:translateX(-50%) translateY(6px); width:240px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:13px; font-weight:400; line-height:1.55; color:var(--cream-dim); font-family:'Poppins', sans-serif; box-shadow:0 16px 32px rgba(0,0,0,0.45); opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:20;}
 .gloss-term.open .gloss-pop{opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto;}
 @media (max-width:600px){ .gloss-pop{width:200px; left:0; transform:translateX(0) translateY(6px);} .gloss-term.open .gloss-pop{transform:translateX(0) translateY(0);} }
-/* ============ ACTIVITY HEATMAP ============ */
-.heatmap-wrap{display:flex; align-items:flex-start; gap:24px; flex-wrap:wrap; margin-top:30px;}
-.heatmap-grid{display:grid; grid-auto-flow:column; grid-template-rows:repeat(7, 1fr); gap:4px;}
-.heatmap-cell{width:13px; height:13px; border-radius:3px; background:var(--line); position:relative; cursor:default;}
-.heatmap-cell[data-level="1"]{background:rgba(63,207,142,0.35);}
-.heatmap-cell[data-level="2"]{background:rgba(63,207,142,0.7);}
-.heatmap-cell[data-level="3"]{background:var(--green);}
-.heatmap-cell:hover .heatmap-tip{opacity:1; transform:translate(-50%, -4px);}
-.heatmap-tip{position:absolute; bottom:calc(100% + 6px); left:50%; transform:translate(-50%, 0); background:var(--card); border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-family:'JetBrains Mono', monospace; font-size:11px; white-space:nowrap; color:var(--cream-dim); opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:10;}
-.heatmap-stats{display:flex; gap:28px; flex-wrap:wrap;}
-.heatmap-stat{font-family:'JetBrains Mono', monospace;}
-.heatmap-stat .hnum{font-size:26px; font-weight:700; color:var(--orange); display:block;}
-.heatmap-stat .hlabel{font-size:11px; color:var(--cream-dim); text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;}
-@media (max-width:700px){ .heatmap-grid{transform:scale(0.85); transform-origin:left top;} }
-
 /* ============ BOOT SEQUENCE (first-visit trust moment) ============ */
 .boot-overlay{position:fixed; inset:0; z-index:200; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; transition:opacity .35s ease;}
 .boot-overlay.active{opacity:1;}
