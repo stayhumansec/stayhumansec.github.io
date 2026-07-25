@@ -19,6 +19,8 @@
   <div class="nav-links">
     <a href="#posts">Posts</a>
     <a href="toolkit.html">Toolkit</a>
+    <a href="#youcheck">You, Check.</a>
+    <a href="glossary.html">Glossary</a>
   </div>
   <div class="nav-right">
     <button class="nav-prompt-btn" id="cmdkTrigger" aria-label="Open navigation and search">
@@ -149,13 +151,6 @@
   </div>
 </section>
 
-<section class="stats-section">
-  <div class="stats-strip" id="statsStrip">
-    <div class="stat-cell reveal"><span class="num" id="statCount">0</span><span class="label">files live now</span></div>
-    <div class="stat-cell reveal"><span class="num" data-countup="8">0</span><span class="label">content pillars</span></div>
-  </div>
-</section>
-
 <section class="section section-alt" id="youcheck">
   <div class="section-inner">
     <div class="section-eyebrow reveal">// YOU, CHECK.</div>
@@ -248,8 +243,6 @@
 
   loadPosts().then(function (data) {
     var posts = data.posts;
-    var liveCount = posts.filter(function (p) { return p.badge === 'live'; }).length;
-    document.getElementById('statCount').setAttribute('data-countup', liveCount);
 
     // render file list
     var listEl = document.getElementById('fileList');
@@ -286,10 +279,9 @@
 
     document.getElementById('listingCount').textContent = 'total ' + posts.length + ' files';
 
-    // now that rows exist, wire up reveal + tab filtering + counters
+    // now that rows exist, wire up reveal + tab filtering
     initScrollReveal({ stagger: true });
     initDeclassify({ stagger: true });
-    animateCounters();
     setupTabs();
     initYouCheck(posts);
   }).catch(function (err) {
