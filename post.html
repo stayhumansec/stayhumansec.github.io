@@ -17,11 +17,11 @@
     <span>stay<span class="b-accent">(human)</span>.sec</span>
   </a>
   <div class="nav-links">
-    <a href="index.html#what-we-are">About</a>
-    <a href="index.html#building">Pillars</a>
+    <a href="index.html#intro">About</a>
+    <a href="index.html#pillars">Pillars</a>
     <a href="index.html#posts">Posts</a>
     <a href="toolkit.html">Toolkit</a>
-    <a href="quiz.html">Quiz</a>
+    <a href="index.html#youcheck">You, Check.</a>
     <a href="glossary.html">Glossary</a>
   </div>
   <div class="nav-right">
@@ -69,8 +69,8 @@
     </div>
     <div class="footer-col">
       <h4>Explore</h4>
-      <a href="index.html#what-we-are">What we are</a>
-      <a href="index.html#building">Content pillars</a>
+      <a href="index.html#intro">What we are</a>
+      <a href="index.html#pillars">Content pillars</a>
       <a href="index.html#posts">All posts</a>
     </div>
     <div class="footer-col">
@@ -195,6 +195,25 @@
     var nextHref = post.next.slug ? 'post.html?slug=' + post.next.slug : '#';
     var nextTag = post.next.slug ? 'a' : 'div';
 
+    var tldrHTML = post.tldr
+      ? '<div class="tldr-box reveal"><div class="label">TL;DR</div><p>' + escapeHTML(post.tldr) + '</p></div>'
+      : '';
+
+    var relatedPosts = data.posts.filter(function (p) {
+      return p.pillar === post.pillar && p.slug !== post.slug && p.badge === 'live';
+    }).slice(0, 3);
+
+    var relatedHTML = relatedPosts.length
+      ? '<div class="related-reads reveal">' +
+          '<div class="related-reads-label">More on ' + escapeHTML(post.pillarLabel || 'this') + '</div>' +
+          relatedPosts.map(function (p) {
+            return '<a href="post.html?slug=' + p.slug + '" class="file-row" style="min-height:auto; padding:16px 18px; margin-bottom:10px;">' +
+              '<div><div class="filename">' + escapeHTML(p.filename) + '</div><div class="title" style="font-size:15px;">' + escapeHTML(p.title) + '</div></div>' +
+            '</a>';
+          }).join('') +
+        '</div>'
+      : '';
+
     document.getElementById('articleRoot').innerHTML =
       '<div class="article-meta-row reveal">' +
         '<span class="tag reveal" style="color:' + post.tagColor + '; border-color:' + post.tagColor + '; margin-bottom:0;">' + escapeHTML(post.tag) + '</span>' +
@@ -203,14 +222,17 @@
       '</div>' +
       '<h1 class="reveal">' + titleHTML + '</h1>' +
       '<p class="intro reveal">' + escapeHTML(post.intro) + '</p>' +
+      tldrHTML +
       '<button class="copy-md-btn reveal" id="copyMdBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg><span>Copy as .md</span></button>' +
       '<div class="stat-line reveal">' + post.statLine + '</div>' +
       '<hr class="divider">' +
+      '<div id="glossaryNudge"></div>' +
       sectionsHTML +
       '<div class="warn-box reveal"><div class="label">' + escapeHTML(post.warn.label) + '</div><p>' + escapeHTML(post.warn.text) + '</p></div>' +
       '<hr class="divider">' +
       '<h2 class="reveal">The 60-second version, if you\'re in a hurry</h2>' +
       '<ul class="checklist reveal">' + checklistHTML + '</ul>' +
+      relatedHTML +
       '<' + nextTag + ' class="next-box reveal"' + (post.next.slug ? ' href="' + nextHref + '"' : '') + '>' +
         '<div class="eyebrow">' + escapeHTML(post.next.eyebrow) + '</div>' +
         '<div class="next-title">' + escapeHTML(post.next.title) + '</div>' +
@@ -221,6 +243,17 @@
     initScrollReveal({ stagger: false });
     buildTOC(post.sections);
     initGlossaryTooltips(document.getElementById('articleRoot'));
+
+    // nudge readers toward the full glossary once an article actually uses enough jargon to warrant it
+    var glossCount = document.querySelectorAll('#articleRoot .gloss-term').length;
+    var nudgeEl = document.getElementById('glossaryNudge');
+    if (nudgeEl && glossCount >= 2) {
+      nudgeEl.innerHTML =
+        '<div class="glossary-nudge reveal is-visible">' +
+          '<span>This post uses ' + glossCount + ' terms explained in the glossary — tap any underlined word, or browse it all.</span>' +
+          '<a href="glossary.html">Open glossary →</a>' +
+        '</div>';
+    }
   }).catch(function (err) {
     document.getElementById('articleRoot').innerHTML =
       '<p style="color:var(--pink); font-family:\'JetBrains Mono\',monospace; font-size:13px;">Could not load posts.json — ' + escapeHTML(err.message) +

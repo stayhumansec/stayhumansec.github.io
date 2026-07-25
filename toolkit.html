@@ -16,10 +16,10 @@
     <span>stay<span class="b-accent">(human)</span>.sec</span>
   </a>
   <div class="nav-links">
-    <a href="index.html#what-we-are">About</a>
+    <a href="index.html#intro">About</a>
     <a href="index.html#posts">Posts</a>
     <a href="toolkit.html">Toolkit</a>
-    <a href="quiz.html">Quiz</a>
+    <a href="index.html#youcheck">You, Check.</a>
     <a href="glossary.html">Glossary</a>
   </div>
   <div class="nav-right">
@@ -44,15 +44,7 @@
     <h2 class="reveal">What I'd actually tell a friend to use.</h2>
     <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:600px;">No affiliate links, no "sponsored." Everything here is something I've personally used long enough to trust — or specifically don't. Free options come first.</p>
 
-    <div class="tabs reveal" id="toolTabs" style="margin-top:36px;">
-      <button class="tab-btn active" data-cat="all">All</button>
-      <button class="tab-btn" data-cat="Password Managers">Password Managers</button>
-      <button class="tab-btn" data-cat="VPNs">VPNs</button>
-      <button class="tab-btn" data-cat="Authenticator Apps">Authenticator Apps</button>
-      <button class="tab-btn" data-cat="Browsers">Browsers</button>
-    </div>
-
-    <div class="listing-grid" id="toolGrid" style="margin-top:28px;"></div>
+    <div id="toolTiers" style="margin-top:8px;"></div>
   </div>
 </section>
 
@@ -64,7 +56,7 @@
     </div>
     <div class="footer-col">
       <h4>Explore</h4>
-      <a href="index.html#what-we-are">What we are</a>
+      <a href="index.html#intro">What we are</a>
       <a href="index.html#posts">All posts</a>
       <a href="glossary.html">Glossary</a>
     </div>
@@ -105,48 +97,96 @@
   initCommandPalette();
   initMobileNav();
 
-  var TOOLS = [
-    { name: 'Bitwarden', cat: 'Password Managers', color: 'var(--green)', verdict: 'Recommended', price: 'Free (paid tier optional)', why: 'Open-source, works identically across every device and browser, and the free tier covers everything most people need.', watch: 'The interface is plainer than paid competitors — that\'s a fair trade for what you get free.' },
-    { name: 'iCloud Keychain / Google Password Manager', cat: 'Password Managers', color: 'var(--green)', verdict: 'Good default', price: 'Free (built in)', why: 'Already on your phone, zero setup, generates and fills unique passwords automatically.', watch: 'Locked to one ecosystem — switching phones later means migrating everything manually.' },
-    { name: 'Proton VPN', cat: 'VPNs', color: 'var(--blue)', verdict: 'Recommended', price: 'Free tier available', why: 'Independently audited, based in Switzerland, and the free tier is a real product, not a bait-and-switch trial.', watch: 'Free tier limits you to a handful of server locations — fine for most people\'s actual use case.' },
-    { name: '"Free" VPN apps from app store ads', cat: 'VPNs', color: 'var(--pink)', verdict: 'Avoid', price: 'Free', why: '', watch: 'Many of these make money by logging and selling your traffic — the exact thing a VPN is supposed to prevent. If a VPN doesn\'t explain how it makes money, assume it\'s your data.' },
-    { name: 'Google Authenticator / Authy', cat: 'Authenticator Apps', color: 'var(--green)', verdict: 'Recommended', price: 'Free', why: 'Either one is a real upgrade over SMS-based codes, which can be intercepted via SIM-swap attacks.', watch: 'Authy backs up codes to the cloud (convenient); Google Authenticator historically didn\'t — check current behavior before switching phones.' },
-    { name: 'Firefox / Brave', cat: 'Browsers', color: 'var(--green)', verdict: 'Recommended', price: 'Free', why: 'Both block third-party trackers by default, out of the box, with no configuration needed.', watch: 'Some banking/government sites are still built assuming Chrome — keep one Chrome-based browser around as a backup.' }
+  var TIERS = [
+    {
+      key: 'open-source',
+      label: 'Open Source',
+      color: 'var(--green)',
+      desc: 'Free, transparent, and community-trusted — the code is public, so nobody has to just take a company\'s word for what it does with your data.',
+      tools: [
+        {
+          name: 'Bitwarden', cat: 'Password Managers', price: 'Free (paid tier optional)',
+          what: 'Stores and auto-fills a unique password for every site you use, encrypted so only you can read them.',
+          features: ['Free tier with no real feature gate — unlimited passwords, unlimited devices', 'Open-source and independently audited', 'Cross-platform: browser extension, phone app, and desktop app all work the same way', 'Built-in password generator and reused/breached-password checker'],
+          advantages: ['Anyone can verify it doesn\'t leak your data, since the code is public', 'The free tier is the real product, not a bait-and-switch trial', 'Switching phones or browsers later doesn\'t mean starting over'],
+          disadvantages: ['Interface is plainer and less polished than paid competitors like 1Password', 'Importing existing passwords and installing the extension takes a bit more manual setup than a phone\'s built-in option']
+        },
+        {
+          name: 'Proton VPN', cat: 'VPNs', price: 'Free tier available',
+          what: 'Encrypts your internet traffic and hides your IP address, so the network you\'re connected to — like public Wi-Fi — can\'t see or intercept what you\'re doing.',
+          features: ['Free tier that\'s a genuinely usable product, not a time-limited trial', 'Apps are open-source and independently audited', 'Based in Switzerland with a verified no-logs policy'],
+          advantages: ['Transparent about how it makes money (paid subscriptions), so there\'s no incentive to sell your data', 'No configuration needed — install, tap connect, done'],
+          disadvantages: ['Free tier limits you to a handful of server locations', 'Paid tier needed for faster speeds or choosing a specific country']
+        },
+        {
+          name: 'Firefox / Brave', cat: 'Browsers', price: 'Free',
+          what: 'Everyday web browsers that block third-party trackers and invasive ads by default — no extensions or configuration required.',
+          features: ['Tracker and third-party cookie blocking on by default, out of the box', 'Open-source codebase', 'Regularly updated with security patches'],
+          advantages: ['Meaningfully more private than Chrome\'s defaults with zero setup', 'Free, and available on every major platform'],
+          disadvantages: ['Some banking, government, or enterprise sites are still built assuming Chrome and may behave oddly', 'Brave\'s built-in crypto/rewards features are unrelated to privacy and can be safely ignored']
+        }
+      ]
+    },
+    {
+      key: 'everyday',
+      label: 'Everyday Apps',
+      color: 'var(--blue)',
+      desc: 'Mainstream tools normal people already have access to — built into the phone you own, or a well-known free tier you don\'t have to go looking for.',
+      tools: [
+        {
+          name: 'iCloud Keychain / Google Password Manager', cat: 'Password Managers', price: 'Free (built in)',
+          what: 'The password manager already built into your phone — saves and auto-fills passwords with zero setup.',
+          features: ['Already installed and turned on for most people by default', 'Generates a strong unique password automatically when you sign up for something new', 'Flags reused, weak, or breached passwords (Security Recommendations / Password Checkup)'],
+          advantages: ['Genuinely free, and you likely already have it', 'Deeply integrated with the OS, so autofill works everywhere without extra permissions'],
+          disadvantages: ['Locked to one ecosystem — switching from iPhone to Android (or back) means manually exporting and re-importing everything', 'Fewer extra features than dedicated apps, like secure notes or granular sharing']
+        },
+        {
+          name: 'Google Authenticator / Authy', cat: 'Authenticator Apps', price: 'Free',
+          what: 'Generates the 6-digit codes used for two-factor authentication (2FA), replacing codes sent by text message.',
+          features: ['Works with virtually every site or app that supports 2FA', 'Codes refresh automatically every 30 seconds and work offline', 'Authy additionally backs codes up to the cloud, encrypted'],
+          advantages: ['A real security upgrade over SMS codes, which can be intercepted via SIM-swap attacks', 'Setup takes under a minute per account — scan a QR code, done'],
+          disadvantages: ['Google Authenticator historically had no backup — losing your phone could mean losing access to every 2FA-protected account (check current behavior before relying on it)', 'Authy\'s cloud backup is convenient, but it\'s one more account you now need to secure well']
+        }
+      ]
+    },
+    {
+      key: 'avoid',
+      label: 'Avoid These',
+      color: 'var(--pink)',
+      desc: 'Common tools people mistakenly trust — explained, so you know exactly why to skip them instead of just taking our word for it.',
+      tools: [
+        {
+          name: '"Free" VPN apps from app-store ads', cat: 'VPNs', price: 'Free',
+          what: 'Ad-driven free VPN apps promising unlimited protection with no visible catch — usually found via app-store search ads rather than word of mouth.',
+          features: ['Free to download with no visible subscription', 'Rarely publish an independent security audit', 'Rarely disclose how they\'re actually funded'],
+          advantages: ['The one real upside: costs nothing upfront'],
+          disadvantages: ['A VPN has real infrastructure costs — if you\'re not paying, something else usually is, often by logging and selling your traffic (the exact thing a VPN is supposed to prevent)', 'No independent audits or transparent no-logs policy in most cases', 'Some have been caught bundling malware or injecting ads into browsing traffic']
+        }
+      ]
+    }
   ];
 
-  var grid = document.getElementById('toolGrid');
-  var tabBar = document.getElementById('toolTabs');
-
-  function render(cat) {
-    var filtered = cat === 'all' ? TOOLS : TOOLS.filter(function (t) { return t.cat === cat; });
-    grid.innerHTML = filtered.map(function (t) {
-      return '<div class="file-row reveal" style="cursor:default; justify-content:flex-start; gap:0;">' +
-        '<div>' +
-          '<div class="file-top">' +
-            '<div class="stripe-dot" style="background:' + t.color + ';"></div>' +
-            '<span class="badge" style="border:1px solid ' + t.color + '; color:' + t.color + '; background:transparent;">' + t.verdict.toUpperCase() + '</span>' +
-          '</div>' +
-          '<div class="meta">' +
-            '<div class="filename">' + escapeHTML(t.cat) + ' · ' + escapeHTML(t.price) + '</div>' +
-            '<div class="title">' + escapeHTML(t.name) + '</div>' +
-            (t.why ? '<div class="desc">' + escapeHTML(t.why) + '</div>' : '') +
-            '<div class="desc" style="margin-top:10px; color:var(--gold);">⚠ ' + escapeHTML(t.watch) + '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-    initScrollReveal({ stagger: true });
+  function toolCard(t) {
+    return '<div class="tool-card reveal">' +
+      '<div class="tool-card-head"><span class="tool-name">' + escapeHTML(t.name) + '</span><span class="tool-cat">' + escapeHTML(t.cat) + ' · ' + escapeHTML(t.price) + '</span></div>' +
+      '<p class="tool-what">' + escapeHTML(t.what) + '</p>' +
+      '<div class="tool-cols">' +
+        '<div class="tool-col features"><h4>Key Features</h4><ul>' + t.features.map(function (f) { return '<li>' + escapeHTML(f) + '</li>'; }).join('') + '</ul></div>' +
+        '<div class="tool-col advantages"><h4>Advantages</h4><ul>' + t.advantages.map(function (a) { return '<li>' + escapeHTML(a) + '</li>'; }).join('') + '</ul></div>' +
+        '<div class="tool-col disadvantages"><h4>Disadvantages</h4><ul>' + t.disadvantages.map(function (d) { return '<li>' + escapeHTML(d) + '</li>'; }).join('') + '</ul></div>' +
+      '</div>' +
+    '</div>';
   }
 
-  tabBar.addEventListener('click', function (e) {
-    var btn = e.target.closest('.tab-btn');
-    if (!btn) return;
-    tabBar.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-    render(btn.getAttribute('data-cat'));
-  });
+  document.getElementById('toolTiers').innerHTML = TIERS.map(function (tier) {
+    return '<div class="toolkit-tier">' +
+      '<div class="toolkit-tier-head reveal"><span class="toolkit-tier-badge" style="background:' + tier.color + '22; color:' + tier.color + '; border:1px solid ' + tier.color + ';">' + escapeHTML(tier.label.toUpperCase()) + '</span><h3>' + escapeHTML(tier.label) + '</h3></div>' +
+      '<p class="toolkit-tier-desc reveal">' + escapeHTML(tier.desc) + '</p>' +
+      '<div class="tool-grid">' + tier.tools.map(toolCard).join('') + '</div>' +
+    '</div>';
+  }).join('');
 
-  render('all');
+  initScrollReveal({ stagger: true });
 </script>
 
 </body>
