@@ -367,6 +367,29 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .glossary-card p{color:var(--cream-dim); font-size:14px; line-height:1.65;}
 @media (max-width:760px){ .glossary-grid{grid-template-columns:1fr;} }
 
+/* ============ TOOLKIT PAGE ============ */
+.toolkit-tier{margin-top:56px;}
+.toolkit-tier:first-of-type{margin-top:36px;}
+.toolkit-tier-head{display:flex; align-items:center; gap:12px; margin-bottom:6px;}
+.toolkit-tier-badge{font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:700; letter-spacing:0.5px; padding:4px 12px; border-radius:20px; flex-shrink:0;}
+.toolkit-tier-head h3{font-size:20px; font-weight:700;}
+.toolkit-tier-desc{color:var(--cream-dim); font-size:14px; max-width:620px; margin-bottom:22px;}
+.tool-grid{display:grid; gap:18px;}
+.tool-card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px 26px; transition:border-color .2s ease;}
+.tool-card-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:4px;}
+.tool-name{font-weight:700; font-size:17px;}
+.tool-cat{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--cream-dim);}
+.tool-what{color:var(--cream-dim); font-size:14.5px; margin:8px 0 18px; line-height:1.65;}
+.tool-cols{display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;}
+.tool-col h4{font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:10px;}
+.tool-col.features h4{color:var(--cream-dim);}
+.tool-col.advantages h4{color:var(--green);}
+.tool-col.disadvantages h4{color:var(--gold);}
+.tool-col ul{list-style:none;}
+.tool-col li{font-size:13.5px; color:var(--cream-dim); margin-bottom:9px; padding-left:14px; position:relative; line-height:1.55;}
+.tool-col li::before{content:"—"; position:absolute; left:0; color:var(--line);}
+@media (max-width:760px){ .tool-cols{grid-template-columns:1fr; gap:16px;} }
+
 /* ============ 404 PAGE ============ */
 .page-404{min-height:60vh; display:flex; align-items:center; justify-content:center; padding:100px 24px; position:relative; z-index:1;}
 .page-404-inner{text-align:center; max-width:520px;}
