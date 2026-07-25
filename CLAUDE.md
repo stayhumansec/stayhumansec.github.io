@@ -7,7 +7,7 @@ A static site for `stayhumansec` — plain-language cybersecurity, AI, and priva
 ```
 index.html      Homepage — hero, pillars, stats, activity heatmap, post listing
 post.html       Article template — renders one post from posts.json based on ?slug=
-quiz.html       "Am I at risk?" 5-question quiz with a scored result + recommended posts
+quiz.html       Redirect shim to index.html#youcheck — the quiz used to live here as its own page
 toolkit.html    Curated tool recommendations (password managers, VPNs, etc.), self-contained data
 glossary.html   Full glossary, rendered from the GLOSSARY_TERMS array in site.js
 404.html        Not-found page, styled as a failed `cat` command

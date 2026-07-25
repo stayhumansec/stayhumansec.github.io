@@ -81,6 +81,11 @@
           ]
         }
       ],
+      "quiz": {
+        "question": "Have you checked which devices are logged into your phone or accounts in the last 6 months?",
+        "riskyLabel": "No, never checked",
+        "safeLabel": "Yes, I have"
+      },
       "warn": {
         "label": "⚠ IF YOU FIND SOMETHING",
         "text": "Don't panic, but do act. Sign out of any device you don't recognize immediately, change your password from a device you trust (not the compromised one), and turn on two-factor authentication if it isn't already on. If it looks like stalkerware specifically, consider that removing it may alert whoever installed it — if this is a safety concern involving another person, that's worth thinking through carefully before you act."
@@ -283,6 +288,11 @@
           ]
         }
       ],
+      "quiz": {
+        "question": "When you get a text claiming there's a \"delivery problem,\" what do you do?",
+        "riskyLabel": "Tap the link to check",
+        "safeLabel": "Check the official app or site instead"
+      },
       "warn": {
         "label": "⚠ IF YOU'VE ALREADY CLICKED",
         "text": "Don't enter anything if a page asks for a password, card number, or OTP — close it immediately. If you already entered something, change that password right away and check your bank/card statements for anything unfamiliar over the next few days."

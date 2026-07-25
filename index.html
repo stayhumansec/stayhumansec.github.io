@@ -21,7 +21,7 @@
     <a href="#pillars">Pillars</a>
     <a href="#posts">Posts</a>
     <a href="toolkit.html">Toolkit</a>
-    <a href="quiz.html">Quiz</a>
+    <a href="#youcheck">You, Check.</a>
     <a href="glossary.html">Glossary</a>
   </div>
   <div class="nav-right">
@@ -122,6 +122,16 @@
   <div class="stats-strip" id="statsStrip">
     <div class="stat-cell reveal"><span class="num" id="statCount">0</span><span class="label">files live now</span></div>
     <div class="stat-cell reveal"><span class="num" data-countup="8">0</span><span class="label">content pillars</span></div>
+  </div>
+</section>
+
+<section class="section section-alt" id="youcheck">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">// YOU, CHECK.</div>
+    <h2 class="reveal">A couple of quick questions. No signup, no shame.</h2>
+    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:560px;">Every question here comes straight from something we've actually written about — answer honestly and we'll point you at exactly the right files to read next.</p>
+    <div class="quiz-dots" id="ycDots"></div>
+    <div id="ycStage"></div>
   </div>
 </section>
 
@@ -248,6 +258,7 @@
     initScrollReveal({ stagger: true });
     animateCounters();
     setupTabs();
+    initYouCheck(posts);
   }).catch(function (err) {
     document.getElementById('fileList').innerHTML =
       '<p style="color:var(--pink); font-family:\'JetBrains Mono\',monospace; font-size:13px;">Could not load posts.json — ' + escapeHTML(err.message) +
@@ -293,6 +304,129 @@
         document.getElementById('posts').scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
+  }
+
+  // "You, Check." — one question per pillar, driven by the first live post in that pillar
+  // carrying a `quiz` field in posts.json. Answering "risky" recommends every live post in
+  // that pillar, not just the one whose wording drove the question — so the result stays
+  // useful even as more posts get added to a pillar later.
+  function initYouCheck(posts) {
+    var dotsEl = document.getElementById('ycDots');
+    var stageEl = document.getElementById('ycStage');
+    if (!dotsEl || !stageEl) return;
+
+    var byPillar = {};
+    posts.forEach(function (p) {
+      if (p.badge !== 'live') return;
+      if (!byPillar[p.pillar]) byPillar[p.pillar] = [];
+      byPillar[p.pillar].push(p);
+    });
+
+    var questions = [];
+    Object.keys(byPillar).forEach(function (pillar) {
+      var group = byPillar[pillar];
+      var driver = null;
+      for (var i = 0; i < group.length; i++) {
+        if (group[i].quiz) { driver = group[i]; break; }
+      }
+      if (!driver) return;
+      questions.push({
+        question: driver.quiz.question,
+        riskyLabel: driver.quiz.riskyLabel,
+        safeLabel: driver.quiz.safeLabel,
+        posts: group
+      });
+    });
+
+    if (!questions.length) {
+      stageEl.innerHTML = '<p style="color:var(--cream-dim); font-family:\'JetBrains Mono\',monospace; font-size:13px;">Not enough live posts yet to build this — check back soon.</p>';
+      return;
+    }
+
+    var current = 0;
+    var riskyAnswers = [];
+
+    dotsEl.innerHTML = questions.map(function (_, i) { return '<span data-i="' + i + '"></span>'; }).join('');
+
+    function updateDots() {
+      dotsEl.querySelectorAll('span').forEach(function (d, i) {
+        d.classList.toggle('done', i < current);
+        d.classList.toggle('current', i === current);
+      });
+    }
+
+    function renderQuestion() {
+      updateDots();
+      var item = questions[current];
+      stageEl.innerHTML =
+        '<div class="quiz-card reveal is-visible">' +
+          '<div class="quiz-q">' + escapeHTML(item.question) + '</div>' +
+          '<div class="quiz-options">' +
+            '<button class="quiz-opt" data-risky="true">' + escapeHTML(item.riskyLabel) + '</button>' +
+            '<button class="quiz-opt" data-risky="false">' + escapeHTML(item.safeLabel) + '</button>' +
+          '</div>' +
+        '</div>';
+
+      stageEl.querySelectorAll('.quiz-opt').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (btn.getAttribute('data-risky') === 'true') riskyAnswers.push(item);
+          current++;
+          if (current < questions.length) {
+            renderQuestion();
+          } else {
+            runScan();
+          }
+        });
+      });
+    }
+
+    function runScan() {
+      dotsEl.querySelectorAll('span').forEach(function (d) { d.classList.add('done'); d.classList.remove('current'); });
+      stageEl.innerHTML = '<div class="quiz-scan">Matching your answers to the right files<span class="dots-anim"></span></div>';
+      setTimeout(renderResult, 1000);
+    }
+
+    function renderResult() {
+      var recs = [];
+      var seen = {};
+      riskyAnswers.forEach(function (q) {
+        q.posts.forEach(function (p) {
+          if (!seen[p.slug]) { seen[p.slug] = true; recs.push(p); }
+        });
+      });
+
+      var badge, color, bg, title, desc;
+      if (!recs.length) {
+        badge = 'LOOKING GOOD'; color = 'var(--green)'; bg = 'rgba(63,207,142,0.15)';
+        title = "You're already doing the right things.";
+        desc = "Nothing in your answers flagged a gap — feel free to browse the full file list below anyway, there's always something worth a skim.";
+      } else {
+        badge = recs.length > 1 ? (recs.length + ' GAPS FOUND') : '1 GAP FOUND';
+        color = 'var(--pink)'; bg = 'rgba(232,90,130,0.15)';
+        title = 'Based on your answers, start here.';
+        desc = "These aren't a generic list — they're the specific posts that cover the gaps your answers just pointed at.";
+      }
+
+      stageEl.innerHTML =
+        '<div class="quiz-card reveal is-visible">' +
+          '<div class="quiz-result-badge" style="background:' + bg + '; color:' + color + '; border:1px solid ' + color + ';">' + escapeHTML(badge) + '</div>' +
+          '<div class="quiz-result-title">' + escapeHTML(title) + '</div>' +
+          '<p class="quiz-result-desc">' + escapeHTML(desc) + '</p>' +
+          '<div class="quiz-recs" id="ycRecs"></div>' +
+        '</div>';
+
+      var recsEl = document.getElementById('ycRecs');
+      if (recs.length && recsEl) {
+        recsEl.innerHTML = '<div class="listing-label" style="margin-bottom:14px;">recommended for you</div>' +
+          recs.map(function (p) {
+            return '<a href="post.html?slug=' + p.slug + '" class="file-row" style="min-height:auto; padding:16px 18px; margin-bottom:10px;">' +
+              '<div><div class="filename">' + escapeHTML(p.filename) + '</div><div class="title" style="font-size:15px;">' + escapeHTML(p.title) + '</div></div>' +
+            '</a>';
+          }).join('');
+      }
+    }
+
+    renderQuestion();
   }
 </script>
 

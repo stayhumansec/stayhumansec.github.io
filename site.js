@@ -217,6 +217,7 @@ function initCommandPalette() {
   var trigger = document.getElementById('cmdkTrigger');
   var staticPages = [
     { title: 'Home', sub: 'index.html', href: 'index.html', color: 'var(--orange)' },
+    { title: 'You, Check.', sub: 'index.html#youcheck — the quick gut-check quiz', href: 'index.html#youcheck', color: 'var(--pink)' },
     { title: 'Glossary', sub: 'glossary.html — plain-language terms', href: 'glossary.html', color: 'var(--blue)' }
   ];
   var items = staticPages.slice();
