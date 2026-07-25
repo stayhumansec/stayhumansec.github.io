@@ -226,17 +226,6 @@ body::after{
 .stat-cell .label{font-size:12px; color:var(--cream-dim); letter-spacing:0.6px; text-transform:uppercase; margin-top:8px;}
 @media (max-width:700px){ .stats-strip{flex-direction:column;} .stat-cell{border-right:none; border-bottom:1px dashed var(--line);} .stat-cell:last-child{border-bottom:none;} }
 
-/* ============ FEATURED BAND ============ */
-.featured-section{position:relative; z-index:1; padding:70px 48px;}
-.featured{max-width:var(--content-max); margin:0 auto; padding:28px 34px; border-radius:18px; background:linear-gradient(135deg, rgba(255,122,61,0.12), rgba(255,122,61,0.02)); border:1px solid var(--orange); display:flex; align-items:center; gap:20px; text-decoration:none; color:inherit; transition:transform .25s var(--ease), box-shadow .25s var(--ease);}
-.featured:hover{transform:translateY(-3px); box-shadow:0 20px 40px rgba(255,122,61,0.15);}
-.featured .spark{font-size:24px; flex-shrink:0;}
-.featured .ftext{flex:1;}
-.featured .feyebrow{font-family:'JetBrains Mono', monospace; font-size:11.5px; color:var(--orange); letter-spacing:1px; margin-bottom:5px;}
-.featured .ftitle{font-weight:700; font-size:18px;}
-.featured .farrow{color:var(--orange); font-size:22px; flex-shrink:0; transition:transform .25s var(--ease);}
-.featured:hover .farrow{transform:translateX(6px);}
-
 /* ============ TABS ============ */
 .tabs{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;}
 .tab-btn{font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--cream-dim); background:transparent; border:1px solid var(--line); padding:10px 20px; border-radius:20px; cursor:pointer; transition:border-color .2s ease, color .2s ease, background .2s ease;}
@@ -363,18 +352,6 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .pattern-list .ptag{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--pink); border:1px solid var(--pink); padding:3px 9px; border-radius:12px; flex-shrink:0; white-space:nowrap;}
 @media (max-width:600px){ .compare{grid-template-columns:1fr;} .pattern-list li{flex-direction:column;} }
 
-/* ============ START HERE PATH ============ */
-.path-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; margin-top:36px; position:relative;}
-.path-step{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px 24px; text-decoration:none; color:inherit; display:block; transition:border-color .25s ease, transform .25s var(--ease), box-shadow .25s var(--ease); position:relative;}
-.path-step:hover{transform:translateY(-5px); box-shadow:0 20px 40px rgba(0,0,0,0.4);}
-.path-step.disabled{cursor:default; opacity:0.6;}
-.path-step.disabled:hover{transform:none; box-shadow:none;}
-.path-num{font-family:'JetBrains Mono', monospace; font-size:14px; color:var(--orange); border:1.5px solid var(--orange); width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; margin-bottom:16px;}
-.path-step h3{font-size:17px; font-weight:700; margin-bottom:8px;}
-.path-step p{color:var(--cream-dim); font-size:14px; line-height:1.6;}
-.path-step .path-badge{position:absolute; top:22px; right:22px; font-family:'JetBrains Mono', monospace; font-size:10px; padding:3px 9px; border-radius:10px; border:1px solid var(--line); color:var(--cream-dim);}
-@media (max-width:860px){ .path-grid{grid-template-columns:1fr;} }
-
 /* ============ COPY-AS-MD BUTTON ============ */
 .copy-md-btn{display:inline-flex; align-items:center; gap:8px; font-family:'JetBrains Mono', monospace; font-size:12.5px; color:var(--cream-dim); background:transparent; border:1px solid var(--line); padding:9px 16px; border-radius:20px; cursor:pointer; margin-bottom:24px; transition:border-color .2s ease, color .2s ease;}
 .copy-md-btn:hover{border-color:var(--orange); color:var(--cream);}
@@ -448,6 +425,5 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 /* ============ RESPONSIVE (mobile stays mobile — this is what desktop no longer inherits) ============ */
 @media (max-width:600px){
   .section{padding:60px 20px;}
-  .featured-section{padding:40px 20px;}
   .listing-label{margin:24px 0 16px;}
 }
