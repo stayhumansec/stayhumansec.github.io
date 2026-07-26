@@ -599,10 +599,21 @@ function setupDownloadPdfButton(btn, post) {
 
     loadScriptOnce(HTML2PDF_CDN_URL).then(function () {
       var el = buildPdfExportDOM(post);
-      el.style.position = 'fixed';
-      el.style.left = '-9999px';
-      el.style.top = '0';
-      document.body.appendChild(el);
+      // html2pdf.js clones this exact element (cloneNode, which copies inline styles) into
+      // its OWN off-screen container before rendering. If *our* element itself carries
+      // position:fixed/absolute, that inline style rides along onto the clone and escapes
+      // html2pdf's container's normal-flow height calculation — the container measures the
+      // fixed-position clone as zero-height, producing a blank PDF. So `el` itself must stay
+      // position:static (the default); hiding it from view is done by a separate wrapper
+      // that clips visually (0-size, overflow:hidden) without affecting el's own layout —
+      // and the wrapper is never part of what gets cloned, since html2pdf only clones `el`.
+      var hideWrap = document.createElement('div');
+      hideWrap.style.position = 'absolute';
+      hideWrap.style.width = '0';
+      hideWrap.style.height = '0';
+      hideWrap.style.overflow = 'hidden';
+      hideWrap.appendChild(el);
+      document.body.appendChild(hideWrap);
 
       return window.html2pdf().set({
         margin: 0,
@@ -612,9 +623,9 @@ function setupDownloadPdfButton(btn, post) {
         jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
       }).from(el).save().then(function () {
-        document.body.removeChild(el);
+        document.body.removeChild(hideWrap);
       }, function (err) {
-        document.body.removeChild(el);
+        document.body.removeChild(hideWrap);
         throw err;
       });
     }).then(function () {
