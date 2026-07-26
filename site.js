@@ -516,6 +516,7 @@ function fallbackCopy(text, done) {
  */
 var PDF_DARK_COLORS = {
   bg: [0, 0, 0],
+  card: [13, 12, 10],
   cream: [244, 241, 232],
   creamDim: [199, 195, 182],
   line: [58, 53, 44],
@@ -629,19 +630,29 @@ function drawPdfGrid(doc, pageW, pageH) {
 }
 
 /**
- * "Glass" card: a low-opacity light fill (standing in for backdrop-filter blur, which has no
- * flat-vector equivalent) plus a solid border — the same visual shorthand used everywhere else
- * in print/PDF recreations of glassmorphism, since real blur would require rasterizing.
+ * "Glass" card: a low-opacity fill (standing in for backdrop-filter blur, which has no flat-
+ * vector equivalent) plus a solid border. On the real site, this specific glass treatment is
+ * only used for the hero-terminal/path-bar window chrome and the warn-box (background:rgba(
+ * ...,0.08)) — NOT for step blocks, which are actually solid cards (see drawPdfSolidCard).
+ * Don't apply this to step/content cards; that was an earlier mistake in this file.
  */
-function drawPdfGlassBox(doc, x, y, w, h, r, borderRGB) {
+function drawPdfGlassBox(doc, x, y, w, h, r, borderRGB, fillRGB, fillOpacity) {
   doc.saveGraphicsState();
-  doc.setGState(new doc.GState({ opacity: 0.06 }));
-  doc.setFillColor.apply(doc, PDF_DARK_COLORS.cream);
+  doc.setGState(new doc.GState({ opacity: fillOpacity || 0.07 }));
+  doc.setFillColor.apply(doc, fillRGB || PDF_DARK_COLORS.cream);
   doc.roundedRect(x, y, w, h, r, r, 'F');
   doc.restoreGraphicsState();
   doc.setDrawColor.apply(doc, borderRGB);
   doc.setLineWidth(1);
   doc.roundedRect(x, y, w, h, r, r, 'S');
+}
+
+/** Solid card — the real style used by the site's .step blocks (background:var(--card), not glass). */
+function drawPdfSolidCard(doc, x, y, w, h, r, fillRGB, borderRGB) {
+  doc.setFillColor.apply(doc, fillRGB);
+  doc.setDrawColor.apply(doc, borderRGB);
+  doc.setLineWidth(1);
+  doc.roundedRect(x, y, w, h, r, r, 'FD');
 }
 
 /** Builds the full PDF document for a post using jsPDF's native drawing API. Returns the jsPDF instance. */
@@ -709,7 +720,7 @@ function generatePostPdf(post, fontData) {
     y += 18;
   }
 
-  /** Measures a step block's wrapped content first, then draws a glass card behind it. */
+  /** Measures a step block's wrapped content first, then draws a solid card behind it (the real .step style — not glass). */
   function drawStepBlock(block) {
     var padX = 16, padTop = 16, padBottom = 16;
     var innerW = contentW - padX * 2;
@@ -728,7 +739,7 @@ function generatePostPdf(post, fontData) {
     var boxH = padTop + totalH + padBottom;
     ensureSpace(boxH + 10);
     var boxTop = y;
-    drawPdfGlassBox(doc, marginX, boxTop, contentW, boxH, 10, PDF_DARK_COLORS.line);
+    drawPdfSolidCard(doc, marginX, boxTop, contentW, boxH, 16, PDF_DARK_COLORS.card, PDF_DARK_COLORS.line);
     y = boxTop + padTop + 8;
     lineGroups.forEach(function (g) {
       doc.setFont(g.font, g.style || 'normal');
@@ -750,18 +761,26 @@ function generatePostPdf(post, fontData) {
 
   paintPageBg();
 
-  // header: icon + wordmark, styled as a glass "terminal chrome" bar
+  // header: icon + wordmark, styled as a glass "terminal chrome" bar (matches .path-bar/
+  // .hero-terminal — window controls are minimize/maximize/close icon glyphs, not colored dots)
   var chromeH = 30;
-  drawPdfGlassBox(doc, marginX, y, contentW, chromeH, 8, PDF_DARK_COLORS.line);
-  var dotColors = [[255, 95, 87], [254, 188, 46], [40, 200, 64]];
-  dotColors.forEach(function (c, i) {
-    setColor('setFillColor', c);
-    doc.circle(marginX + 16 + i * 12, y + chromeH / 2, 2.8, 'F');
-  });
+  drawPdfGlassBox(doc, marginX, y, contentW, chromeH, 14, PDF_DARK_COLORS.line);
   doc.setFont(monoFont, 'normal');
   doc.setFontSize(8.5);
   setColor('setTextColor', PDF_DARK_COLORS.creamDim);
-  doc.text('stay(human).sec:~$ cat ' + sanitizePdfText(post.filename || ''), marginX + 56, y + chromeH / 2 + 3);
+  doc.text('stay(human).sec:~$ cat ' + sanitizePdfText(post.filename || ''), marginX + 16, y + chromeH / 2 + 3);
+
+  var wcCenterY = y + chromeH / 2;
+  var wcMinX = pageW - marginX - 16 - 36;
+  setColor('setDrawColor', PDF_DARK_COLORS.creamDim);
+  doc.setLineWidth(1);
+  doc.line(wcMinX - 3, wcCenterY + 3, wcMinX + 3, wcCenterY + 3); // minimize
+  doc.rect(wcMinX + 14, wcCenterY - 3, 6, 6, 'S'); // maximize
+  setColor('setDrawColor', PDF_DARK_COLORS.pinkBorder);
+  var closeX = wcMinX + 28;
+  doc.line(closeX - 3, wcCenterY - 3, closeX + 3, wcCenterY + 3); // close
+  doc.line(closeX - 3, wcCenterY + 3, closeX + 3, wcCenterY - 3);
+
   y += chromeH + 20;
 
   var iconH = 15;
@@ -823,21 +842,31 @@ function generatePostPdf(post, fontData) {
         writeWrapped('AVOID — ' + badLabel + ': ' + block.bad.text, { size: 9.5, color: PDF_DARK_COLORS.creamDim, lineH: 13.5, gapAfter: 4 });
         writeWrapped('DO — ' + goodLabel + ': ' + block.good.text, { size: 9.5, color: PDF_DARK_COLORS.green, lineH: 13.5, gapAfter: 8 });
       } else if (block.type === 'pattern-list') {
+        // real .pattern-list li is its own solid card (background:var(--card)), not a plain row
         block.items.forEach(function (it) {
+          var padX = 14, padY = 12;
+          doc.setFont(sansFont, 'bold');
+          doc.setFontSize(9.5);
+          var tagText = sanitizePdfText(it.tag) + ':  ';
+          var tW = doc.getTextWidth(tagText);
+          doc.setFont(sansFont, 'normal');
+          var itLines = doc.splitTextToSize(sanitizePdfText(it.text), contentW - padX * 2 - tW);
+          var rowH = Math.max(13.5, itLines.length * 13.5);
+          var boxH = padY * 2 + rowH;
+          ensureSpace(boxH + 10);
+          var boxTop = y;
+          drawPdfSolidCard(doc, marginX, boxTop, contentW, boxH, 12, PDF_DARK_COLORS.card, PDF_DARK_COLORS.line);
+          var textY = boxTop + padY + 9;
           doc.setFont(sansFont, 'bold');
           doc.setFontSize(9.5);
           setColor('setTextColor', PDF_DARK_COLORS.cream);
-          ensureSpace(14);
-          doc.text(sanitizePdfText(it.tag) + ':', marginX, y);
-          var tW = doc.getTextWidth(it.tag + ': ') + 4;
+          doc.text(tagText, marginX + padX, textY);
           doc.setFont(sansFont, 'normal');
           setColor('setTextColor', PDF_DARK_COLORS.creamDim);
-          var itLines = doc.splitTextToSize(sanitizePdfText(it.text), contentW - tW);
           itLines.forEach(function (line, i) {
-            if (i > 0) ensureSpace(13.5);
-            doc.text(line, marginX + tW, y + i * 13.5);
+            doc.text(line, marginX + padX + tW, textY + i * 13.5);
           });
-          y += Math.max(13.5, itLines.length * 13.5) + 4;
+          y = boxTop + boxH + 10;
         });
         y += 4;
       }
@@ -850,7 +879,7 @@ function generatePostPdf(post, fontData) {
   var warnBoxH = 16 + 16 + warnLines.length * 13.5 + 16;
   ensureSpace(warnBoxH + 10);
   var warnTop = y;
-  drawPdfGlassBox(doc, marginX, warnTop, contentW, warnBoxH, 8, PDF_DARK_COLORS.pinkBorder);
+  drawPdfGlassBox(doc, marginX, warnTop, contentW, warnBoxH, 16, PDF_DARK_COLORS.pinkBorder, PDF_DARK_COLORS.pinkBorder, 0.08);
   y = warnTop + 24;
   doc.setFont(monoFont, 'bold');
   doc.setFontSize(9);
