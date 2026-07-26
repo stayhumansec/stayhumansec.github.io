@@ -1,0 +1,13 @@
+The password mistake nobody thinks is a big deal. You're probably doing it. 🔑
+
+Here's the spoiler: it's reusing the same password on more than one site. Feels harmless — until one random site you signed up for years ago gets breached, and suddenly every other account where you reused that password is at risk too. It's called credential stuffing, and a machine does it in seconds.
+
+The fix doesn't require memorizing anything: run your phone's built-in password checkup (Settings → Passwords on iPhone, passwords.google.com on Android/Chrome), then let a password manager — the one already on your phone, free — generate a unique one for everything going forward.
+
+Start with email, banking, and anything with saved payment info first. The rest can catch up over time.
+
+Next up: what is smishing? (SMS phishing, explained)
+
+Ran your checkup yet? Tell me how many reused passwords it found. 👇
+
+#passwordsecurity #passwordmanager #cybersecuritytips #staysafeonline #onlinesafety #databreach
