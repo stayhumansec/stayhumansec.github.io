@@ -1,0 +1,13 @@
+"Your package couldn't be delivered. Click here to fix it." 📦
+
+That text is called smishing — SMS phishing. The wording changes every time, but the pattern underneath almost never does: a name you trust (your bank, a delivery company), a manufactured problem that needs fixing right now, and a link that promises to fix it.
+
+It works because a text feels more urgent and more "official" than an email ever does, and almost nobody's ever been taught to question one.
+
+The fix: don't tap the link. Open the company's official app instead, or type their website in yourself. If something's genuinely wrong, it'll be sitting right there too — no scam link required.
+
+Next up: incognito mode doesn't make you anonymous.
+
+Gotten one of these this week? Tell me which company they pretended to be. 👇
+
+#smishing #phishing #textscam #cybersecurity #staysafeonline #scamalert
