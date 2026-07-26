@@ -184,6 +184,34 @@
           features: ['Works with virtually every site or app that supports 2FA', 'Codes refresh automatically every 30 seconds and work offline', 'Authy additionally backs codes up to the cloud, encrypted'],
           advantages: ['A real security upgrade over SMS codes, which can be intercepted via SIM-swap attacks', 'Setup takes under a minute per account — scan a QR code, done'],
           disadvantages: ['Google Authenticator historically had no backup — losing your phone could mean losing access to every 2FA-protected account (check current behavior before relying on it)', 'Authy\'s cloud backup is convenient, but it\'s one more account you now need to secure well']
+        },
+        {
+          name: 'WhatsApp', cat: 'Messaging', price: 'Free',
+          what: 'The messaging app most of your contacts probably already have — encrypts messages end-to-end by default, so the content of your chats isn\'t readable in transit.',
+          features: ['End-to-end encryption on by default for chats and calls', 'Voice/video calls, group chats, and file sharing built in', 'Optional end-to-end encrypted cloud backup, if you turn it on'],
+          advantages: ['Nearly everyone already has it, so it\'s realistically the encrypted option most people will actually use', 'Zero setup — it works the way people already expect a messaging app to work'],
+          disadvantages: ['Owned by Meta, which — while it can\'t read encrypted message content — does collect metadata (who you talk to, when, how often) tied to your Meta account', 'Cloud backups aren\'t end-to-end encrypted unless you specifically turn that setting on']
+        },
+        {
+          name: 'Google Drive / iCloud Backup', cat: 'Cloud Backup', price: 'Free tier built in',
+          what: 'The cloud backup already built into your phone — quietly saves your photos, contacts, and files so losing or breaking your phone doesn\'t mean losing everything on it.',
+          features: ['Automatic backup running in the background, no setup beyond turning it on', 'Free tier (5–15GB depending on provider) covers most people\'s basics', 'Restores everything onto a new device in one step'],
+          advantages: ['The single best protection against losing years of photos to a broken or stolen phone', 'Already there — no new app to install or account to create'],
+          disadvantages: ['Free storage tier fills up fast once you\'re backing up photos and videos, and the paid upgrade is an ongoing subscription', 'Everything backed up is now also sitting on that company\'s servers — encrypted, but still a company you\'re trusting with it']
+        },
+        {
+          name: 'Find My iPhone / Find My Device', cat: 'Device Tracking', price: 'Free (built in)',
+          what: 'The feature already on your phone that lets you locate, lock, or erase it remotely if it\'s lost or stolen — from any browser or another device.',
+          features: ['Real-time location tracking for a lost or stolen device', 'Remote lock and remote wipe, so a thief can\'t get into your accounts even with the phone in hand', 'Works even offline, using nearby devices (iPhone) or last known location (Android) to relay position'],
+          advantages: ['Already turned on for most people by default — nothing to install', 'Genuinely useful in the exact moment you\'d panic most: realizing your phone is gone'],
+          disadvantages: ['Only works if it was enabled before the phone went missing — there\'s nothing to do about it after the fact', 'Requires still being signed into your Apple/Google account, so losing access to that account first makes this useless too']
+        },
+        {
+          name: 'Face ID / Fingerprint Unlock', cat: 'Device Security', price: 'Free (built in)',
+          what: 'The fingerprint or face-scan lock already built into your phone — the fastest, and often strongest, everyday barrier between someone picking it up and getting into everything on it.',
+          features: ['Unlocks the phone in under a second, no PIN typing required', 'Biometric data is stored in a secure hardware chip on the device, never uploaded anywhere', 'Falls back to a PIN/passcode automatically after a few failed attempts'],
+          advantages: ['Meaningfully harder to bypass than someone watching you type a 4-digit PIN over your shoulder', 'Zero ongoing effort once it\'s set up once'],
+          disadvantages: ['In some jurisdictions you can be legally compelled to unlock a device with your fingerprint or face in ways a memorized passcode can\'t be — worth knowing if that\'s a real concern for you', 'Still needs a strong backup passcode set, since biometrics occasionally fail (wet fingers, face masks, and so on)']
         }
       ]
     },
@@ -199,6 +227,20 @@
           features: ['Free to download with no visible subscription', 'Rarely publish an independent security audit', 'Rarely disclose how they\'re actually funded'],
           advantages: ['The one real upside: costs nothing upfront'],
           disadvantages: ['A VPN has real infrastructure costs — if you\'re not paying, something else usually is, often by logging and selling your traffic (the exact thing a VPN is supposed to prevent)', 'No independent audits or transparent no-logs policy in most cases', 'Some have been caught bundling malware or injecting ads into browsing traffic']
+        },
+        {
+          name: '"Cleaner" / "Booster" / phone "antivirus" apps', cat: 'Utility Apps', price: 'Free (ads / paid upgrade)',
+          what: 'Apps promising to speed up your phone, free up RAM, or scan for viruses — often pushed through alarming pop-up ads claiming your device is already infected or dangerously full.',
+          features: ['"One-tap" cleaning, boosting, or virus-scanning', 'Ad-supported, usually with a paid "pro" upgrade', 'Often requests broad permissions (storage, usage access, sometimes accessibility) to work'],
+          advantages: ['None that the phone doesn\'t already do better on its own — modern iOS/Android manage memory and storage automatically'],
+          disadvantages: ['Modern phones don\'t need manual RAM "boosting" — the OS already reclaims memory as needed, so these apps are solving a problem that doesn\'t exist', 'The permissions many request are more invasive than what an actual virus scanner would need', 'Some are the thing to actually worry about — bundling ad trackers, or in worse cases malware, behind a legitimate-looking "cleaner" front']
+        },
+        {
+          name: 'Free "utility" apps with excessive permissions', cat: 'Utility Apps', price: 'Free',
+          what: 'Free single-purpose apps — flashlight, PDF converter, photo editor, QR scanner — from unfamiliar developers that ask for permissions far beyond what the app actually needs to function.',
+          features: ['Does one simple task, often genuinely well', 'No cost to download', 'Usually ad-supported'],
+          advantages: ['The core function is often perfectly fine and does exactly what it says'],
+          disadvantages: ['A flashlight app asking for your contacts, location, or microphone access is a real red flag — that data has nothing to do with turning on a light', 'Excess permissions are a common way these apps make money: selling the data they collect on the side', 'Built-in OS alternatives (Files app PDF tools, camera app QR scanning) usually do the same job with zero extra permissions']
         }
       ]
     }
