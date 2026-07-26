@@ -53,7 +53,7 @@ here — see the notes at the bottom.
 | 27 | Stay Safe | Turn on automatic software updates — why it matters | Pending |
 | 28 | Story Time | A real (lighthearted) near-miss in the family group chat | Pending |
 
-## Pillar coverage check (all 8 represented across 28 days)
+## Pillar coverage check (all 9 represented across 28 days)
 
 | Pillar | Cadence | Days used |
 |---|---|---|
@@ -81,17 +81,22 @@ AI-privacy-intersection coverage.
 ## A note on Cyber News
 
 Cyber News is deliberately **not** pre-written here — it's always today's real,
-current story, found the morning it's posted. See CLAUDE.md's "Automated Post
-Generation Workflow" section for exactly how Claude Code should find and
-select that story when this pillar comes up (including which days can pair
-Cyber News alongside a day's other planned pillar, since it doesn't need its
-own dedicated day the way the others do).
+current story, found the morning it's posted. See `AUTOMATED-WORKFLOW.md` for
+exactly how Claude Code should find and select that story when this pillar
+comes up (including which days can pair Cyber News alongside a day's other
+planned pillar, since it doesn't need its own dedicated day the way the
+others do). Every Cyber News post requires `sourceUrl`, `sourceName`, and
+`date` in its `posts.json` entry — see `AUTOMATED-WORKFLOW.md`'s
+verification checklist.
 
 ## A note on AI News
 
 AI News works the same way as Cyber News, but twice a week instead of daily,
-and scoped specifically to **AI-and-your-own-data** stories — not general AI
+uses its own `ai-news` pillar (violet, shared with `ai-watch`), and is
+scoped specifically to **AI-and-your-own-data** stories — not general AI
 industry news (model releases, benchmarks, funding). It's always today's
 real, current story, found the day it's posted, and pairs alongside whatever
-else is scheduled that day rather than taking its own dedicated slot. See
-CLAUDE.md's "Sourcing an AI News story" section for the exact criteria.
+else is scheduled that day rather than taking its own dedicated slot. Same
+`sourceUrl`/`sourceName`/`date` requirement as Cyber News. See
+`AUTOMATED-WORKFLOW.md`'s "Sourcing an AI News story" section for the exact
+criteria.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Glossary — stay(human).sec</title>
+<title>News — stay(human).sec</title>
 <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
@@ -34,18 +34,19 @@
 
 <div class="path-bar">
   <div class="path-bar-inner">
-    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ cat GLOSSARY.md</div>
+    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ tail -f NEWS.log</div>
     <div class="win-controls"><span class="wc-min"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="19"/></svg></span><span class="wc-max"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg></span><span class="wc-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span></div>
   </div>
 </div>
 
 <section class="section">
   <div class="section-inner">
-    <div class="section-eyebrow reveal">// GLOSSARY.md</div>
-    <h2 class="reveal">Plain-language definitions, no jargon left unexplained.</h2>
-    <p style="color:var(--cream-dim); font-size:16px; max-width:600px;" class="reveal">Every term used across the site, defined the way we'd explain it to a friend — not a textbook.</p>
+    <div class="section-eyebrow reveal">// NEWS</div>
+    <h2 class="reveal">Real stories, plain-language, sourced.</h2>
+    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:700px;">Every Cyber News and AI News post, in one feed — newest first. Each one is a real, current story, never invented, always linked back to where it actually came from. Our write-up explains what it means for you; the original story is one click away if you want it straight from the source.</p>
 
-    <div class="glossary-grid" id="glossaryGrid"></div>
+    <div class="listing-label reveal" id="newsCount">loading feed…</div>
+    <div class="news-grid" id="newsGrid"></div>
   </div>
 </section>
 
@@ -58,8 +59,8 @@
     <div class="footer-col">
       <h4>Explore</h4>
       <a href="index.html#intro">What we are</a>
-      <a href="index.html#pillars">Content pillars</a>
       <a href="index.html#posts">All posts</a>
+      <a href="glossary.html">Glossary</a>
     </div>
     <div class="footer-col">
       <h4>Follow</h4>
@@ -99,18 +100,67 @@
   initMobileNav();
   highlightActiveNav();
   initScrambleReveal('.section-eyebrow');
+  initScrollReveal();
 
-  var grid = document.getElementById('glossaryGrid');
-  grid.innerHTML = GLOSSARY_TERMS.map(function (t) {
-    return '<div class="glossary-card declass">' +
-      '<div class="g-term" style="color:' + t.color + ';">// ' + t.term.toUpperCase().replace(/[^A-Z0-9]/g, '_') + '.md</div>' +
-      '<h3>' + t.term + '</h3>' +
-      '<p>' + t.def + '</p>' +
+  var externalIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>';
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function newsCard(post) {
+    var isAi = post.pillar === 'ai-news';
+    var badgeColor = isAi ? 'var(--violet)' : 'var(--blue)';
+    var badgeLabel = post.pillarLabel || (isAi ? 'AI News' : 'Cyber News');
+
+    var sourceLink = post.sourceUrl
+      ? '<a class="news-source-link" href="' + escapeHTML(post.sourceUrl) + '" target="_blank" rel="noopener">' + externalIcon + '<span>Read the original story' + (post.sourceName ? ' — ' + escapeHTML(post.sourceName) : '') + '</span></a>'
+      : '';
+
+    return '<div class="news-card declass">' +
+      '<div class="news-card-top">' +
+        '<span class="tag-chip" style="--chip-color:' + badgeColor + ';"><span class="chip-dot"></span>' + escapeHTML(badgeLabel) + '</span>' +
+        '<span class="news-date">' + escapeHTML(fmtDate(post.date)) + '</span>' +
+      '</div>' +
+      '<a class="news-card-link" href="post.html?slug=' + post.slug + '">' +
+        '<div class="news-title">' + escapeHTML(post.title) + '</div>' +
+        '<div class="news-desc">' + escapeHTML(post.listDesc || '') + '</div>' +
+      '</a>' +
+      '<div class="news-card-footer">' +
+        '<a class="news-read-more" href="post.html?slug=' + post.slug + '">Read our write-up <span>→</span></a>' +
+        sourceLink +
+      '</div>' +
     '</div>';
-  }).join('');
+  }
 
-  initScrollReveal({ stagger: true });
-  initDeclassify({ stagger: true });
+  loadPosts().then(function (data) {
+    var newsPosts = data.posts.filter(function (p) {
+      return p.pillar === 'cyber-news' || p.pillar === 'ai-news';
+    }).sort(function (a, b) {
+      return (b.date || '').localeCompare(a.date || '');
+    });
+
+    var grid = document.getElementById('newsGrid');
+    var countEl = document.getElementById('newsCount');
+
+    if (!newsPosts.length) {
+      countEl.textContent = 'total 0 stories';
+      grid.innerHTML = '<div class="news-empty">No Cyber News or AI News stories yet — these are always today\'s real, current story, sourced the day they\'re posted, so this feed starts empty. Check back soon, or browse <a href="index.html#posts" style="color:var(--orange);">all posts</a> in the meantime.</div>';
+      return;
+    }
+
+    countEl.textContent = 'total ' + newsPosts.length + ' stor' + (newsPosts.length === 1 ? 'y' : 'ies');
+    grid.innerHTML = newsPosts.map(newsCard).join('');
+    initScrollReveal({ stagger: true });
+    initDeclassify({ stagger: true });
+  }).catch(function (err) {
+    document.getElementById('newsGrid').innerHTML =
+      '<p style="color:var(--pink); font-family:\'JetBrains Mono\',monospace; font-size:13px;">Could not load posts.json — ' + escapeHTML(err.message) +
+      '. If you opened this file directly (file://), most browsers block local fetch() calls — run a local server or view it via GitHub Pages.</p>';
+  });
 </script>
 
 </body>

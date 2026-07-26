@@ -12,7 +12,7 @@
       "titleAccent": "your phone?",
       "listDesc": "The 5-minute check that tells you for sure — session lists, unknown devices, and what to do if you find something.",
       "intro": "Right now, on the exact phone in your hand, there could be a device logged into your account that isn't yours. Maybe there isn't — but you don't actually know, because most people never check. This is the real 5-minute check, not a hypothetical: no app to install, nothing to buy, just open a settings menu and look.",
-      "tldr": "Check which devices are signed into your Apple ID / Google account, scan your app list for anything unfamiliar, and look for configuration profiles or device admin apps you didn't set up yourself. All 5 minutes, all built into your phone already.",
+      "tldr": "Check which devices are signed into your Apple ID or Google account. Scan your app list for anything you don't recognize. And look for configuration profiles or device admin apps you never set up — that last one's the one people usually skip, and it's the one worth checking most. Five minutes, all built into your phone already.",
       "statLine": "$ context — <b>292 days</b>. That's the average time it takes someone to realize their login was stolen, according to IBM. Nearly a year of someone else quietly having access, before anyone notices.",
       "sections": [
         {
@@ -43,7 +43,7 @@
             {
               "type": "step",
               "paragraphs": [
-                "Scroll through your full app list — not just your home screen, the real list under <code>Settings → Apps</code>. Spyware doesn't usually announce itself; it hides behind boring, forgettable names like \"System Update,\" \"Device Health,\" or \"Battery Optimizer.\"",
+                "Scroll through your full app list — not just your home screen, the real list under <code>Settings → Apps</code>. Spyware doesn't usually announce itself; it likes boring, forgettable names like \"System Update,\" \"Device Health,\" or \"Battery Optimizer\" — huh, funny how none of those actually tell you anything.",
                 "If you can't remember installing something and can't explain what it does, don't shrug it off. That's exactly the gap it's counting on."
               ]
             }
@@ -64,7 +64,7 @@
               "type": "step",
               "platform": "Android",
               "paragraphs": [
-                "Go to <code>Settings → Security → Device admin apps</code>. Anything sitting here that you didn't knowingly turn on — an unfamiliar \"Find My Device\"-style app, for instance — deserves a second look before you move on."
+                "Go to <code>Settings → Security → Device admin apps</code>. Anything sitting here you didn't knowingly turn on — an unfamiliar \"Find My Device\"-style app, say — deserves a second look before you move on. If you don't recognize it, don't just shrug and close the screen."
               ]
             }
           ]
@@ -76,7 +76,7 @@
             {
               "type": "step",
               "paragraphs": [
-                "Both Google and Apple already built the easy version of this for you — <code>Google Account → Security → Security Checkup</code>, or the Security Recommendations screen from Step 1 on iPhone. One tap, and it flags weak passwords, reused passwords, and sign-ins you don't recognize automatically."
+                "Both Google and Apple already built the easy version of this for you — <code>Google Account → Security → Security Checkup</code>, or the Security Recommendations screen from Step 1 on iPhone. One tap. It flags weak passwords, reused passwords, sign-ins you don't recognize. You didn't even have to think about it."
               ]
             }
           ]
@@ -89,7 +89,7 @@
       },
       "warn": {
         "label": "⚠ IF YOU FIND SOMETHING",
-        "text": "Don't panic, but do act. Sign out of any device you don't recognize immediately, change your password from a device you trust (not the compromised one), and turn on two-factor authentication if it isn't already on. If it looks like stalkerware specifically, consider that removing it may alert whoever installed it — if this is a safety concern involving another person, that's worth thinking through carefully before you act."
+        "text": "Don't panic, but do act. Sign out of any device you don't recognize, change your password from a device you trust — not the compromised one — and turn on two-factor authentication if it isn't already on. If it looks like stalkerware specifically, know that removing it may alert whoever installed it. If this is a safety concern involving another person, that's worth thinking through carefully before you act. Take your time with that part."
       },
       "checklist": [
         "Checked which devices are logged into your Apple ID / Google account",
@@ -120,7 +120,7 @@
       "titleAccent": "a big deal",
       "listDesc": "Why reusing one password anywhere is worse than you think, and how a password manager actually fixes it.",
       "intro": "Here's the spoiler: it's reusing the same password on more than one site. It feels completely harmless — until it's the reason your email, your bank, and half your other accounts all get hit on the same afternoon.",
-      "tldr": "Run a password checkup to see what's reused or compromised, turn on your phone's built-in password manager, and fix your email, banking, and payment-linked accounts first — the manager handles the rest as you go.",
+      "tldr": "Run a password checkup and see what's reused or compromised — brace yourself, the list is usually longer than you think. Turn on your phone's built-in password manager. Fix email, banking, and payment-linked accounts first; the manager handles the rest as you go.",
       "statLine": "$ context — one password, leaked from any random site you signed up for years ago, can unlock every other account where you reused it. It's called <b>credential stuffing</b>, and a machine does it in seconds, not a person.",
       "sections": [
         {
@@ -152,7 +152,7 @@
               "type": "compare",
               "bad": {
                 "label": "✕ ONE PASSWORD, EVERYWHERE",
-                "text": "One site gets breached — maybe one you signed up for once and forgot about. Your email and password leak together. Within seconds, automated tools are trying that exact combo on hundreds of other sites: banking, email, social media."
+                "text": "Say it's some newsletter you signed up for back in 2019 and never thought about again — that site gets breached. Your email and that password leak together. Within seconds, automated tools are trying that exact combo on your bank. Your real email. Your Instagram. Not because anyone's targeting you specifically — a machine doesn't care, it just tries the combo everywhere."
               },
               "good": {
                 "label": "✓ UNIQUE PER SITE",
@@ -168,7 +168,7 @@
             {
               "type": "step",
               "paragraphs": [
-                "Good news: you don't have to memorize unique passwords for every account — a password manager remembers them for you. Your phone almost certainly already has one built in, for free: <code>iCloud Keychain</code> on iPhone, or <code>Google Password Manager</code> on Android/Chrome.",
+                "Good news — you don't have to memorize a unique password for every single account. (Nobody actually does that, whatever anyone tells you.) A password manager remembers them for you, and your phone almost certainly already has one built in, for free: <code>iCloud Keychain</code> if you're on iPhone, <code>Google Password Manager</code> if you're Android or Chrome.",
                 "Want one that works identically no matter what device or browser you're on? <code>Bitwarden</code> is free and widely trusted. Either path is a genuine upgrade over trying to remember it all yourself."
               ]
             }
@@ -221,7 +221,7 @@
       "titleAccent": "smishing?",
       "listDesc": "The exact texts scammers send, why they work, and how to tell a real message from a fake one in seconds.",
       "intro": "Smishing is just SMS phishing — a scam text engineered to look official enough that you click before your brain catches up. The wording changes every time. The pattern underneath almost never does, and once you can see it, these texts stop working on you.",
-      "tldr": "Scam texts always follow the same pattern: a trusted name, a fake urgent problem, and a link. Never tap the link — go to the official app or type the website yourself. That one habit defeats almost all of them.",
+      "tldr": "Scam texts always follow the same pattern. A trusted name. A fake urgent problem. A link. Never tap it — go to the official app or type the website yourself. That one habit alone defeats almost all of them.",
       "statLine": "$ context — smishing works because a text feels more urgent and more \"official\" than an email ever does, and almost nobody's ever been taught to question one.",
       "sections": [
         {
@@ -231,7 +231,7 @@
             {
               "type": "step",
               "paragraphs": [
-                "Almost every smishing text is built from the same three ingredients: a name you trust (your bank, a delivery company, the tax office), a problem that supposedly needs fixing right now, and a link that promises to fix it. Swap the wording and it's a new scam — the structure underneath is always the same."
+                "Almost every smishing text is built the same way. A name you trust — your bank, a delivery company, the tax office. A problem that supposedly needs fixing right now. A link that promises to fix it. Swap out the wording and it looks like a brand new scam. It isn't. It's the same three pieces, every time."
               ]
             },
             {
@@ -285,7 +285,7 @@
             {
               "type": "step",
               "paragraphs": [
-                "\"Act now.\" \"Your account will be suspended.\" \"Offer expires in 1 hour.\" That urgency isn't accidental — it's the scammer doing their own job for them, engineered to make you click before you've had a chance to think. Real companies almost never demand instant action over text."
+                "\"Act now.\" \"Your account will be suspended.\" \"Offer expires in 1 hour.\" None of that's an accident. It's the scammer doing your thinking for you, on purpose, so you click before you catch up. Ask yourself: when's the last time your actual bank texted you an ultimatum with a countdown clock? Never. That's the tell."
               ]
             }
           ]
