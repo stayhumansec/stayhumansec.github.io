@@ -141,3 +141,121 @@ Orange is the single primary accent (CTAs, active states, hover borders). Green 
 - **Copy-as-markdown**: `post.html` includes a "Copy as .md" button; `generateMarkdown()` in `site.js` reconstructs a markdown version of a post straight from its JSON shape, so any post added to `posts.json` gets this for free with no extra work.
 - **Download as PDF — removed.** This existed through four implementations (html2canvas/html2pdf.js rasterizing a DOM clone, `window.print()` + a print stylesheet, and two rounds of native jsPDF drawing chasing dark/grid/glass fidelity against the live site) before being removed entirely at the user's request. Every version, `generatePostPdf()`/`drawPdf*()` helpers, the CDN font-fetch code, and the `.download-pdf-btn` CSS are gone from `site.js`/`post.html`/`style.css`. If asked to rebuild this feature, don't assume any prior version's approach was "the answer" — html2canvas silently produced blank PDFs for real visitors, `window.print()` depended on the visitor's OS print pipeline (one real machine rasterized the whole page through a "Print to PDF" driver instead of producing real text), and native jsPDF drawing required several rounds of fixing color/font/layout fidelity bugs against the actual site CSS. Ask what's wanted (light standalone document vs. dark/grid/glass site match) before building, and verify any PDF output with PyMuPDF (`page.get_text()`, `page.get_fonts()`, `page.get_images()`) rather than assuming it looks right.
 - **Escaping**: all post-derived text is passed through `escapeHTML()` before insertion, *except* `step` block `paragraphs`, which are treated as trusted raw HTML (so `<code>` tags work) — never put user-supplied or untrusted content there.
+
+## Automated Post Generation Workflow
+
+This section documents the standard process for generating a day's post — both
+the Instagram carousel and the matching website article — so this workflow is
+consistent every time it's triggered, whether by the project owner or a future
+session picking this up cold.
+
+### How this gets triggered
+
+The website grows automatically as posts are added — no manual review gate,
+**as long as automated verification passes** (see step 7). Instagram is a
+separate, always-manual step: **this workflow never posts to Instagram under
+any circumstances.** The owner reviews the generated slides and posts them
+manually, on their own schedule.
+
+### Standard steps
+
+1. **Check `CALENDAR.md`** for the next day marked "Pending." If the day's
+   pillar is Cyber News, or if today's slot includes Cyber News alongside
+   another pillar, follow the "Sourcing a Cyber News story" process below
+   before writing anything.
+
+2. **Write the carousel copy** for all 4 slides, following the established
+   structure (see "Standard workflow for 'make today's post'" earlier in this
+   file, and the tone/voice rules in "Utility & Content Philosophy").
+
+3. **Generate the 4 slides** using `instagram/generate_post.py`. Save them to
+   `instagram/posts/day_NN_<topic-slug>/slide1.png` through `slide4.png`, plus
+   a `caption.txt` in the same folder with the finished Instagram caption.
+
+4. **Verify every slide** with `verify_slide()` before considering the post
+   done — checks correct size and confirms the image isn't blank. This step
+   is non-negotiable; this project has hit blank/broken image bugs before.
+
+5. **Write the matching website article** as a new entry in
+   `website/posts.json`, following the exact schema and block types
+   (`step`, `compare`, `pattern-list`, `warn`, `checklist`, `next`) of
+   existing entries. Include the `pillar`, `pillarLabel`, `pillarColor`, and
+   `readMinutes` fields already established in the current schema.
+
+6. **Update `CALENDAR.md`**, marking that day's row as "Done."
+
+7. **Run automated verification, then merge only if everything passes:**
+   - `posts.json` is valid JSON (parses without error)
+   - The new post entry has every field the schema requires (`slug`,
+     `filename`, `badge`, `freq`, `pillar`, `pillarLabel`, `pillarColor`,
+     `readMinutes`, `stripeColor`, `tagColor`, `tag`, `title`, `titleAccent`,
+     `listDesc`, `intro`, `statLine`, `sections`, `warn`, `checklist`, `next`)
+   - All 4 carousel slide images pass `verify_slide()` (correct size, not
+     blank)
+   - `post.html?slug=<new-slug>` actually loads and renders without a
+     JavaScript console error (serve locally and check — this is the exact
+     class of bug that's bitten this project before, e.g. a missing schema
+     field silently breaking the template)
+   - **If every check passes:** commit, push directly, and merge into `main`
+     without waiting for approval. The website update goes live automatically.
+   - **If any check fails:** do NOT merge. Push the branch and open a PR
+     anyway (so no work is lost), clearly report which check failed and why,
+     and stop for the owner to review manually. Never merge on a partial
+     pass.
+
+8. **Report back** with a summary — either "verified and merged, live now" or
+   "verification failed on [X], PR opened for review instead" — then stop.
+
+### Sourcing a Cyber News story (when the day's pillar requires it)
+
+Cyber News exists to cover **real, current stories that affect normal
+people** — not deep technical CVE writeups aimed at security professionals.
+When this pillar comes up:
+
+1. **Search for a current cybersecurity story** (published within roughly the
+   last 3-5 days) using these criteria, in priority order:
+   - Affects a product, service, or company that ordinary people actually
+     use (a bank, an airline, a major app, a retailer) — not enterprise-only
+     infrastructure
+   - Has a clear, explainable "what should I actually do about this" angle
+   - Doesn't require prior security knowledge to understand the headline
+
+2. **Preferred sources**, roughly in order of how consumer-relevant their
+   coverage tends to be:
+   - **BleepingComputer** — strong on breach news with practical detail
+   - **Krebs on Security** — deep, credible, well-explained incident coverage
+   - **The Verge / TechCrunch (security coverage)** — good at consumer framing
+   - **Malwarebytes Labs blog** — written for a general audience already
+   - **Hacker News (news.ycombinator.com)** — useful for surfacing what's
+     trending, but many stories there are technical/developer-focused; only
+     use a Hacker News story if it clearly meets criteria #1 and #2 above,
+     don't use it just because it's popular there
+   - Official statements from the affected company, if available, for
+     verifying facts before writing about them
+
+3. **Do not fabricate or guess at details.** If a search doesn't turn up a
+   story that clearly meets the "affects normal people, explainable, recent"
+   bar, say so explicitly in your response rather than stretching a marginal
+   or overly technical story to fit. It's fine for a Cyber News slot to stay
+   pending an extra day rather than force a weak story.
+
+4. **Always cite the source** — include the outlet name and a link in the
+   website article (and note it in the PR description), so the claim is
+   verifiable and not just asserted.
+
+5. **Follow the same "no fear-mongering, always pair with an action" rule**
+   from the Content Philosophy section — a Cyber News post should end with
+   something concrete the reader can actually do, not just "this is scary."
+
+### Trigger prompt (for reference)
+
+The owner will typically trigger this with something like:
+
+> "Generate today's post — check CALENDAR.md for the next pending day, [if
+> Cyber News: search for a real current story following the sourcing
+> criteria in CLAUDE.md], write the carousel copy, generate all 4 slides,
+> verify none are blank, write the matching posts.json entry, update
+> CALENDAR.md, run all verification checks, and merge to main automatically
+> if everything passes. If anything fails, open a PR instead and tell me
+> exactly what failed. Don't touch Instagram — I'll post those myself
+> whenever I'm ready."
