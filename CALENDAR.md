@@ -11,11 +11,11 @@ the note at the bottom.
 | 1 | Launch | Introduction post | ✅ Done |
 | 2 | Stay Safe | Use a password manager | ✅ Done |
 | 2 | Cyber Basics | What is smishing? | ✅ Done |
-| 3 | Myth Busting | "Incognito mode makes you anonymous" — busted | Pending |
-| 4 | AI Watch | AI voice cloning & the "emergency call" scam | Pending |
-| 5 | Stay Safe | Turn on 2FA — what it actually protects | Pending |
-| 6 | Case File | Anatomy of a real phishing email, line by line | Pending |
-| 7 | AI Watch | Deepfakes: how to spot one in 2026 | Pending |
+| 3 | Myth Busting | "Incognito mode makes you anonymous" — busted | ✅ Done |
+| 4 | AI Watch | AI voice cloning & the "emergency call" scam | ✅ Done |
+| 5 | Stay Safe | Turn on 2FA — what it actually protects | ✅ Done |
+| 6 | Case File | Anatomy of a real phishing email, line by line | ✅ Done |
+| 7 | AI Watch | Deepfakes: how to spot one in 2026 | ✅ Done |
 
 ## Week 2
 
