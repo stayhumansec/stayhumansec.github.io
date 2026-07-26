@@ -5,15 +5,20 @@ A static site for `stayhumansec` — plain-language cybersecurity, AI, and priva
 ## Project structure
 
 ```
-index.html      Homepage — hero, pillars, stats, activity heatmap, post listing
-post.html       Article template — renders one post from posts.json based on ?slug=
-quiz.html       Redirect shim to index.html#youcheck — the quiz used to live here as its own page
-toolkit.html    Curated tool recommendations (password managers, VPNs, etc.), self-contained data
-glossary.html   Full glossary, rendered from the GLOSSARY_TERMS array in site.js
-404.html        Not-found page, styled as a failed `cat` command
-style.css       All styles for every page (one shared stylesheet, no per-page CSS files)
-site.js         All shared JS: data loading, rendering helpers, animations, nav, command palette
-posts.json      All post content — the only content data file; index.html and post.html both read it
+index.html            Homepage — hero, pillars, stats, activity heatmap, post listing
+post.html             Article template — renders one post from posts.json based on ?slug=
+quiz.html             Redirect shim to index.html#youcheck — the quiz used to live here as its own page
+toolkit.html          Curated tool recommendations (password managers, VPNs, etc.), self-contained data
+tools.html            Utilities hub — links to every small in-browser tool below
+password-coach.html   AI Password Coach — teaches the passphrase method, generates real random examples
+recovery-kit.html     2FA Recovery Kit Builder — printable "if I lose my phone" plan, localStorage only
+breach-check.html     Breach Exposure Check — k-anonymity password breach lookup via HaveIBeenPwned
+ask.html              Search the Archive — local keyword search over posts.json + glossary, optional AI answer
+glossary.html         Full glossary, rendered from the GLOSSARY_TERMS array in site.js
+404.html              Not-found page, styled as a failed `cat` command
+style.css             All styles for every page (one shared stylesheet, no per-page CSS files)
+site.js               All shared JS: data loading, rendering helpers, animations, nav, command palette
+posts.json            All post content — the only content data file; index.html and post.html both read it
 ```
 
 There is no templating engine or bundler. Every HTML file is hand-written, loads `style.css` and `site.js` directly via `<link>`/`<script>` tags, and does its own DOM rendering inline in a `<script>` block at the bottom of the file. `index.html` and `post.html` both fail loudly (visible error message) if `site.js` didn't load or `posts.json` didn't fetch — this is deliberate, since `fetch()` against a local `file://` path is blocked by browsers, and that's the #1 way people break this site testing it locally. Use a local static server (e.g. `python3 -m http.server`) when developing.
@@ -101,6 +106,30 @@ Orange is the single primary accent (CTAs, active states, hover borders). Green 
 - Mobile nav (`initMobileNav`) — auto-builds a slide-out panel from whatever's already in `.nav-links`, so link lists never need to be duplicated per page.
 - Inline glossary tooltips (`initGlossaryTooltips`) — auto-wraps the first mention of any `GLOSSARY_TERMS` entry inside article `<p>` tags with a tap-to-reveal definition popover.
 - Scroll progress bar, scroll-position-based nav compaction, animated counters (`data-countup`), and a GitHub-style activity heatmap of publish dates — all self-contained, opt-in per page by calling the relevant `init*`/`render*` function.
+
+## Utility & Content Philosophy
+
+### Current utilities (in `tools.html`)
+
+- `password-coach.html` — AI Password Coach. Teaches the passphrase method rather than handing over a copy-paste password.
+- `recovery-kit.html` — 2FA Recovery Kit Builder. Pure offline form + localStorage, no AI, no network calls.
+- `breach-check.html` — Breach Exposure Check. Real k-anonymity math against HaveIBeenPwned; the password itself never leaves the browser, only a SHA-1 hash prefix does.
+- `ask.html` — Search the Archive. Local keyword search over `posts.json` + glossary, with an optional BYOK AI deep-dive on top. Renamed from "Ask the Archive" since the default experience is search, not Q&A — kept for now but not fully proven out; a genuinely synthesizing version may replace it later as its own task.
+
+**Removed**: Scam & Phishing Inspector and Privacy Policy Reader (both deleted, along with every link/reference to them). Both worked by regex pattern-matching over arbitrary user-pasted text — a scam message or a policy document — and presenting the result as a verdict. That's an approximate judgment call dressed up as a finding, not a real check, and a security education brand can't afford a tool that's confidently wrong. Do not rebuild either of these, or anything with the same shape (open-ended text in, "risk" verdict out from string matching), even if asked to make it "smarter" — the fix for a heuristic-only tool giving false confidence is not adding more heuristics, it's not shipping it as a verdict-giving tool at all.
+
+### Ship a tool only if it's backed by something real
+
+- Real data (an actual breach database, actual math), real computation (client-side crypto, real randomness), or the user's own structured input (a form, a checklist) — never an approximate judgment call on open-ended or ambiguous text. A confidently-wrong security tool is worse than no tool at all.
+- Prefer tools that teach the underlying method or skill over tools that just generate a finished answer to copy-paste. The goal is someone leaves having learned something they can do themselves forever, not a one-time output they'll forget the origin of.
+- Never name a tool "AI [X]" unless AI is doing genuine, load-bearing work in the *default* experience. If AI is an optional bring-your-own-key extra layered on top of a working non-AI tool, it must never be required for the tool to be useful, and the name shouldn't imply AI is core to it.
+
+### Writing (Instagram captions and website articles alike)
+
+- Plain language always beats jargon. If a beginner wouldn't understand a term on first read, either explain it inline or don't use it.
+- No fear-mongering. State real risks honestly, but always pair them with a concrete, doable fix — never leave someone anxious with nothing actionable to do about it.
+- Written voice is one real person, not a company or a bot — warm, direct, occasionally a little playful, never corporate.
+- Never overstate certainty. If something is a heuristic, an estimate, or has real limitations, say so plainly rather than presenting it as a definitive verdict.
 
 ## Content conventions
 
