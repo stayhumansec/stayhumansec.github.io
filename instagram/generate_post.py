@@ -279,6 +279,37 @@ def verify_slide(path):
     return True
 
 
+def save_pdf_carousel(image_paths, output_path):
+    """Combines a sequence of slide PNGs (typically the same 4 slides already
+    generated for Instagram) into a single multi-page PDF, for platforms
+    like LinkedIn whose carousel format is a PDF document upload rather than
+    separate images. Uses Pillow's own multi-page PDF save -- no extra
+    dependency (img2pdf, reportlab, etc.) needed. Preserves slide order and
+    pixel size exactly as given."""
+    imgs = [Image.open(p).convert('RGB') for p in image_paths]
+    if not imgs:
+        raise ValueError("save_pdf_carousel: no image paths given")
+    imgs[0].save(output_path, save_all=True, append_images=imgs[1:])
+    return output_path
+
+
+def verify_pdf_carousel(path, expected_pages):
+    """Call this after save_pdf_carousel(). Confirms the PDF actually has
+    the expected number of pages and each page matches the 1080x1080 slide
+    size -- the same "don't assume it looks right" discipline this project
+    already applies to slide images and (previously) to PDF output."""
+    import fitz
+    doc = fitz.open(path)
+    assert doc.page_count == expected_pages, f"{path}: expected {expected_pages} pages, got {doc.page_count}"
+    for i, page in enumerate(doc):
+        rect = page.rect
+        assert (round(rect.width), round(rect.height)) == (1080, 1080), \
+            f"{path}: page {i} is {rect.width}x{rect.height}, expected 1080x1080"
+    doc.close()
+    print(f"✓ {path} — {expected_pages} pages, 1080x1080")
+    return True
+
+
 if __name__ == "__main__":
     print("This is a library, not a script to run directly.")
     print("Import it: from generate_post import *")
