@@ -1,8 +1,8 @@
 # Content Calendar — 4 Weeks (Days 1-28)
 
 Single source of truth for "what's today's topic." Update the Status column as
-days are completed. Cyber News is intentionally never pre-written here — see
-the note at the bottom.
+days are completed. Cyber News and AI News are intentionally never pre-written
+here — see the notes at the bottom.
 
 ## Week 1
 
@@ -22,34 +22,34 @@ the note at the bottom.
 | Day | Pillar | Topic | Status |
 |---|---|---|---|
 | 8 | Deep Dive | Ransomware: how it spreads, one infographic | Pending |
-| 9 | Cyber Basics | 2FA vs MFA — what's the actual difference | Pending |
-| 10 | Myth Busting | "A strong password is enough" — busted | Pending |
-| 11 | Story Time | A real (lighthearted) social engineering near-miss | Pending |
-| 12 | AI Watch | AI and your data: what "training on your data" means | Pending |
-| 13 | Case File | How a fake delivery text drains a bank account | Pending |
-| 14 | Cyber Basics | What is a VPN actually protecting you from? | Pending |
+| 9 | AI Watch | What actually happens to what you type into an AI chatbot | Pending |
+| 10 | Cyber Basics | 2FA vs MFA — what's the actual difference | Pending |
+| 11 | Myth Busting | "Free VPNs are safe because they're free" — busted | Pending |
+| 12 | Stay Safe | Review your app permissions (the 5-minute check) | Pending |
+| 13 | Story Time | A real (lighthearted) social engineering near-miss | Pending |
+| 14 | AI Watch | "Anonymized" data in the AI era — is it really anonymous? | Pending |
 
 ## Week 3
 
 | Day | Pillar | Topic | Status |
 |---|---|---|---|
-| 15 | Stay Safe | Passkeys — the password killer, explained simply | Pending |
-| 16 | Stay Safe | Lock your phone with more than a 4-digit PIN | Pending |
-| 17 | Cyber Basics | What is encryption? (the lock-and-key analogy) | Pending |
-| 18 | Myth Busting | "Free VPNs are safe because they're free" — busted | Pending |
-| 19 | AI Watch | AI-written phishing emails — why they're harder to spot now | Pending |
-| 20 | Case File | Anatomy of a SIM-swap attack | Pending |
-| 21 | Stay Safe | Review your app permissions (the 5-minute check) | Pending |
+| 15 | Cyber Basics | What is a VPN actually protecting you from? | Pending |
+| 16 | AI Watch | What AI photo/video tools actually keep from what you upload | Pending |
+| 17 | Stay Safe | Passkeys — the password killer, explained simply | Pending |
+| 18 | Myth Busting | "My data isn't valuable, why would anyone target me?" — busted | Pending |
+| 19 | Case File | Anatomy of a SIM-swap attack | Pending |
+| 20 | AI Watch | The AI features quietly added to apps you already use | Pending |
+| 21 | Cyber Basics | What is encryption? (the lock-and-key analogy) | Pending |
 
 ## Week 4
 
 | Day | Pillar | Topic | Status |
 |---|---|---|---|
-| 22 | Cyber Basics | What is malware? (virus vs. spyware vs. ransomware) | Pending |
-| 23 | Myth Busting | "My data isn't valuable, why would anyone target me?" — busted | Pending |
-| 24 | AI Watch | Fake AI chatbot "customer support" scams | Pending |
-| 25 | Deep Dive | How a data breach actually happens, start to finish | Pending |
-| 26 | Case File | The fake job offer scam, broken down | Pending |
+| 22 | Stay Safe | Lock your phone with more than a 4-digit PIN | Pending |
+| 23 | AI Watch | Voice assistants: what's actually recorded vs. processed on your device | Pending |
+| 24 | Myth Busting | "Private browsing stops AI chatbots from remembering what I told them" — busted | Pending |
+| 25 | Cyber Basics | What is malware? (virus vs. spyware vs. ransomware) | Pending |
+| 26 | Case File | A privacy incident, broken down — what actually happens when an app's data ends up somewhere you didn't expect | Pending |
 | 27 | Stay Safe | Turn on automatic software updates — why it matters | Pending |
 | 28 | Story Time | A real (lighthearted) near-miss in the family group chat | Pending |
 
@@ -58,13 +58,25 @@ the note at the bottom.
 | Pillar | Cadence | Days used |
 |---|---|---|
 | 🗞️ Cyber News | Daily | Not pre-planned — see note below |
-| 🛡️ Stay Safe | Daily | 2, 5, 15, 16, 21, 27 |
-| 📘 Cyber Basics | Daily | 2, 9, 14, 17, 22 |
-| 🤖 AI Watch | Weekly | 4, 7, 12, 19, 24 |
-| ❌ Myth Busting | Weekly | 3, 10, 18, 23 |
-| 🕵️ Case File | Weekly | 6, 13, 20, 26 |
-| 🔬 Deep Dive | Occasional | 8, 25 |
-| 😄 Story Time | Occasional | 11, 28 |
+| 🤖 AI News | 2x/week | Not pre-planned — see note below |
+| 🛡️ Stay Safe | Daily | 2, 5, 12, 17, 22, 27 |
+| 📘 Cyber Basics | Daily | 2, 10, 15, 21, 25 |
+| 🤖 AI Watch | Weekly (elevated) | 4, 7, 9, 14, 16, 20, 23 |
+| ❌ Myth Busting | Weekly | 3, 11, 18, 24 |
+| 🕵️ Case File | Weekly | 6, 19, 26 |
+| 🔬 Deep Dive | Occasional | 8 |
+| 😄 Story Time | Occasional | 13, 28 |
+
+## Content-balance check (cybersecurity / privacy / AI-privacy-intersection)
+
+This calendar was deliberately rebalanced — see CLAUDE.md's "Content Balance"
+section for the full reasoning. Rough split across all 28 days: **11
+cybersecurity, 9 privacy, 8 AI** (6 of those 8 AI Watch slots are specifically
+AI-and-your-own-data topics — what happens to a chatbot conversation, an
+AI photo upload, a voice assistant recording, an app's quietly-added AI
+feature — not AI-as-attacker). This is a real shift from the original
+calendar, which had AI Watch at 100% AI-as-attacker topics and zero
+AI-privacy-intersection coverage.
 
 ## A note on Cyber News
 
@@ -74,3 +86,12 @@ Generation Workflow" section for exactly how Claude Code should find and
 select that story when this pillar comes up (including which days can pair
 Cyber News alongside a day's other planned pillar, since it doesn't need its
 own dedicated day the way the others do).
+
+## A note on AI News
+
+AI News works the same way as Cyber News, but twice a week instead of daily,
+and scoped specifically to **AI-and-your-own-data** stories — not general AI
+industry news (model releases, benchmarks, funding). It's always today's
+real, current story, found the day it's posted, and pairs alongside whatever
+else is scheduled that day rather than taking its own dedicated slot. See
+CLAUDE.md's "Sourcing an AI News story" section for the exact criteria.
