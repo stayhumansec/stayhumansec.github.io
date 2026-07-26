@@ -519,73 +519,198 @@ function loadScriptOnce(src) {
   return _scriptLoadPromises[src];
 }
 
-var HTML2PDF_CDN_URL = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+var JSPDF_CDN_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
 
 /**
- * Builds an off-screen, brand-styled DOM snapshot of a post for PDF export — same content
- * shape as generateMarkdown(), but as real elements so html2pdf.js/html2canvas can rasterize
- * it with the site's actual fonts and colors instead of laying out text manually in jsPDF.
- * Strips HTML from step paragraphs since a rasterized PDF has no use for <code> styling.
+ * Three rounds of trying to make html2canvas/html2pdf.js rasterize a styled DOM clone all
+ * failed for real visitors (zero-height clone, then a JPEG-alpha theory, then confirmed the
+ * canvas simply wasn't painting any content at all in a real browser) while every fix looked
+ * correct in sandboxed testing — html2canvas's cloning/rendering pipeline was an unreliable,
+ * undebuggable black box across environments. So PDF export is built directly with jsPDF's
+ * own text/shape drawing API instead of screenshotting anything: deterministic, no DOM
+ * cloning, no web-font loading race, no canvas painting to silently fail.
  */
-function buildPdfExportDOM(post) {
-  var el = document.createElement('div');
-  el.className = 'pdf-export-root';
+var PDF_BRAND_COLORS = {
+  bg: [0, 0, 0],
+  card: [13, 12, 10],
+  cream: [244, 241, 232],
+  creamDim: [199, 195, 182],
+  line: [58, 53, 44],
+  orange: [255, 122, 61],
+  blue: [76, 141, 255],
+  green: [63, 207, 142],
+  violet: [150, 112, 230],
+  gold: [232, 167, 0],
+  pink: [232, 90, 130]
+};
 
-  function stripTags(html) { return html.replace(/<[^>]+>/g, ''); }
+/** Maps a post's `var(--xxx)` color string to an RGB triple jsPDF can use — falls back to orange. */
+function pdfColorFromVar(cssVar) {
+  var match = /--([a-z]+)/.exec(cssVar || '');
+  return (match && PDF_BRAND_COLORS[match[1]]) || PDF_BRAND_COLORS.orange;
+}
 
-  var sectionsHTML = post.sections.map(function (sec) {
-    var blocksHTML = sec.blocks.map(function (block) {
+function stripTagsForPdf(html) { return html.replace(/<[^>]+>/g, ''); }
+
+/**
+ * jsPDF's built-in fonts (helvetica/courier/times) only support the WinAnsi glyph set — no
+ * arrows, checkboxes, or symbol characters. Post content routinely uses "→" for step
+ * sequences ("Settings → General → ..."), and this file's own warn/compare/checklist markup
+ * used ⚠/✕/✓/☐. Left unreplaced, jsPDF renders those as garbled glyphs AND — worse —
+ * mis-measures their width, throwing off splitTextToSize()'s wrapping math enough to run
+ * text off the page edge. Every string reaching doc.text()/splitTextToSize() goes through
+ * this first.
+ */
+function sanitizePdfText(str) {
+  return String(str)
+    .replace(/→/g, '->')
+    .replace(/⚠/g, '!')
+    .replace(/✕/g, 'X')
+    .replace(/✓/g, 'OK')
+    .replace(/☐/g, '[ ]');
+}
+
+/** Builds the full PDF document for a post using jsPDF's native drawing API. Returns the jsPDF instance. */
+function generatePostPdf(post) {
+  var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+  var pageW = doc.internal.pageSize.getWidth();
+  var pageH = doc.internal.pageSize.getHeight();
+  var marginX = 50, marginTop = 44, marginBottom = 50;
+  var contentW = pageW - marginX * 2;
+  var chromeH = 24;
+  var y = marginTop;
+
+  function setColor(method, rgb) { doc[method](rgb[0], rgb[1], rgb[2]); }
+
+  function paintPageChrome() {
+    setColor('setFillColor', PDF_BRAND_COLORS.bg);
+    doc.rect(0, 0, pageW, pageH, 'F');
+    setColor('setFillColor', PDF_BRAND_COLORS.card);
+    doc.rect(0, 0, pageW, chromeH, 'F');
+    var dots = [[255, 95, 87], [254, 188, 46], [40, 200, 64]];
+    dots.forEach(function (c, i) {
+      setColor('setFillColor', c);
+      doc.circle(marginX - 30 + i * 11, chromeH / 2, 2.6, 'F');
+    });
+    doc.setFont('courier', 'normal');
+    doc.setFontSize(8);
+    setColor('setTextColor', PDF_BRAND_COLORS.creamDim);
+    doc.text(sanitizePdfText('stay(human).sec:~$ cat ' + post.filename), marginX, chromeH / 2 + 3);
+  }
+
+  function newPage() {
+    doc.addPage();
+    paintPageChrome();
+    y = marginTop + chromeH;
+  }
+
+  function ensureSpace(h) {
+    if (y + h > pageH - marginBottom) newPage();
+  }
+
+  function writeWrapped(text, opts) {
+    opts = opts || {};
+    var size = opts.size || 10.5;
+    var lineH = opts.lineH || size * 1.5;
+    doc.setFont(opts.font || 'helvetica', opts.style || 'normal');
+    doc.setFontSize(size);
+    setColor('setTextColor', opts.color || PDF_BRAND_COLORS.cream);
+    var lines = doc.splitTextToSize(sanitizePdfText(text), contentW - (opts.indent || 0));
+    lines.forEach(function (line) {
+      ensureSpace(lineH);
+      doc.text(line, marginX + (opts.indent || 0), y);
+      y += lineH;
+    });
+    y += opts.gapAfter || 0;
+  }
+
+  function drawDivider() {
+    ensureSpace(20);
+    setColor('setDrawColor', PDF_BRAND_COLORS.line);
+    doc.setLineDashPattern([2, 2], 0);
+    doc.line(marginX, y, pageW - marginX, y);
+    doc.setLineDashPattern([], 0);
+    y += 20;
+  }
+
+  paintPageChrome();
+  y = marginTop + chromeH;
+
+  // tag pill
+  var tagRGB = pdfColorFromVar(post.tagColor);
+  doc.setFont('courier', 'normal');
+  doc.setFontSize(8);
+  var tagText = sanitizePdfText(post.tag);
+  var tagW = doc.getTextWidth(tagText) + 16;
+  ensureSpace(20);
+  setColor('setDrawColor', tagRGB);
+  doc.roundedRect(marginX, y - 9, tagW, 15, 7, 7, 'S');
+  setColor('setTextColor', tagRGB);
+  doc.text(tagText, marginX + 8, y + 1);
+  y += 26;
+
+  writeWrapped(post.title, { size: 19, font: 'helvetica', style: 'bold', color: PDF_BRAND_COLORS.cream, lineH: 23, gapAfter: 10 });
+  writeWrapped(post.intro, { size: 10.5, color: PDF_BRAND_COLORS.creamDim, lineH: 15, gapAfter: 6 });
+  drawDivider();
+
+  post.sections.forEach(function (sec) {
+    ensureSpace(28);
+    writeWrapped(sec.num + ' — ' + sec.title, { size: 13.5, style: 'bold', color: PDF_BRAND_COLORS.cream, lineH: 17, gapAfter: 8 });
+    sec.blocks.forEach(function (block) {
       if (block.type === 'step') {
-        var platform = block.platform ? '<div class="pdf-platform">' + escapeHTML(block.platform) + '</div>' : '';
-        var paras = block.paragraphs.map(function (p) { return '<p>' + escapeHTML(stripTags(p)) + '</p>'; }).join('');
-        return '<div class="pdf-step">' + platform + paras + '</div>';
+        if (block.platform) {
+          writeWrapped(block.platform.toUpperCase(), { size: 8.5, font: 'courier', color: PDF_BRAND_COLORS.green, lineH: 11, gapAfter: 3 });
+        }
+        block.paragraphs.forEach(function (p) {
+          writeWrapped(stripTagsForPdf(p), { size: 10, color: PDF_BRAND_COLORS.creamDim, lineH: 14.5, gapAfter: 8 });
+        });
+      } else if (block.type === 'compare') {
+        writeWrapped(block.bad.label + ': ' + block.bad.text, { size: 9.5, color: PDF_BRAND_COLORS.pink, lineH: 13.5, gapAfter: 4 });
+        writeWrapped(block.good.label + ': ' + block.good.text, { size: 9.5, color: PDF_BRAND_COLORS.green, lineH: 13.5, gapAfter: 8 });
+      } else if (block.type === 'pattern-list') {
+        block.items.forEach(function (it) {
+          writeWrapped(it.tag + ' — ' + it.text, { size: 9.5, color: PDF_BRAND_COLORS.creamDim, lineH: 13.5, gapAfter: 4 });
+        });
+        y += 4;
       }
-      if (block.type === 'compare') {
-        return '<div class="pdf-compare">' +
-          '<p>✕ <b>' + escapeHTML(block.bad.label) + ':</b> ' + escapeHTML(block.bad.text) + '</p>' +
-          '<p>✓ <b>' + escapeHTML(block.good.label) + ':</b> ' + escapeHTML(block.good.text) + '</p>' +
-        '</div>';
-      }
-      if (block.type === 'pattern-list') {
-        return '<ul class="pdf-pattern-list">' + block.items.map(function (it) {
-          return '<li><b>' + escapeHTML(it.tag) + ':</b> ' + escapeHTML(it.text) + '</li>';
-        }).join('') + '</ul>';
-      }
-      return '';
-    }).join('');
-    return '<h2 class="pdf-h2">' + escapeHTML(sec.num) + ' — ' + escapeHTML(sec.title) + '</h2>' + blocksHTML;
-  }).join('');
+    });
+  });
 
-  var checklistHTML = post.checklist.map(function (c) { return '<li>' + escapeHTML(c) + '</li>'; }).join('');
+  // warn box
+  ensureSpace(50);
+  var warnTop = y;
+  writeWrapped(post.warn.label, { size: 9, font: 'courier', color: PDF_BRAND_COLORS.pink, lineH: 12, gapAfter: 4 });
+  writeWrapped(post.warn.text, { size: 9.5, indent: 10, color: PDF_BRAND_COLORS.creamDim, lineH: 13.5 });
+  setColor('setDrawColor', PDF_BRAND_COLORS.pink);
+  doc.roundedRect(marginX - 8, warnTop - 14, contentW + 16, y - warnTop + 20, 6, 6, 'S');
+  y += 22;
 
-  el.innerHTML =
-    '<div class="pdf-chrome">' +
-      '<span class="pdf-dot" style="background:#ff5f57;"></span>' +
-      '<span class="pdf-dot" style="background:#febc2e;"></span>' +
-      '<span class="pdf-dot" style="background:#28c840;"></span>' +
-      '<span class="pdf-chrome-path">stay(human).sec:~$ cat ' + escapeHTML(post.filename) + '</span>' +
-    '</div>' +
-    '<div class="pdf-body">' +
-      '<div class="pdf-tag" style="color:' + post.tagColor + '; border-color:' + post.tagColor + ';">' + escapeHTML(post.tag) + '</div>' +
-      '<h1 class="pdf-title">' + escapeHTML(post.title) + '</h1>' +
-      '<p class="pdf-intro">' + escapeHTML(post.intro) + '</p>' +
-      '<hr class="pdf-divider">' +
-      sectionsHTML +
-      '<div class="pdf-warn"><div class="pdf-warn-label">' + escapeHTML(post.warn.label) + '</div><p>' + escapeHTML(post.warn.text) + '</p></div>' +
-      '<h2 class="pdf-h2">The 60-second version</h2>' +
-      '<ul class="pdf-checklist">' + checklistHTML + '</ul>' +
-    '</div>' +
-    '<div class="pdf-footer">stay(human).sec — plain-language cybersecurity, AI &amp; privacy — stayhumansec.github.io</div>';
+  drawDivider();
+  writeWrapped('The 60-second version', { size: 13.5, style: 'bold', color: PDF_BRAND_COLORS.cream, lineH: 17, gapAfter: 6 });
+  post.checklist.forEach(function (c) {
+    writeWrapped('☐  ' + c, { size: 10, color: PDF_BRAND_COLORS.creamDim, lineH: 15, gapAfter: 2 });
+  });
 
-  return el;
+  // footer on every page
+  var pageCount = doc.internal.getNumberOfPages();
+  for (var i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    setColor('setDrawColor', PDF_BRAND_COLORS.line);
+    doc.line(marginX, pageH - 34, pageW - marginX, pageH - 34);
+    doc.setFont('courier', 'normal');
+    doc.setFontSize(7.5);
+    setColor('setTextColor', PDF_BRAND_COLORS.creamDim);
+    doc.text('stay(human).sec — plain-language cybersecurity, AI & privacy — stayhumansec.github.io', pageW / 2, pageH - 20, { align: 'center' });
+  }
+
+  return doc;
 }
 
 /**
- * Wires up a "Download as PDF" button. Lazy-loads html2pdf.js from a CDN only on first
- * click (so articles that are never exported never pay for the library), renders the post
- * into an off-screen brand-styled DOM node, and hands it to html2pdf.js to rasterize and
- * download — entirely in the browser. No server round-trip, no email capture, nothing sent
- * or stored anywhere.
+ * Wires up a "Download as PDF" button. Lazy-loads jsPDF from a CDN only on first click (so
+ * articles that are never exported never pay for the library), builds the PDF natively via
+ * generatePostPdf(), and triggers a direct download — entirely in the browser. No server
+ * round-trip, no email capture, nothing sent or stored anywhere.
  */
 function setupDownloadPdfButton(btn, post) {
   if (!btn) return;
@@ -597,53 +722,9 @@ function setupDownloadPdfButton(btn, post) {
     btn.classList.remove('pdf-error');
     labelEl.textContent = 'Generating…';
 
-    loadScriptOnce(HTML2PDF_CDN_URL).then(function () {
-      var el = buildPdfExportDOM(post);
-      // html2pdf.js clones this exact element (cloneNode, which copies inline styles) into
-      // its OWN off-screen container before rendering. If *our* element itself carries
-      // position:fixed/absolute, that inline style rides along onto the clone and escapes
-      // html2pdf's container's normal-flow height calculation — the container measures the
-      // fixed-position clone as zero-height, producing a blank PDF. So `el` itself must stay
-      // position:static (the default); hiding it from view is done by a separate wrapper
-      // that clips visually (0-size, overflow:hidden) without affecting el's own layout —
-      // and the wrapper is never part of what gets cloned, since html2pdf only clones `el`.
-      var hideWrap = document.createElement('div');
-      hideWrap.style.position = 'absolute';
-      hideWrap.style.width = '0';
-      hideWrap.style.height = '0';
-      hideWrap.style.overflow = 'hidden';
-      hideWrap.appendChild(el);
-      document.body.appendChild(hideWrap);
-
-      // Two more failure modes beyond the zero-height one above:
-      // 1) Capturing before the Poppins/JetBrains Mono web fonts (loaded async via style.css's
-      //    @import) have actually finished swapping in can leave html2canvas measuring/painting
-      //    text against fonts that aren't ready yet. document.fonts.ready plus a couple of
-      //    animation-frame turns guarantees a real paint has happened against final fonts before
-      //    capture starts.
-      // 2) image.type:'jpeg' has no alpha channel — if html2canvas leaves any part of the
-      //    canvas unpainted (even a sliver), the browser's canvas->JPEG encoder composites that
-      //    transparency as solid BLACK, not white or "nothing." PNG preserves alpha instead of
-      //    silently blacking out unpainted regions, which removes that whole failure class.
-      return document.fonts.ready.then(function () {
-        return new Promise(function (resolve) {
-          requestAnimationFrame(function () { requestAnimationFrame(resolve); });
-        });
-      }).then(function () {
-        return window.html2pdf().set({
-          margin: 0,
-          filename: post.slug + '.pdf',
-          image: { type: 'png' },
-          html2canvas: { scale: 1, backgroundColor: '#000000', useCORS: true },
-          jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'] }
-        }).from(el).save();
-      }).then(function () {
-        document.body.removeChild(hideWrap);
-      }, function (err) {
-        document.body.removeChild(hideWrap);
-        throw err;
-      });
+    loadScriptOnce(JSPDF_CDN_URL).then(function () {
+      var doc = generatePostPdf(post);
+      doc.save(post.slug + '.pdf');
     }).then(function () {
       btn.disabled = false;
       labelEl.textContent = originalLabel;

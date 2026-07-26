@@ -392,35 +392,6 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .download-pdf-btn svg{width:13px; height:13px;}
 .download-pdf-btn.pdf-error{border-color:var(--pink); color:var(--pink);}
 
-/* ============ PDF EXPORT TEMPLATE ============
-   Rendered off-screen and rasterized by html2pdf.js/html2canvas — colors are hardcoded
-   hex (not var()) to match the documented brand tokens 1:1, since a detached/off-screen
-   snapshot shouldn't depend on how a particular browser resolves custom properties at
-   capture time. */
-.pdf-export-root{width:800px; background:#000000; color:#f4f1e8; font-family:'Poppins', sans-serif;}
-.pdf-chrome{display:flex; align-items:center; gap:8px; background:#0d0c0a; padding:18px 28px; border-bottom:1px solid #3a352c;}
-.pdf-dot{width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0;}
-.pdf-chrome-path{font-family:'JetBrains Mono', monospace; font-size:13px; color:#c7c3b6; margin-left:8px;}
-.pdf-body{padding:44px 52px;}
-.pdf-tag{display:inline-block; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.5px; text-transform:uppercase; border:1px solid; border-radius:20px; padding:5px 14px; margin-bottom:20px;}
-.pdf-title{font-size:32px; font-weight:800; line-height:1.25; margin:0 0 18px; color:#f4f1e8;}
-.pdf-intro{font-size:15px; line-height:1.7; color:#c7c3b6; margin:0 0 22px;}
-.pdf-divider{border:none; border-top:1px dashed #3a352c; margin:26px 0;}
-.pdf-h2{font-size:19px; font-weight:700; color:#f4f1e8; margin:34px 0 14px;}
-.pdf-step{margin-bottom:16px;}
-.pdf-platform{font-family:'JetBrains Mono', monospace; font-size:11px; color:#3fcf8e; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;}
-.pdf-step p{font-size:14px; line-height:1.7; color:#e5e2d8; margin:0 0 10px;}
-.pdf-compare{background:#0d0c0a; border:1px solid #3a352c; border-radius:10px; padding:16px 18px; margin-bottom:18px;}
-.pdf-compare p{font-size:13.5px; line-height:1.6; margin:0 0 8px; color:#e5e2d8;}
-.pdf-pattern-list{list-style:none; padding:0; margin:0 0 18px;}
-.pdf-pattern-list li{font-size:13.5px; line-height:1.6; color:#e5e2d8; margin-bottom:8px;}
-.pdf-warn{background:rgba(232,90,130,0.08); border:1px solid #e85a82; border-radius:12px; padding:18px 20px; margin:30px 0;}
-.pdf-warn-label{font-family:'JetBrains Mono', monospace; font-size:11px; color:#e85a82; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;}
-.pdf-warn p{font-size:13.5px; line-height:1.6; color:#e5e2d8; margin:0;}
-.pdf-checklist{list-style:none; padding:0; margin:0;}
-.pdf-checklist li{font-size:14px; line-height:1.8; color:#e5e2d8; padding-left:24px; position:relative; margin-bottom:6px;}
-.pdf-checklist li::before{content:'\2610'; position:absolute; left:0; color:#ff7a3d;}
-.pdf-footer{font-family:'JetBrains Mono', monospace; font-size:11px; color:#c7c3b6; text-align:center; padding:26px; border-top:1px solid #3a352c;}
 /* ============ GLOSSARY PAGE ============ */
 .glossary-grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:18px; margin-top:36px;}
 .glossary-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px 24px; transition:border-color .2s ease, transform .25s var(--ease);}
