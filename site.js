@@ -501,36 +501,36 @@ function fallbackCopy(text, done) {
 }
 
 /**
- * Download-as-PDF, take three. v1 (html2canvas/html2pdf.js rasterizing a styled DOM clone) and
+ * Download-as-PDF, take four. v1 (html2canvas/html2pdf.js rasterizing a styled DOM clone) and
  * v2 (window.print() + a print stylesheet) both failed for real visitors in ways that never
  * reproduced in testing — v1's canvas silently painted nothing in some browsers, v2 depended on
  * the visitor's OS/browser print pipeline, which on at least one real machine rasterized the
- * whole page through a "Print to PDF" driver instead of producing real text. Neither failure
- * mode is something this site's code can fully control, because both hand the actual rendering
- * off to something else (a canvas library, a print driver) and hope it behaves.
- *
- * This version draws the PDF directly with jsPDF's own text/shape API — no canvas, no print
- * dialog, no dependency on how a particular OS's print pipeline chooses to handle the page.
- * It's also a deliberately different, standalone document design (light/cream background,
- * Poppins headings, plain body copy) rather than a copy of the dark on-screen theme, since a
- * downloadable brand resource and a webpage don't need to look identical.
+ * whole page through a "Print to PDF" driver instead of producing real text. v3 switched to
+ * drawing the PDF natively with jsPDF as a deliberately different light/cream "standalone
+ * document" rather than a copy of the dark site — but the actual ask was to match the site's
+ * dark/grid/glass identity, so v4 keeps native jsPDF drawing (still the only approach with no
+ * external rendering step to misbehave) while reproducing that look: black background, the
+ * site's faint 44pt line grid, and translucent "glass" cards for step/warning blocks standing
+ * in for the site's backdrop-filter blur (which has no equivalent in flat vector PDF drawing —
+ * approximated here with a low-opacity fill + a solid border instead of a real blur).
  */
-var PDF_LIGHT_COLORS = {
-  bg: [250, 247, 240],
-  ink: [30, 27, 22],
-  inkMuted: [107, 101, 88],
-  line: [228, 220, 205],
+var PDF_DARK_COLORS = {
+  bg: [0, 0, 0],
+  cream: [244, 241, 232],
+  creamDim: [199, 195, 182],
+  line: [58, 53, 44],
   orange: [255, 122, 61],
-  greenDark: [27, 122, 78],
-  pinkBorder: [232, 90, 130],
-  pinkFill: [253, 238, 242]
+  green: [63, 207, 142],
+  pinkBorder: [232, 90, 130]
 };
 
-var PDF_HEADING_FONT_FILES = {
-  headingRegular: 'https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrFJA.ttf',
-  headingBold: 'https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7V1s.ttf'
+var PDF_BRAND_FONT_FILES = {
+  sansRegular: 'https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrFJA.ttf',
+  sansBold: 'https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7V1s.ttf',
+  monoRegular: 'https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPQ.ttf',
+  monoBold: 'https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8L6tjPQ.ttf'
 };
-var _pdfHeadingFontCache = null;
+var _pdfBrandFontCache = null;
 
 function arrayBufferToBase64(buffer) {
   var bytes = new Uint8Array(buffer);
@@ -543,14 +543,14 @@ function arrayBufferToBase64(buffer) {
 }
 
 /**
- * Fetches Poppins (the site's real heading font) as base64, once, for embedding into the PDF.
- * Resolves to null on any failure so the PDF still generates with jsPDF's built-in Helvetica
- * standing in for headings — a visitor should always get a working PDF, exact font or not.
+ * Fetches the real Poppins + JetBrains Mono files as base64, once, for embedding into the PDF.
+ * Resolves to null on any failure so the PDF still generates with jsPDF's built-in Helvetica/
+ * Courier standing in — a visitor should always get a working PDF, exact font or not.
  */
-function loadPdfHeadingFontData() {
-  if (_pdfHeadingFontCache) return _pdfHeadingFontCache;
-  _pdfHeadingFontCache = Promise.all(Object.keys(PDF_HEADING_FONT_FILES).map(function (key) {
-    return fetch(PDF_HEADING_FONT_FILES[key]).then(function (res) {
+function loadPdfBrandFontData() {
+  if (_pdfBrandFontCache) return _pdfBrandFontCache;
+  _pdfBrandFontCache = Promise.all(Object.keys(PDF_BRAND_FONT_FILES).map(function (key) {
+    return fetch(PDF_BRAND_FONT_FILES[key]).then(function (res) {
       if (!res.ok) throw new Error('font fetch failed: ' + key);
       return res.arrayBuffer();
     }).then(function (buf) {
@@ -563,14 +563,18 @@ function loadPdfHeadingFontData() {
   }).catch(function () {
     return null;
   });
-  return _pdfHeadingFontCache;
+  return _pdfBrandFontCache;
 }
 
 /**
  * jsPDF's built-in fonts only support the WinAnsi glyph set — no arrows or checkmark symbols.
  * Post content routinely uses "→" for step sequences, and some posts.json fields (compare
  * block labels) already embed their own ✕/✓ prefix. Every string reaching doc.text()/
- * splitTextToSize() goes through this first.
+ * splitTextToSize() goes through this first. IMPORTANT: strip a field's own leading symbol
+ * (e.g. block.bad.label) *before* concatenating it after another prefix like "AVOID — " — once
+ * concatenated the symbol is no longer anchored at the start of the string, so this regex won't
+ * catch it there, and an unstripped symbol corrupts splitTextToSize()'s width math and runs
+ * text off the page edge. This exact bug happened once already; don't reintroduce it.
  */
 function sanitizePdfText(str) {
   return String(str)
@@ -584,37 +588,64 @@ function stripTagsForPdf(html) { return html.replace(/<[^>]+>/g, ''); }
 
 /**
  * Draws the brand icon (the two curved-bracket "parentheses" + orange face from
- * brandIconSVG()) using the exact same bezier curve data as the real SVG, just recolored for
- * a light background. `x,y` is the top-left of the icon's bounding box; `h` is the icon's
- * rendered height in pt (the source viewBox is 150x100, so width follows at h*1.5).
+ * brandIconSVG()) using the exact same bezier curve data as the real SVG. `x,y` is the
+ * top-left of the icon's bounding box; `h` is the icon's rendered height in pt (the source
+ * viewBox is 150x100, so width follows at h*1.5).
  */
 function drawPdfBrandIcon(doc, x, y, h) {
   var s = h / 100;
-  doc.setDrawColor(30, 27, 22);
+  doc.setDrawColor.apply(doc, PDF_DARK_COLORS.cream);
   doc.setLineCap('round');
 
   doc.setLineWidth(7 * s);
   doc.lines([[-9 * s, 9 * s, -18 * s, 17 * s, -18 * s, 34 * s], [0, 17 * s, 9 * s, 25 * s, 18 * s, 34 * s]], x + 38 * s, y + 16 * s, [1, 1], 'S');
   doc.lines([[9 * s, 9 * s, 18 * s, 17 * s, 18 * s, 34 * s], [0, 17 * s, -9 * s, 25 * s, -18 * s, 34 * s]], x + 112 * s, y + 16 * s, [1, 1], 'S');
 
-  doc.setFillColor.apply(doc, PDF_LIGHT_COLORS.orange);
+  doc.setFillColor.apply(doc, PDF_DARK_COLORS.orange);
   doc.circle(x + 75 * s, y + 38 * s, 13 * s, 'F');
 
-  doc.setDrawColor.apply(doc, PDF_LIGHT_COLORS.orange);
+  doc.setDrawColor.apply(doc, PDF_DARK_COLORS.orange);
   doc.setLineWidth(5 * s);
   doc.lines([[0, -10 * s, 7 * s, -17 * s, 17 * s, -17 * s], [10 * s, 0, 17 * s, 7 * s, 17 * s, 17 * s]], x + 58 * s, y + 78 * s, [1, 1], 'S');
 }
 
 /** Small drawn checkmark for the checklist — avoids jsPDF's built-in fonts not having a ✓ glyph. */
 function drawPdfCheck(doc, x, y, size) {
-  doc.setDrawColor.apply(doc, PDF_LIGHT_COLORS.orange);
+  doc.setDrawColor.apply(doc, PDF_DARK_COLORS.orange);
   doc.setLineWidth(1.3);
   doc.setLineCap('round');
   doc.lines([[size * 0.35, size * 0.35], [size * 0.65, -size * 0.75]], x, y, [1, 1], 'S');
 }
 
+/** Faint 44pt line grid across the full page, matching the site's --grid overlay. */
+function drawPdfGrid(doc, pageW, pageH) {
+  doc.saveGraphicsState();
+  doc.setGState(new doc.GState({ opacity: 0.07 }));
+  doc.setDrawColor.apply(doc, PDF_DARK_COLORS.cream);
+  doc.setLineWidth(0.5);
+  for (var gx = 0; gx < pageW; gx += 44) doc.line(gx, 0, gx, pageH);
+  for (var gy = 0; gy < pageH; gy += 44) doc.line(0, gy, pageW, gy);
+  doc.restoreGraphicsState();
+}
+
+/**
+ * "Glass" card: a low-opacity light fill (standing in for backdrop-filter blur, which has no
+ * flat-vector equivalent) plus a solid border — the same visual shorthand used everywhere else
+ * in print/PDF recreations of glassmorphism, since real blur would require rasterizing.
+ */
+function drawPdfGlassBox(doc, x, y, w, h, r, borderRGB) {
+  doc.saveGraphicsState();
+  doc.setGState(new doc.GState({ opacity: 0.06 }));
+  doc.setFillColor.apply(doc, PDF_DARK_COLORS.cream);
+  doc.roundedRect(x, y, w, h, r, r, 'F');
+  doc.restoreGraphicsState();
+  doc.setDrawColor.apply(doc, borderRGB);
+  doc.setLineWidth(1);
+  doc.roundedRect(x, y, w, h, r, r, 'S');
+}
+
 /** Builds the full PDF document for a post using jsPDF's native drawing API. Returns the jsPDF instance. */
-function generatePostPdf(post, headingFontData) {
+function generatePostPdf(post, fontData) {
   var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
   var pageW = doc.internal.pageSize.getWidth();
   var pageH = doc.internal.pageSize.getHeight();
@@ -622,21 +653,26 @@ function generatePostPdf(post, headingFontData) {
   var contentW = pageW - marginX * 2;
   var y = marginTop;
 
-  var headingFont = 'helvetica';
-  if (headingFontData) {
-    doc.addFileToVFS('headingRegular.ttf', headingFontData.headingRegular);
-    doc.addFont('headingRegular.ttf', 'Heading', 'normal');
-    doc.addFileToVFS('headingBold.ttf', headingFontData.headingBold);
-    doc.addFont('headingBold.ttf', 'Heading', 'bold');
-    headingFont = 'Heading';
+  var sansFont = 'helvetica', monoFont = 'courier';
+  if (fontData) {
+    doc.addFileToVFS('sansRegular.ttf', fontData.sansRegular);
+    doc.addFont('sansRegular.ttf', 'Sans', 'normal');
+    doc.addFileToVFS('sansBold.ttf', fontData.sansBold);
+    doc.addFont('sansBold.ttf', 'Sans', 'bold');
+    doc.addFileToVFS('monoRegular.ttf', fontData.monoRegular);
+    doc.addFont('monoRegular.ttf', 'Mono', 'normal');
+    doc.addFileToVFS('monoBold.ttf', fontData.monoBold);
+    doc.addFont('monoBold.ttf', 'Mono', 'bold');
+    sansFont = 'Sans';
+    monoFont = 'Mono';
   }
-  var bodyFont = 'helvetica';
 
   function setColor(method, rgb) { doc[method](rgb[0], rgb[1], rgb[2]); }
 
   function paintPageBg() {
-    setColor('setFillColor', PDF_LIGHT_COLORS.bg);
+    setColor('setFillColor', PDF_DARK_COLORS.bg);
     doc.rect(0, 0, pageW, pageH, 'F');
+    drawPdfGrid(doc, pageW, pageH);
   }
 
   function newPage() {
@@ -653,9 +689,9 @@ function generatePostPdf(post, headingFontData) {
     opts = opts || {};
     var size = opts.size || 10.5;
     var lineH = opts.lineH || size * 1.5;
-    doc.setFont(opts.font || bodyFont, opts.style || 'normal');
+    doc.setFont(opts.font || sansFont, opts.style || 'normal');
     doc.setFontSize(size);
-    setColor('setTextColor', opts.color || PDF_LIGHT_COLORS.ink);
+    setColor('setTextColor', opts.color || PDF_DARK_COLORS.cream);
     var lines = doc.splitTextToSize(sanitizePdfText(text), contentW - (opts.indent || 0));
     lines.forEach(function (line) {
       ensureSpace(lineH);
@@ -667,88 +703,135 @@ function generatePostPdf(post, headingFontData) {
 
   function drawDivider() {
     ensureSpace(18);
-    setColor('setDrawColor', PDF_LIGHT_COLORS.line);
+    setColor('setDrawColor', PDF_DARK_COLORS.line);
     doc.setLineWidth(0.75);
     doc.line(marginX, y, pageW - marginX, y);
     y += 18;
   }
 
+  /** Measures a step block's wrapped content first, then draws a glass card behind it. */
+  function drawStepBlock(block) {
+    var padX = 16, padTop = 16, padBottom = 16;
+    var innerW = contentW - padX * 2;
+    var lineGroups = [];
+    var totalH = 0;
+    if (block.platform) {
+      lineGroups.push({ text: block.platform.toUpperCase(), size: 8.5, font: monoFont, style: 'bold', color: PDF_DARK_COLORS.orange, lineH: 11, gapAfter: 6, charSpace: 0.4 });
+      totalH += 11 + 6;
+    }
+    block.paragraphs.forEach(function (p, i) {
+      var lines = doc.splitTextToSize(sanitizePdfText(stripTagsForPdf(p)), innerW);
+      var gap = i < block.paragraphs.length - 1 ? 8 : 0;
+      lineGroups.push({ lines: lines, size: 10, font: sansFont, color: PDF_DARK_COLORS.creamDim, lineH: 14.5, gapAfter: gap });
+      totalH += lines.length * 14.5 + gap;
+    });
+    var boxH = padTop + totalH + padBottom;
+    ensureSpace(boxH + 10);
+    var boxTop = y;
+    drawPdfGlassBox(doc, marginX, boxTop, contentW, boxH, 10, PDF_DARK_COLORS.line);
+    y = boxTop + padTop + 8;
+    lineGroups.forEach(function (g) {
+      doc.setFont(g.font, g.style || 'normal');
+      doc.setFontSize(g.size);
+      setColor('setTextColor', g.color);
+      if (g.text) {
+        doc.text(g.text, marginX + padX, y, g.charSpace ? { charSpace: g.charSpace } : undefined);
+        y += g.lineH + g.gapAfter;
+      } else {
+        g.lines.forEach(function (line) {
+          doc.text(line, marginX + padX, y);
+          y += g.lineH;
+        });
+        y += g.gapAfter;
+      }
+    });
+    y = boxTop + boxH + 14;
+  }
+
   paintPageBg();
 
-  // header: icon + wordmark
+  // header: icon + wordmark, styled as a glass "terminal chrome" bar
+  var chromeH = 30;
+  drawPdfGlassBox(doc, marginX, y, contentW, chromeH, 8, PDF_DARK_COLORS.line);
+  var dotColors = [[255, 95, 87], [254, 188, 46], [40, 200, 64]];
+  dotColors.forEach(function (c, i) {
+    setColor('setFillColor', c);
+    doc.circle(marginX + 16 + i * 12, y + chromeH / 2, 2.8, 'F');
+  });
+  doc.setFont(monoFont, 'normal');
+  doc.setFontSize(8.5);
+  setColor('setTextColor', PDF_DARK_COLORS.creamDim);
+  doc.text('stay(human).sec:~$ cat ' + sanitizePdfText(post.filename || ''), marginX + 56, y + chromeH / 2 + 3);
+  y += chromeH + 20;
+
   var iconH = 15;
   drawPdfBrandIcon(doc, marginX, y - 2, iconH);
-  doc.setFont(headingFont, 'bold');
+  doc.setFont(sansFont, 'bold');
   doc.setFontSize(12.5);
-  setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+  setColor('setTextColor', PDF_DARK_COLORS.cream);
   var wmX = marginX + iconH * 1.5 + 8;
   doc.text('stay', wmX, y + 9);
   var wStay = doc.getTextWidth('stay');
-  setColor('setTextColor', PDF_LIGHT_COLORS.orange);
+  setColor('setTextColor', PDF_DARK_COLORS.orange);
   doc.text('(human)', wmX + wStay, y + 9);
   var wHuman = doc.getTextWidth('(human)');
-  setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+  setColor('setTextColor', PDF_DARK_COLORS.cream);
   doc.text('.sec', wmX + wStay + wHuman, y + 9);
   y += iconH + 16;
 
-  writeWrapped(post.title, { size: 21, font: headingFont, style: 'bold', color: PDF_LIGHT_COLORS.ink, lineH: 25, gapAfter: 8 });
+  writeWrapped(post.title, { size: 21, font: sansFont, style: 'bold', color: PDF_DARK_COLORS.cream, lineH: 25, gapAfter: 8 });
 
-  doc.setFont(bodyFont, 'bold');
+  doc.setFont(monoFont, 'bold');
   doc.setFontSize(8.5);
-  setColor('setTextColor', PDF_LIGHT_COLORS.orange);
+  setColor('setTextColor', PDF_DARK_COLORS.orange);
   var tagText = sanitizePdfText((post.tag || '').toUpperCase());
   doc.text(tagText, marginX, y, { charSpace: 0.6 });
   var tagW = doc.getTextWidth(tagText) + 6 * tagText.length * 0.06;
-  setColor('setTextColor', PDF_LIGHT_COLORS.inkMuted);
-  doc.setFont(bodyFont, 'normal');
+  setColor('setTextColor', PDF_DARK_COLORS.creamDim);
+  doc.setFont(sansFont, 'normal');
   doc.setFontSize(9);
   doc.text('·  ' + (post.readMinutes || 3) + ' min read', marginX + tagW + 8, y);
   y += 22;
 
   drawDivider();
 
-  writeWrapped(post.intro, { size: 10.5, color: PDF_LIGHT_COLORS.inkMuted, lineH: 15.5, gapAfter: 10 });
+  writeWrapped(post.intro, { size: 10.5, color: PDF_DARK_COLORS.creamDim, lineH: 15.5, gapAfter: 10 });
   drawDivider();
 
   post.sections.forEach(function (sec) {
     ensureSpace(30);
-    doc.setFont(bodyFont, 'bold');
+    doc.setFont(monoFont, 'bold');
     doc.setFontSize(13);
-    setColor('setTextColor', PDF_LIGHT_COLORS.orange);
+    setColor('setTextColor', PDF_DARK_COLORS.orange);
     doc.text(sanitizePdfText(sec.num), marginX, y);
-    var numW = doc.getTextWidth(sec.num) + 10;
-    doc.setFont(headingFont, 'bold');
+    var numW = doc.getTextWidth(sec.num) + 12;
+    doc.setFont(sansFont, 'bold');
     doc.setFontSize(13.5);
-    setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+    setColor('setTextColor', PDF_DARK_COLORS.cream);
     var titleLines = doc.splitTextToSize(sanitizePdfText(sec.title), contentW - numW);
     titleLines.forEach(function (line, i) {
       doc.text(line, marginX + numW, y + i * 16);
     });
-    y += Math.max(16, titleLines.length * 16) + 8;
+    y += Math.max(16, titleLines.length * 16) + 12;
 
     sec.blocks.forEach(function (block) {
       if (block.type === 'step') {
-        if (block.platform) {
-          writeWrapped(block.platform.toUpperCase(), { size: 8.5, font: bodyFont, style: 'bold', color: PDF_LIGHT_COLORS.orange, lineH: 11, gapAfter: 3, charSpace: 0.4 });
-        }
-        block.paragraphs.forEach(function (p) {
-          writeWrapped(stripTagsForPdf(p), { size: 10, color: PDF_LIGHT_COLORS.ink, lineH: 14.5, gapAfter: 8 });
-        });
+        drawStepBlock(block);
       } else if (block.type === 'compare') {
         var badLabel = block.bad.label.replace(/^[✕✓]\s*/, '');
         var goodLabel = block.good.label.replace(/^[✕✓]\s*/, '');
-        writeWrapped('AVOID — ' + badLabel + ': ' + block.bad.text, { size: 9.5, color: PDF_LIGHT_COLORS.inkMuted, lineH: 13.5, gapAfter: 4 });
-        writeWrapped('DO — ' + goodLabel + ': ' + block.good.text, { size: 9.5, color: PDF_LIGHT_COLORS.greenDark, lineH: 13.5, gapAfter: 8 });
+        writeWrapped('AVOID — ' + badLabel + ': ' + block.bad.text, { size: 9.5, color: PDF_DARK_COLORS.creamDim, lineH: 13.5, gapAfter: 4 });
+        writeWrapped('DO — ' + goodLabel + ': ' + block.good.text, { size: 9.5, color: PDF_DARK_COLORS.green, lineH: 13.5, gapAfter: 8 });
       } else if (block.type === 'pattern-list') {
         block.items.forEach(function (it) {
-          doc.setFont(bodyFont, 'bold');
+          doc.setFont(sansFont, 'bold');
           doc.setFontSize(9.5);
-          setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+          setColor('setTextColor', PDF_DARK_COLORS.cream);
           ensureSpace(14);
           doc.text(sanitizePdfText(it.tag) + ':', marginX, y);
           var tW = doc.getTextWidth(it.tag + ': ') + 4;
-          doc.setFont(bodyFont, 'normal');
-          setColor('setTextColor', PDF_LIGHT_COLORS.inkMuted);
+          doc.setFont(sansFont, 'normal');
+          setColor('setTextColor', PDF_DARK_COLORS.creamDim);
           var itLines = doc.splitTextToSize(sanitizePdfText(it.text), contentW - tW);
           itLines.forEach(function (line, i) {
             if (i > 0) ensureSpace(13.5);
@@ -761,25 +844,22 @@ function generatePostPdf(post, headingFontData) {
     });
   });
 
-  // warning box
-  var warnLines = doc.splitTextToSize(sanitizePdfText(post.warn.text), contentW - 20);
+  // warning box — glass card, pink border
+  var warnLines = doc.splitTextToSize(sanitizePdfText(post.warn.text), contentW - 32);
   var warnLabelText = sanitizePdfText(post.warn.label);
-  var warnBoxH = 14 + 14 + warnLines.length * 13.5 + 16;
+  var warnBoxH = 16 + 16 + warnLines.length * 13.5 + 16;
   ensureSpace(warnBoxH + 10);
   var warnTop = y;
-  setColor('setFillColor', PDF_LIGHT_COLORS.pinkFill);
-  setColor('setDrawColor', PDF_LIGHT_COLORS.pinkBorder);
-  doc.setLineWidth(1);
-  doc.roundedRect(marginX, warnTop, contentW, warnBoxH, 8, 8, 'FD');
-  y = warnTop + 20;
-  doc.setFont(bodyFont, 'bold');
+  drawPdfGlassBox(doc, marginX, warnTop, contentW, warnBoxH, 8, PDF_DARK_COLORS.pinkBorder);
+  y = warnTop + 24;
+  doc.setFont(monoFont, 'bold');
   doc.setFontSize(9);
-  setColor('setTextColor', PDF_LIGHT_COLORS.pinkBorder);
+  setColor('setTextColor', PDF_DARK_COLORS.pinkBorder);
   doc.text(warnLabelText, marginX + 16, y, { charSpace: 0.3 });
   y += 16;
-  doc.setFont(bodyFont, 'normal');
+  doc.setFont(sansFont, 'normal');
   doc.setFontSize(9.5);
-  setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+  setColor('setTextColor', PDF_DARK_COLORS.creamDim);
   warnLines.forEach(function (line) {
     doc.text(line, marginX + 16, y);
     y += 13.5;
@@ -787,14 +867,14 @@ function generatePostPdf(post, headingFontData) {
   y = warnTop + warnBoxH + 22;
 
   drawDivider();
-  writeWrapped('The 60-second version', { size: 13.5, font: headingFont, style: 'bold', color: PDF_LIGHT_COLORS.ink, lineH: 18, gapAfter: 6 });
+  writeWrapped('The 60-second version', { size: 13.5, font: sansFont, style: 'bold', color: PDF_DARK_COLORS.cream, lineH: 18, gapAfter: 6 });
   post.checklist.forEach(function (c) {
     var lines = doc.splitTextToSize(sanitizePdfText(c), contentW - 22);
     ensureSpace(lines.length * 14.5 + 4);
     drawPdfCheck(doc, marginX + 2, y - 8, 9);
-    doc.setFont(bodyFont, 'normal');
+    doc.setFont(sansFont, 'normal');
     doc.setFontSize(10);
-    setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+    setColor('setTextColor', PDF_DARK_COLORS.cream);
     lines.forEach(function (line, i) {
       doc.text(line, marginX + 20, y + i * 14.5);
     });
@@ -805,12 +885,12 @@ function generatePostPdf(post, headingFontData) {
   var pageCount = doc.internal.getNumberOfPages();
   for (var i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    setColor('setDrawColor', PDF_LIGHT_COLORS.line);
+    setColor('setDrawColor', PDF_DARK_COLORS.line);
     doc.setLineWidth(0.75);
     doc.line(marginX, pageH - 36, pageW - marginX, pageH - 36);
-    doc.setFont(bodyFont, 'normal');
+    doc.setFont(monoFont, 'normal');
     doc.setFontSize(8.5);
-    setColor('setTextColor', PDF_LIGHT_COLORS.inkMuted);
+    setColor('setTextColor', PDF_DARK_COLORS.creamDim);
     doc.text('stayhumansec.github.io', marginX, pageH - 22);
     doc.text('Page ' + i + ' of ' + pageCount, pageW - marginX, pageH - 22, { align: 'right' });
   }
@@ -849,7 +929,7 @@ function setupDownloadPdfButton(btn, post) {
     btn.classList.remove('pdf-error');
     labelEl.textContent = 'Generating…';
 
-    Promise.all([loadScriptOnce(JSPDF_CDN_URL), loadPdfHeadingFontData()]).then(function (results) {
+    Promise.all([loadScriptOnce(JSPDF_CDN_URL), loadPdfBrandFontData()]).then(function (results) {
       var doc = generatePostPdf(post, results[1]);
       doc.save(post.slug + '.pdf');
     }).then(function () {
