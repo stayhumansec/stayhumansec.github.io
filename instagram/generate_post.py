@@ -99,6 +99,35 @@ def circle_pts(cx, cy, r, step_deg=8):
             for d in range(0, 361, step_deg)]
 
 
+def rounded_rect_points(x0, y0, x1, y1, radius, arc_step_deg=8, edge_step=10):
+    """Ordered perimeter points for a rounded rectangle -- straight edges plus
+    four corner arcs, walked clockwise from the top-left corner back to itself.
+    Exists so a rectangular shape (a phone body, a card outline, etc.) can be
+    fed into wobbly()/wobbly_animated() exactly like any other point list --
+    those two functions don't care whether the points came from a bezier
+    curve or a straight edge, they just jitter-and-stamp whatever they're given."""
+    r = radius
+    pts = []
+
+    def edge(p0, p1):
+        n = max(2, int(math.hypot(p1[0] - p0[0], p1[1] - p0[1]) / edge_step))
+        return [(p0[0] + (p1[0] - p0[0]) * t / n, p0[1] + (p1[1] - p0[1]) * t / n) for t in range(n + 1)]
+
+    def arc(cx, cy, start_deg, end_deg):
+        return [(cx + r * math.cos(math.radians(d)), cy + r * math.sin(math.radians(d)))
+                for d in range(start_deg, end_deg + 1, arc_step_deg)]
+
+    pts += edge((x0 + r, y0), (x1 - r, y0))
+    pts += arc(x1 - r, y0 + r, -90, 0)
+    pts += edge((x1, y0 + r), (x1, y1 - r))
+    pts += arc(x1 - r, y1 - r, 0, 90)
+    pts += edge((x1 - r, y1), (x0 + r, y1))
+    pts += arc(x0 + r, y1 - r, 90, 180)
+    pts += edge((x0, y1 - r), (x0, y0 + r))
+    pts += arc(x0 + r, y0 + r, 180, 270)
+    return pts
+
+
 def draw_thick_path(draw, points, offx, offy, iscale, color, width):
     r = max(width * iscale / 2, 1.6)
     for (x, y) in points:
@@ -247,6 +276,37 @@ def verify_slide(path):
     assert img.size == (1080, 1080), f"{path}: wrong size {img.size}"
     assert bbox is not None, f"{path}: image is blank!"
     print(f"✓ {path} — {img.size}, bbox {bbox}")
+    return True
+
+
+def save_pdf_carousel(image_paths, output_path):
+    """Combines a sequence of slide PNGs (typically the same 4 slides already
+    generated for Instagram) into a single multi-page PDF, for platforms
+    like LinkedIn whose carousel format is a PDF document upload rather than
+    separate images. Uses Pillow's own multi-page PDF save -- no extra
+    dependency (img2pdf, reportlab, etc.) needed. Preserves slide order and
+    pixel size exactly as given."""
+    imgs = [Image.open(p).convert('RGB') for p in image_paths]
+    if not imgs:
+        raise ValueError("save_pdf_carousel: no image paths given")
+    imgs[0].save(output_path, save_all=True, append_images=imgs[1:])
+    return output_path
+
+
+def verify_pdf_carousel(path, expected_pages):
+    """Call this after save_pdf_carousel(). Confirms the PDF actually has
+    the expected number of pages and each page matches the 1080x1080 slide
+    size -- the same "don't assume it looks right" discipline this project
+    already applies to slide images and (previously) to PDF output."""
+    import fitz
+    doc = fitz.open(path)
+    assert doc.page_count == expected_pages, f"{path}: expected {expected_pages} pages, got {doc.page_count}"
+    for i, page in enumerate(doc):
+        rect = page.rect
+        assert (round(rect.width), round(rect.height)) == (1080, 1080), \
+            f"{path}: page {i} is {rect.width}x{rect.height}, expected 1080x1080"
+    doc.close()
+    print(f"✓ {path} — {expected_pages} pages, 1080x1080")
     return True
 
 

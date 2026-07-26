@@ -141,21 +141,24 @@ Orange is the single primary accent (CTAs, active states, hover borders). Green 
 - **Copy-as-markdown**: `post.html` includes a "Copy as .md" button; `generateMarkdown()` in `site.js` reconstructs a markdown version of a post straight from its JSON shape, so any post added to `posts.json` gets this for free with no extra work.
 - **Download as PDF — removed.** This existed through four implementations (html2canvas/html2pdf.js rasterizing a DOM clone, `window.print()` + a print stylesheet, and two rounds of native jsPDF drawing chasing dark/grid/glass fidelity against the live site) before being removed entirely at the user's request. Every version, `generatePostPdf()`/`drawPdf*()` helpers, the CDN font-fetch code, and the `.download-pdf-btn` CSS are gone from `site.js`/`post.html`/`style.css`. If asked to rebuild this feature, don't assume any prior version's approach was "the answer" — html2canvas silently produced blank PDFs for real visitors, `window.print()` depended on the visitor's OS print pipeline (one real machine rasterized the whole page through a "Print to PDF" driver instead of producing real text), and native jsPDF drawing required several rounds of fixing color/font/layout fidelity bugs against the actual site CSS. Ask what's wanted (light standalone document vs. dark/grid/glass site match) before building, and verify any PDF output with PyMuPDF (`page.get_text()`, `page.get_fonts()`, `page.get_images()`) rather than assuming it looks right.
 - **Escaping**: all post-derived text is passed through `escapeHTML()` before insertion, *except* `step` block `paragraphs`, which are treated as trusted raw HTML (so `<code>` tags work) — never put user-supplied or untrusted content there.
+- **Platform adaptation**: one fact/fix, four packages. The underlying content — the actual fact, the actual fix — never changes between platforms; only tone and format do. Instagram gets the 4-slide carousel with a punchy hook-style caption; Facebook reuses those exact same slides with a warmer, community/family-oriented caption; LinkedIn combines those same slides into a single PDF carousel with a narrative, first-person, professionally-framed caption; X gets a numbered thread instead of any images at all. See "Platform-specific packaging" under Automated Post Generation Workflow for the exact spec per platform.
 
 ## Automated Post Generation Workflow
 
-This section documents the standard process for generating a day's post — both
-the Instagram carousel and the matching website article — so this workflow is
-consistent every time it's triggered, whether by the project owner or a future
-session picking this up cold.
+This section documents the standard process for generating a day's post —
+the website article, the Instagram carousel, and the Facebook, LinkedIn, and
+X packages built from that same carousel — so this workflow is consistent
+every time it's triggered, whether by the project owner or a future session
+picking this up cold.
 
 ### How this gets triggered
 
 The website grows automatically as posts are added — no manual review gate,
-**as long as automated verification passes** (see step 7). Instagram is a
-separate, always-manual step: **this workflow never posts to Instagram under
-any circumstances.** The owner reviews the generated slides and posts them
-manually, on their own schedule.
+**as long as automated verification passes** (see step 7). Social packaging
+(Instagram, Facebook, LinkedIn, X) is a separate, always-manual step:
+**this workflow never posts to any social platform under any circumstances.**
+The owner reviews every generated slide, PDF, caption, and thread and posts
+them manually, on their own schedule, per platform.
 
 ### Standard workflow for "make today's post"
 
@@ -191,6 +194,41 @@ as website articles — see "Writing" under Utility & Content Philosophy and
 "Content conventions" for the shared voice, and the pillar table for which
 tag color (`tag_pill(bg=...)`) matches which pillar.
 
+### Platform-specific packaging
+
+Every day's post produces **four** platform variants from the same
+underlying fact/fix — the content itself never changes, only tone and
+format do. All four land in the same `instagram/posts/day_NN_<topic-slug>/`
+folder alongside the slides, regardless of which platform they're for —
+there's no per-platform subdirectory.
+
+- **Instagram** — the 4 slides (`slide1.png`–`slide4.png`) described above,
+  plus `caption.txt`: punchy, hook-first, matches the carousel's own pacing.
+
+- **Facebook** — reuses the exact same 4 slide PNGs, no new images. Only
+  `facebook_caption.txt` is new: same core fact/fix as the Instagram
+  caption, but warmer and more community-oriented — a "share this with
+  someone in your family" framing, since Facebook's audience skews older
+  and more relationship-driven than Instagram's.
+
+- **LinkedIn** — combines the same 4 slide PNGs into a single `linkedin.pdf`
+  (LinkedIn's carousel format is a PDF document upload, not separate
+  images), built with `save_pdf_carousel()` in `instagram/generate_post.py`
+  and checked with `verify_pdf_carousel()` (confirms page count and that
+  every page is 1080×1080 — both use Pillow's own multi-page PDF save, no
+  extra dependency). `linkedin_caption.txt` is more narrative and
+  first-person than Instagram's punchier hook style, with professional
+  framing where it genuinely fits ("why this matters for your work life")
+  — don't force the work-life angle onto a post where it doesn't apply.
+
+- **X (Twitter)** — no new images at all. `x_thread.txt` is a numbered
+  thread: tweet 1 is the hook (mirrors slide 1's punch), each following
+  tweet covers one core point from the post (mirrors the swipe-hook pacing
+  already established across the carousel), and the final tweet points to
+  the website article for the full write-up. `slide1.png` can optionally be
+  suggested as the hook tweet's attached image, but nothing new is rendered
+  for it.
+
 ### Standard steps
 
 1. **Check `CALENDAR.md`** for the next day marked "Pending." If the day's
@@ -200,21 +238,30 @@ tag color (`tag_pill(bg=...)`) matches which pillar.
 
 2. **Write the carousel copy** for all 4 slides, following the established
    structure (see "Standard workflow for 'make today's post'" earlier in this
-   file, and the tone/voice rules in "Utility & Content Philosophy").
+   file, and the tone/voice rules in "Utility & Content Philosophy"). Then
+   write the four platform captions/thread (Instagram, Facebook, LinkedIn,
+   X) per the "Platform-specific packaging" spec above — same fact/fix,
+   different tone per platform.
 
 3. **Generate the 4 slides** using `instagram/generate_post.py` (a rendering
    library, not a script — `from generate_post import *`, see its module
    docstring for the exact usage pattern and the shared helpers it provides:
    `base_card`, `linux_chrome`, `tag_pill`, `wrap_text`, `draw_swipe_hook`,
-   `clean_smiley`, `footer`, `verify_slide`). Save the output to
+   `clean_smiley`, `footer`, `verify_slide`, `save_pdf_carousel`,
+   `verify_pdf_carousel`). Save the output to
    `instagram/posts/day_NN_<topic-slug>/slide1.png` through `slide4.png`
-   (paths relative to the repo root), plus a `caption.txt` in the same folder
-   with the finished Instagram caption.
+   (paths relative to the repo root). In that same folder, write
+   `caption.txt` (Instagram), `facebook_caption.txt`, build `linkedin.pdf`
+   from the same 4 slides via `save_pdf_carousel()`, write
+   `linkedin_caption.txt`, and write `x_thread.txt`.
 
 4. **Verify every slide** with `verify_slide()` before considering the post
    done — checks correct size (1080×1080) and confirms the image isn't
    blank. This step is non-negotiable; this project has hit blank/broken
-   image bugs before.
+   image bugs before. Also run `verify_pdf_carousel(path, 4)` on
+   `linkedin.pdf` to confirm it has exactly 4 pages, each 1080×1080, and
+   confirm `facebook_caption.txt`, `linkedin_caption.txt`, and
+   `x_thread.txt` all exist and are non-empty.
 
 5. **Write the matching website article** as a new entry in `posts.json`
    (repo root — this is a flat static site, there's no `website/`
@@ -233,6 +280,9 @@ tag color (`tag_pill(bg=...)`) matches which pillar.
      `listDesc`, `intro`, `statLine`, `sections`, `warn`, `checklist`, `next`)
    - All 4 carousel slide images pass `verify_slide()` (correct size, not
      blank)
+   - `linkedin.pdf` passes `verify_pdf_carousel()` (4 pages, each 1080×1080)
+   - `facebook_caption.txt`, `linkedin_caption.txt`, and `x_thread.txt` all
+     exist in the day's folder and are non-empty
    - `post.html?slug=<new-slug>` actually loads and renders without a
      JavaScript console error (serve locally and check — this is the exact
      class of bug that's bitten this project before, e.g. a missing schema
@@ -294,9 +344,11 @@ The owner will typically trigger this with something like:
 
 > "Generate today's post — check CALENDAR.md for the next pending day, [if
 > Cyber News: search for a real current story following the sourcing
-> criteria in CLAUDE.md], write the carousel copy, generate all 4 slides,
-> verify none are blank, write the matching posts.json entry, update
-> CALENDAR.md, run all verification checks, and merge to main automatically
-> if everything passes. If anything fails, open a PR instead and tell me
-> exactly what failed. Don't touch Instagram — I'll post those myself
-> whenever I'm ready."
+> criteria in CLAUDE.md], write the carousel copy plus all four platform
+> captions/thread, generate all 4 slides, build the LinkedIn PDF, verify
+> none of the slides are blank and the PDF/captions/thread all check out,
+> write the matching posts.json entry, update CALENDAR.md, run all
+> verification checks, and merge to main automatically if everything
+> passes. If anything fails, open a PR instead and tell me exactly what
+> failed. Don't touch Instagram, Facebook, LinkedIn, or X — I'll post those
+> myself whenever I'm ready."
