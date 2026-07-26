@@ -521,9 +521,18 @@ var PDF_DARK_COLORS = {
   creamDim: [199, 195, 182],
   line: [58, 53, 44],
   orange: [255, 122, 61],
+  blue: [76, 141, 255],
   green: [63, 207, 142],
-  pinkBorder: [232, 90, 130]
+  violet: [150, 112, 230],
+  gold: [232, 167, 0],
+  pink: [232, 90, 130]
 };
+
+/** Maps a post's `var(--xxx)` color string (tagColor/pillarColor) to an RGB triple for jsPDF. */
+function pdfColorFromVar(cssVar) {
+  var match = /--([a-z]+)/.exec(cssVar || '');
+  return (match && PDF_DARK_COLORS[match[1]]) || PDF_DARK_COLORS.orange;
+}
 
 var PDF_BRAND_FONT_FILES = {
   sansRegular: 'https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrFJA.ttf',
@@ -712,11 +721,14 @@ function generatePostPdf(post, fontData) {
     y += opts.gapAfter || 0;
   }
 
+  /** Matches .divider (border-top:1px dashed var(--line)) — real dividers on the site are dashed, not solid. */
   function drawDivider() {
     ensureSpace(18);
     setColor('setDrawColor', PDF_DARK_COLORS.line);
     doc.setLineWidth(0.75);
+    doc.setLineDashPattern([2, 2], 0);
     doc.line(marginX, y, pageW - marginX, y);
+    doc.setLineDashPattern([], 0);
     y += 18;
   }
 
@@ -776,7 +788,7 @@ function generatePostPdf(post, fontData) {
   doc.setLineWidth(1);
   doc.line(wcMinX - 3, wcCenterY + 3, wcMinX + 3, wcCenterY + 3); // minimize
   doc.rect(wcMinX + 14, wcCenterY - 3, 6, 6, 'S'); // maximize
-  setColor('setDrawColor', PDF_DARK_COLORS.pinkBorder);
+  setColor('setDrawColor', PDF_DARK_COLORS.pink);
   var closeX = wcMinX + 28;
   doc.line(closeX - 3, wcCenterY - 3, closeX + 3, wcCenterY + 3); // close
   doc.line(closeX - 3, wcCenterY + 3, closeX + 3, wcCenterY - 3);
@@ -796,25 +808,72 @@ function generatePostPdf(post, fontData) {
   var wHuman = doc.getTextWidth('(human)');
   setColor('setTextColor', PDF_DARK_COLORS.cream);
   doc.text('.sec', wmX + wStay + wHuman, y + 9);
-  y += iconH + 16;
+  y += iconH + 20;
 
-  writeWrapped(post.title, { size: 21, font: sansFont, style: 'bold', color: PDF_DARK_COLORS.cream, lineH: 25, gapAfter: 8 });
-
-  doc.setFont(monoFont, 'bold');
-  doc.setFontSize(8.5);
-  setColor('setTextColor', PDF_DARK_COLORS.orange);
+  // meta row: tag pill + pillar chip + read time (matches .article-meta-row order — before the title)
+  var tagRGB = pdfColorFromVar(post.tagColor);
   var tagText = sanitizePdfText((post.tag || '').toUpperCase());
-  doc.text(tagText, marginX, y, { charSpace: 0.6 });
-  var tagW = doc.getTextWidth(tagText) + 6 * tagText.length * 0.06;
+  doc.setFont(monoFont, 'bold');
+  doc.setFontSize(8);
+  var tagPillW = doc.getTextWidth(tagText) + 20;
+  setColor('setDrawColor', tagRGB);
+  doc.setLineWidth(1);
+  doc.roundedRect(marginX, y - 10, tagPillW, 16, 8, 8, 'S');
+  setColor('setTextColor', tagRGB);
+  doc.text(tagText, marginX + 10, y, { charSpace: 0.4 });
+  var metaX = marginX + tagPillW + 10;
+
+  if (post.pillarLabel) {
+    var pillarRGB = pdfColorFromVar(post.pillarColor);
+    doc.setFont(monoFont, 'normal');
+    doc.setFontSize(8);
+    var pillarText = sanitizePdfText(post.pillarLabel);
+    var pillarPillW = doc.getTextWidth(pillarText) + 22;
+    setColor('setDrawColor', pillarRGB);
+    doc.roundedRect(metaX, y - 10, pillarPillW, 16, 8, 8, 'S');
+    setColor('setFillColor', pillarRGB);
+    doc.circle(metaX + 10, y - 2, 2, 'F');
+    setColor('setTextColor', pillarRGB);
+    doc.text(pillarText, metaX + 16, y);
+    metaX += pillarPillW + 10;
+  }
+
   setColor('setTextColor', PDF_DARK_COLORS.creamDim);
   doc.setFont(sansFont, 'normal');
   doc.setFontSize(9);
-  doc.text('·  ' + (post.readMinutes || 3) + ' min read', marginX + tagW + 8, y);
-  y += 22;
+  doc.text((post.readMinutes || 3) + ' min read', metaX, y);
+  y += 26;
 
-  drawDivider();
-
+  writeWrapped(post.title, { size: 21, font: sansFont, style: 'bold', color: PDF_DARK_COLORS.cream, lineH: 25, gapAfter: 8 });
   writeWrapped(post.intro, { size: 10.5, color: PDF_DARK_COLORS.creamDim, lineH: 15.5, gapAfter: 10 });
+
+  // TL;DR box — blue glass card, matches .tldr-box (background:rgba(76,141,255,0.08))
+  if (post.tldr) {
+    var tldrLines = doc.splitTextToSize(sanitizePdfText(post.tldr), contentW - 32);
+    var tldrBoxH = 16 + 14 + tldrLines.length * 14.5 + 10;
+    ensureSpace(tldrBoxH + 10);
+    var tldrTop = y;
+    drawPdfGlassBox(doc, marginX, tldrTop, contentW, tldrBoxH, 14, PDF_DARK_COLORS.blue, PDF_DARK_COLORS.blue, 0.08);
+    y = tldrTop + 22;
+    doc.setFont(monoFont, 'bold');
+    doc.setFontSize(9);
+    setColor('setTextColor', PDF_DARK_COLORS.blue);
+    doc.text('TL;DR', marginX + 16, y, { charSpace: 0.5 });
+    y += 16;
+    doc.setFont(sansFont, 'normal');
+    doc.setFontSize(10);
+    setColor('setTextColor', PDF_DARK_COLORS.creamDim);
+    tldrLines.forEach(function (line) {
+      doc.text(line, marginX + 16, y);
+      y += 14.5;
+    });
+    y = tldrTop + tldrBoxH + 16;
+  }
+
+  if (post.statLine) {
+    writeWrapped(stripTagsForPdf(post.statLine), { size: 10, font: monoFont, color: PDF_DARK_COLORS.creamDim, lineH: 15, gapAfter: 6 });
+  }
+
   drawDivider();
 
   post.sections.forEach(function (sec) {
@@ -879,11 +938,11 @@ function generatePostPdf(post, fontData) {
   var warnBoxH = 16 + 16 + warnLines.length * 13.5 + 16;
   ensureSpace(warnBoxH + 10);
   var warnTop = y;
-  drawPdfGlassBox(doc, marginX, warnTop, contentW, warnBoxH, 16, PDF_DARK_COLORS.pinkBorder, PDF_DARK_COLORS.pinkBorder, 0.08);
+  drawPdfGlassBox(doc, marginX, warnTop, contentW, warnBoxH, 16, PDF_DARK_COLORS.pink, PDF_DARK_COLORS.pink, 0.08);
   y = warnTop + 24;
   doc.setFont(monoFont, 'bold');
   doc.setFontSize(9);
-  setColor('setTextColor', PDF_DARK_COLORS.pinkBorder);
+  setColor('setTextColor', PDF_DARK_COLORS.pink);
   doc.text(warnLabelText, marginX + 16, y, { charSpace: 0.3 });
   y += 16;
   doc.setFont(sansFont, 'normal');
