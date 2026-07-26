@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="view-transition" content="same-origin">
 <title>stay(human).sec — cybersecurity, AI & privacy, explained simply</title>
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 
@@ -18,6 +18,7 @@
   </a>
   <div class="nav-links">
     <a href="#posts">Posts</a>
+    <a href="news.html">News</a>
     <a href="toolkit.html">Toolkit</a>
     <a href="tools.html">Utilities</a>
     <a href="#youcheck">You, Check.</a>
@@ -59,6 +60,13 @@
     </div>
   </div>
 </section>
+
+<div class="news-ticker-bar" id="newsTicker" style="display:none;">
+  <a href="news.html" class="news-ticker-link">
+    <span class="news-ticker-prompt">$ tail -f news.log</span>
+    <span class="news-ticker-text" id="newsTickerText"></span><span class="news-ticker-cursor" id="newsTickerCursor">_</span>
+  </a>
+</div>
 
 <section class="section" id="router" style="padding-top:70px; padding-bottom:70px;">
   <div class="section-inner">
@@ -111,7 +119,7 @@
         </div>
         <ul class="about-facts">
           <li><span>WRITTEN_BY</span><b>One person</b></li>
-          <li><span>CONTENT_PILLARS</span><b>8</b></li>
+          <li><span>CONTENT_PILLARS</span><b>9</b></li>
           <li><span>PUBLISH_RHYTHM</span><b>Daily / weekly</b></li>
         </ul>
       </div>
@@ -120,11 +128,11 @@
     <div id="pillars" class="section-body" style="margin-top:70px;">
       <div class="section-eyebrow reveal">// HOW THE ACCOUNT WORKS</div>
       <h2 class="reveal">One fact. One fix. Every day.</h2>
-      <p class="reveal">Eight formats, each with its own rhythm — click any of them below to jump straight to that kind of post.</p>
+      <p class="reveal">Nine formats, each with its own rhythm — click any of them below to jump straight to that kind of post.</p>
 
       <div class="pillar-grid">
         <div class="pillar-card reveal" data-pillar="cyber-news" style="--pillar-color:var(--blue);">
-          <div class="dot"></div><div class="pname">Cyber News</div><div class="pfreq">Daily</div>
+          <div class="dot"></div><div class="pname">Cyber News</div><div class="pfreq">Alt. daily</div>
         </div>
         <div class="pillar-card reveal" data-pillar="stay-safe" style="--pillar-color:var(--orange);">
           <div class="dot"></div><div class="pname">Stay Safe</div><div class="pfreq">Daily</div>
@@ -134,6 +142,9 @@
         </div>
         <div class="pillar-card reveal" data-pillar="ai-watch" style="--pillar-color:var(--violet);">
           <div class="dot"></div><div class="pname">AI Watch</div><div class="pfreq">Weekly</div>
+        </div>
+        <div class="pillar-card reveal" data-pillar="ai-news" style="--pillar-color:var(--violet);">
+          <div class="dot"></div><div class="pname">AI News</div><div class="pfreq">Alt. daily</div>
         </div>
         <div class="pillar-card reveal" data-pillar="myth-busting" style="--pillar-color:var(--gold);">
           <div class="dot"></div><div class="pname">Myth Busting</div><div class="pfreq">Weekly</div>
@@ -216,7 +227,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=11"></script>
+<script src="site.js?v=13"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML =
@@ -245,6 +256,8 @@
 
   loadPosts().then(function (data) {
     var posts = data.posts;
+
+    initNewsTicker(posts);
 
     // render file list
     var listEl = document.getElementById('fileList');

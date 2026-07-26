@@ -341,6 +341,7 @@ function initCommandPalette() {
   var trigger = document.getElementById('cmdkTrigger');
   var staticPages = [
     { title: 'Home', sub: 'index.html', href: 'index.html', color: 'var(--orange)' },
+    { title: 'News', sub: 'news.html — Cyber News + AI News, straight from the source', href: 'news.html', color: 'var(--blue)' },
     { title: 'You, Check.', sub: 'index.html#youcheck — the quick gut-check quiz', href: 'index.html#youcheck', color: 'var(--pink)' },
     { title: 'Toolkit', sub: 'toolkit.html — recommended tools', href: 'toolkit.html', color: 'var(--gold)' },
     { title: 'Utilities', sub: 'tools.html — every small tool in one place', href: 'tools.html', color: 'var(--violet)' },
@@ -589,6 +590,73 @@ function initBootSequence(onDone) {
   var skipBtn = document.getElementById('bootSkip');
   if (skipBtn) skipBtn.addEventListener('click', dismiss);
   timers.push(setTimeout(next, 350));
+}
+
+/**
+ * Homepage-only "news ticker" — types out the most recent Cyber News / AI
+ * News headlines one at a time, holds briefly, backspaces, moves to the
+ * next. A quiet teaser toward news.html, not a dominant element: small
+ * monospace text, one line, hidden entirely if there are no news posts yet
+ * rather than showing an awkward empty prompt.
+ *
+ * Under prefers-reduced-motion, skips the type/backspace animation
+ * entirely and just shows the single most recent headline as static text
+ * (still links to news.html, cursor stops blinking via the CSS media query).
+ */
+function initNewsTicker(posts) {
+  var bar = document.getElementById('newsTicker');
+  var textEl = document.getElementById('newsTickerText');
+  if (!bar || !textEl) return;
+
+  var headlines = posts.filter(function (p) {
+    return p.pillar === 'cyber-news' || p.pillar === 'ai-news';
+  }).sort(function (a, b) {
+    return (b.date || '').localeCompare(a.date || '');
+  }).map(function (p) { return p.title; });
+
+  if (!headlines.length) return; // stays hidden — nothing to tease yet
+
+  bar.style.display = '';
+
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced || headlines.length === 1) {
+    textEl.textContent = headlines[0];
+    return;
+  }
+
+  var idx = 0;
+  var timers = [];
+
+  function typeLoop() {
+    var full = headlines[idx];
+    var i = 0;
+    var typing = setInterval(function () {
+      textEl.textContent = full.slice(0, i);
+      i++;
+      if (i > full.length) {
+        clearInterval(typing);
+        timers.push(setTimeout(erase, 2600));
+      }
+    }, 38);
+    timers.push(typing);
+  }
+
+  function erase() {
+    var full = headlines[idx];
+    var i = full.length;
+    var erasing = setInterval(function () {
+      textEl.textContent = full.slice(0, i);
+      i--;
+      if (i < 0) {
+        clearInterval(erasing);
+        idx = (idx + 1) % headlines.length;
+        timers.push(setTimeout(typeLoop, 400));
+      }
+    }, 22);
+    timers.push(erasing);
+  }
+
+  typeLoop();
 }
 
 /** Escapes text before it's inserted as HTML, since post content comes from a JSON data file. */
