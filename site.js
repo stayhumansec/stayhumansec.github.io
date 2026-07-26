@@ -287,6 +287,28 @@ function setupNavScroll() {
 }
 
 /**
+ * Marks whichever nav-links entry corresponds to the current page with an `.active` class,
+ * so there's always a visible "you are here." Only matches links whose href is a standalone
+ * page (no `#anchor`) — Posts/You,Check point to homepage sections via anchors and multiple
+ * of them legitimately share the same target page, so highlighting one over the other would
+ * be arbitrary; skipped entirely rather than guessed. The Utilities pill lights up for its
+ * hub page and every individual tool page underneath it, since "you're somewhere in
+ * Utilities" is the useful signal there, not just "you're on tools.html exactly."
+ */
+function highlightActiveNav() {
+  var UTILITY_PAGES = ['tools.html', 'password-coach.html', 'scam-inspector.html', 'privacy-policy-reader.html', 'recovery-kit.html', 'breach-check.html', 'ask.html'];
+  var current = window.location.pathname.split('/').pop() || 'index.html';
+
+  document.querySelectorAll('.nav-links a').forEach(function (a) {
+    var href = a.getAttribute('href') || '';
+    if (!href || href.indexOf('#') !== -1) return;
+    var isUtilitiesLink = href === 'tools.html';
+    var match = isUtilitiesLink ? UTILITY_PAGES.indexOf(current) !== -1 : href === current;
+    if (match) a.classList.add('active');
+  });
+}
+
+/**
  * Ambient cursor glow that softly follows the mouse on dark sections.
  * Skipped entirely on touch devices and under prefers-reduced-motion.
  */
