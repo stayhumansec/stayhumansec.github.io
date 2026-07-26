@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Glossary — stay(human).sec</title>
+<title>Utilities — stay(human).sec</title>
 <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
@@ -17,7 +17,6 @@
   </a>
   <div class="nav-links">
     <a href="index.html#posts">Posts</a>
-    <a href="toolkit.html">Toolkit</a>
     <a href="tools.html">Utilities</a>
     <a href="index.html#youcheck">You, Check.</a>
     <a href="glossary.html">Glossary</a>
@@ -33,18 +32,55 @@
 
 <div class="path-bar">
   <div class="path-bar-inner">
-    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ cat GLOSSARY.md</div>
+    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ ls ./utilities</div>
     <div class="win-controls"><span class="wc-min"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="19"/></svg></span><span class="wc-max"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg></span><span class="wc-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span></div>
   </div>
 </div>
 
 <section class="section">
   <div class="section-inner">
-    <div class="section-eyebrow reveal">// GLOSSARY.md</div>
-    <h2 class="reveal">Plain-language definitions, no jargon left unexplained.</h2>
-    <p style="color:var(--cream-dim); font-size:16px; max-width:600px;" class="reveal">Every term used across the site, defined the way we'd explain it to a friend — not a textbook.</p>
+    <div class="section-eyebrow reveal">// UTILITIES</div>
+    <h2 class="reveal">Small, focused, actually useful.</h2>
+    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:600px;">Every tool here runs primarily in your browser — no account, no tracking. A few offer an optional AI deep-dive if you bring your own API key; everything else works with zero setup, zero cost, zero data leaving your device.</p>
 
-    <div class="glossary-grid" id="glossaryGrid"></div>
+    <div class="router-grid" style="margin-top:36px;">
+      <a href="password-coach.html" class="router-card declass" style="--router-color:var(--violet);">
+        <div class="router-icon" aria-hidden="true">🔑</div>
+        <h3>AI Password Coach</h3>
+        <p>Memorable passwords built from real randomness, not something you'll forget by tomorrow.</p>
+        <span class="router-arrow">→</span>
+      </a>
+      <a href="scam-inspector.html" class="router-card declass" style="--router-color:var(--pink);">
+        <div class="router-icon" aria-hidden="true">🔍</div>
+        <h3>Scam &amp; Phishing Inspector <span class="tool-ai-badge">AI</span></h3>
+        <p>Paste a suspicious link or message, get instant red flags — plus an optional AI second opinion.</p>
+        <span class="router-arrow">→</span>
+      </a>
+      <a href="privacy-policy-reader.html" class="router-card declass" style="--router-color:var(--blue);">
+        <div class="router-icon" aria-hidden="true">📄</div>
+        <h3>Privacy Policy Reader <span class="tool-ai-badge">AI</span></h3>
+        <p>Scan any policy or terms of service for the clauses that actually matter.</p>
+        <span class="router-arrow">→</span>
+      </a>
+      <a href="recovery-kit.html" class="router-card declass" style="--router-color:var(--green);">
+        <div class="router-icon" aria-hidden="true">🗝️</div>
+        <h3>2FA Recovery Kit Builder</h3>
+        <p>Build a printable "if I lose my phone" plan before you actually need one.</p>
+        <span class="router-arrow">→</span>
+      </a>
+      <a href="breach-check.html" class="router-card declass" style="--router-color:var(--gold);">
+        <div class="router-icon" aria-hidden="true">🛡️</div>
+        <h3>Breach Exposure Check</h3>
+        <p>Check if a password has already leaked, without ever sending the password itself.</p>
+        <span class="router-arrow">→</span>
+      </a>
+      <a href="ask.html" class="router-card declass" style="--router-color:var(--orange);">
+        <div class="router-icon" aria-hidden="true">💬</div>
+        <h3>Ask the Archive <span class="tool-ai-badge">AI</span></h3>
+        <p>Ask a plain security question, answered from what's actually written on this site.</p>
+        <span class="router-arrow">→</span>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -57,8 +93,8 @@
     <div class="footer-col">
       <h4>Explore</h4>
       <a href="index.html#intro">What we are</a>
-      <a href="index.html#pillars">Content pillars</a>
       <a href="index.html#posts">All posts</a>
+      <a href="glossary.html">Glossary</a>
     </div>
     <div class="footer-col">
       <h4>Follow</h4>
@@ -97,17 +133,6 @@
   initCommandPalette();
   initMobileNav();
   initScrambleReveal('.section-eyebrow');
-
-  var grid = document.getElementById('glossaryGrid');
-  grid.innerHTML = GLOSSARY_TERMS.map(function (t) {
-    return '<div class="glossary-card declass">' +
-      '<div class="g-term" style="color:' + t.color + ';">// ' + t.term.toUpperCase().replace(/[^A-Z0-9]/g, '_') + '.md</div>' +
-      '<h3>' + t.term + '</h3>' +
-      '<p>' + t.def + '</p>' +
-    '</div>';
-  }).join('');
-
-  initScrollReveal({ stagger: true });
   initDeclassify({ stagger: true });
 </script>
 

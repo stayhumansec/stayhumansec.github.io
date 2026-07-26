@@ -321,7 +321,13 @@ function initCommandPalette() {
     { title: 'Home', sub: 'index.html', href: 'index.html', color: 'var(--orange)' },
     { title: 'You, Check.', sub: 'index.html#youcheck — the quick gut-check quiz', href: 'index.html#youcheck', color: 'var(--pink)' },
     { title: 'Toolkit', sub: 'toolkit.html — recommended tools', href: 'toolkit.html', color: 'var(--gold)' },
+    { title: 'Utilities', sub: 'tools.html — every small tool in one place', href: 'tools.html', color: 'var(--violet)' },
     { title: 'AI Password Coach', sub: 'password-coach.html — memorable, genuinely strong passwords', href: 'password-coach.html', color: 'var(--violet)' },
+    { title: 'Scam & Phishing Inspector', sub: 'scam-inspector.html — paste a link or message, get red flags', href: 'scam-inspector.html', color: 'var(--pink)' },
+    { title: 'Privacy Policy Reader', sub: 'privacy-policy-reader.html — scan a policy for what matters', href: 'privacy-policy-reader.html', color: 'var(--blue)' },
+    { title: '2FA Recovery Kit Builder', sub: 'recovery-kit.html — build a printable recovery plan', href: 'recovery-kit.html', color: 'var(--green)' },
+    { title: 'Breach Exposure Check', sub: 'breach-check.html — check if a password has already leaked', href: 'breach-check.html', color: 'var(--gold)' },
+    { title: 'Ask the Archive', sub: 'ask.html — ask a security question, grounded in this site', href: 'ask.html', color: 'var(--orange)' },
     { title: 'Glossary', sub: 'glossary.html — plain-language terms', href: 'glossary.html', color: 'var(--blue)' }
   ];
   var items = staticPages.slice();
@@ -570,4 +576,101 @@ function escapeHTML(str) {
   var div = document.createElement('div');
   div.textContent = str == null ? '' : String(str);
   return div.innerHTML;
+}
+
+/* ============================================================
+ * BRING-YOUR-OWN-KEY AI HELPERS
+ *
+ * The site has no backend, so the only way to offer a real (not just
+ * rule-based) AI feature without breaking that is to let each visitor
+ * bring their own Anthropic API key and call Anthropic directly from
+ * their own browser. The key is stored only in that browser's
+ * localStorage — it never touches any server of ours, and every tool
+ * on the site keeps working with plain rule-based analysis if no key
+ * is set. This is the one deliberate exception to "nothing leaves the
+ * browser," and it's opt-in per visitor, not on by default.
+ * ============================================================ */
+
+function getStoredApiKey() {
+  try { return localStorage.getItem('shs_ai_key') || ''; } catch (e) { return ''; }
+}
+function setStoredApiKey(key) {
+  try {
+    if (key) localStorage.setItem('shs_ai_key', key);
+    else localStorage.removeItem('shs_ai_key');
+  } catch (e) {}
+}
+
+/**
+ * Calls Anthropic's Messages API directly from the browser using the visitor's own key.
+ * Requires the anthropic-dangerous-direct-browser-access header — Anthropic provides this
+ * specifically to support bring-your-own-key browser calls like this one, name
+ * notwithstanding. Throws on any non-2xx response with the response body attached so
+ * callers can show a real error instead of a silent failure.
+ *
+ * `userPromptOrMessages` accepts either a plain string (single-turn — wrapped into a
+ * one-message array) or an already-built array of {role, content} messages for multi-turn
+ * conversations like the Ask the Archive chat.
+ */
+async function callClaude(apiKey, systemPrompt, userPromptOrMessages, opts) {
+  opts = opts || {};
+  var messages = Array.isArray(userPromptOrMessages)
+    ? userPromptOrMessages
+    : [{ role: 'user', content: userPromptOrMessages }];
+  var res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: opts.model || 'claude-haiku-4-5-20251001',
+      max_tokens: opts.maxTokens || 1024,
+      system: systemPrompt,
+      messages: messages
+    })
+  });
+  if (!res.ok) {
+    var errText = '';
+    try { errText = (await res.json()).error.message; } catch (e) { errText = 'HTTP ' + res.status; }
+    throw new Error(errText);
+  }
+  var data = await res.json();
+  return (data.content && data.content[0] && data.content[0].text) || '';
+}
+
+/**
+ * Renders the reusable "add your own API key" box used by every AI-enabled tool. Shows a
+ * masked input + save/clear buttons, and calls onSaved(key) whenever the stored key changes
+ * so the calling page can enable/disable its AI-powered action.
+ */
+function renderApiKeyBox(containerEl, onSaved) {
+  var existing = getStoredApiKey();
+  containerEl.innerHTML =
+    '<div class="ai-key-box">' +
+      '<div class="ai-key-head">🔑 Optional: add your own Anthropic API key to unlock the AI deep-dive</div>' +
+      '<div class="ai-key-row">' +
+        '<input type="password" id="aiKeyInput" placeholder="sk-ant-..." value="' + escapeHTML(existing) + '" autocomplete="off" spellcheck="false" />' +
+        '<button class="btn-secondary" id="aiKeySaveBtn" style="cursor:pointer;">Save</button>' +
+        (existing ? '<button class="btn-secondary" id="aiKeyClearBtn" style="cursor:pointer;">Clear</button>' : '') +
+      '</div>' +
+      '<p class="ai-key-note">Stored only in this browser — never sent anywhere except directly from your browser to Anthropic when you use the AI deep-dive. Don\'t have one? <a href="https://console.anthropic.com/" target="_blank" rel="noopener">Get a key here</a>. Everything on this page works fine without one, just with less depth.</p>' +
+    '</div>';
+
+  document.getElementById('aiKeySaveBtn').addEventListener('click', function () {
+    var val = document.getElementById('aiKeyInput').value.trim();
+    setStoredApiKey(val);
+    renderApiKeyBox(containerEl, onSaved);
+    if (onSaved) onSaved(val);
+  });
+  var clearBtn = document.getElementById('aiKeyClearBtn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      setStoredApiKey('');
+      renderApiKeyBox(containerEl, onSaved);
+      if (onSaved) onSaved('');
+    });
+  }
 }
