@@ -422,6 +422,21 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .tool-card.pw-recommended{position:relative; border-color:var(--orange); border-style:dashed;}
 .pw-recommended-badge{position:absolute; top:-11px; right:20px; background:var(--bg); padding:0 8px; font-family:'JetBrains Mono', monospace; font-size:10px; font-weight:700; letter-spacing:0.5px; color:var(--orange);}
 
+/* ============ BYOK AI TOOLS (shared across Scam Inspector, Privacy Policy Reader, Ask the Archive) ============ */
+.ai-key-box{background:var(--card); border:1px dashed var(--line); border-radius:14px; padding:18px 20px; margin:24px 0;}
+.ai-key-head{font-family:'JetBrains Mono', monospace; font-size:12.5px; color:var(--cream-dim); margin-bottom:12px;}
+.ai-key-row{display:flex; gap:10px; flex-wrap:wrap;}
+.ai-key-row input{flex:1; min-width:200px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 14px; color:var(--cream); font-family:'JetBrains Mono', monospace; font-size:13px;}
+.ai-key-row input:focus{outline:none; border-color:var(--orange);}
+.ai-key-row .btn-secondary{padding:9px 16px; font-size:12.5px; border-radius:10px; margin-bottom:0;}
+.ai-key-note{font-size:12px; color:var(--cream-dim); margin-top:10px; line-height:1.6;}
+.ai-key-note a{color:var(--orange);}
+.ai-result-box{background:rgba(150,112,230,0.07); border:1px solid var(--violet); border-radius:14px; padding:20px 22px; margin-top:16px;}
+.ai-result-box .label{font-family:'JetBrains Mono', monospace; font-size:11.5px; font-weight:700; color:var(--violet); letter-spacing:1px; margin-bottom:10px;}
+.ai-result-box p{color:var(--cream-dim); font-size:14.5px; line-height:1.7; white-space:pre-wrap;}
+.ai-loading{font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--cream-dim); padding:16px 0;}
+.tool-ai-badge{display:inline-block; font-family:'JetBrains Mono', monospace; font-size:9.5px; font-weight:700; letter-spacing:0.5px; color:var(--violet); border:1px solid var(--violet); border-radius:8px; padding:1px 6px; vertical-align:middle; margin-left:4px;}
+
 /* ============ 404 PAGE ============ */
 .page-404{min-height:60vh; display:flex; align-items:center; justify-content:center; padding:100px 24px; position:relative; z-index:1;}
 .page-404-inner{text-align:center; max-width:520px;}
