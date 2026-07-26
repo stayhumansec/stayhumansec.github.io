@@ -72,6 +72,14 @@ Defined by convention across `index.html` (pillar-card grid) and each post's `pi
 | `deep-dive` | Deep Dive | `var(--green)` | Occasional |
 | `story-time` | Story Time | `#ff8a6a` (one-off, not a CSS var) | Occasional |
 
+AI News posts (see "Content Balance" below) use the existing `ai-watch` pillar/color rather than a new pillar slug — same reasoning as not adding a dedicated Privacy pillar: it delivers the content without a new color, new pillar-grid card, or other site-structure change to maintain.
+
+## Content Balance
+
+An audit run in July 2026 found a real, measured imbalance despite the brand claiming three equal pillars (cybersecurity, AI, privacy): of 28 planned content pieces, 18 were cybersecurity, 5 were privacy, 4 were AI-as-attacker (deepfakes, voice cloning, AI phishing), and **exactly 1 was AI-privacy-intersection** — content about what happens to a normal person's *own* data when *they* use an AI tool (a ChatGPT conversation, an AI photo upload, a voice assistant, an app quietly adding an AI feature). Every AI Watch post up to that point treated AI purely as an attacker's tool, never as something the reader hands their own data to.
+
+The calendar was rebalanced in response — see `CALENDAR.md`, which now runs roughly 11 cybersecurity / 9 privacy / 8 AI across all 28 days, with 6 of those 8 AI Watch slots specifically AI-and-your-own-data topics. When planning future days beyond day 28, or when Cyber News/AI News stories come up for selection, keep this same rough three-way balance in mind rather than defaulting back to cybersecurity-only or AI-as-attacker-only topics — the imbalance came from exactly that default, applied one day at a time without anyone checking the aggregate.
+
 ## Brand system
 
 **Identity**: "stay(human).sec" — wordmark always styled as `stay` + `(human)` in accent orange + `.sec`, reused verbatim (with parens colored) in the nav, hero, and footer. Tagline: "For human. For privacy." Framed persona: "Not a company. Not a bot. Just one person explaining this properly."
@@ -131,6 +139,16 @@ Orange is the single primary accent (CTAs, active states, hover borders). Green 
 - No fear-mongering. State real risks honestly, but always pair them with a concrete, doable fix — never leave someone anxious with nothing actionable to do about it.
 - Written voice is one real person, not a company or a bot — warm, direct, occasionally a little playful, never corporate.
 - Never overstate certainty. If something is a heuristic, an estimate, or has real limitations, say so plainly rather than presenting it as a definitive verdict.
+
+### The beginner test (mandatory before any content ships)
+
+Every piece of content — carousel, article, or animated explainer script — gets checked against one question before it's considered done: **would a complete beginner follow this start to finish without needing to look anything else up?** This is a permanent standard, not a one-time cleanup pass. Concretely:
+
+- Every technical term is either avoided or defined in plain language the moment it's first used. Cross-check it against `GLOSSARY_TERMS` in `site.js` — if the term isn't in there and isn't explained inline, that's a gap to fix before shipping, not after.
+- Never assume a setting, menu, or concept is self-explanatory just because it has a specific name. "Device admin apps," "OTP," and "spyware" all shipped once without ever being explained in plain words — asking a reader to evaluate a settings screen, or warning them about a term, without first saying what it actually means or does is exactly the failure mode to catch. Say what it *does*, not just what it's *called*.
+- Reread the finished piece once specifically hunting for tone that's drifted dry or instructional instead of staying "one person explaining this to a friend" — this can happen even when every individual sentence is factually fine.
+
+This audit was first run in full against `posts.json` and the carousel/social copy in July 2026 — see "Content Balance" below for the topic-coverage half of that audit, and treat both halves (balance and writing quality) as a standard to re-check periodically, not a single fix.
 
 ## Content conventions
 
@@ -234,7 +252,11 @@ there's no per-platform subdirectory.
 1. **Check `CALENDAR.md`** for the next day marked "Pending." If the day's
    pillar is Cyber News, or if today's slot includes Cyber News alongside
    another pillar, follow the "Sourcing a Cyber News story" process below
-   before writing anything.
+   before writing anything. Separately, AI News runs twice a week regardless
+   of what else is scheduled that day — check whether one of this week's two
+   AI News slots is still open, and if so, follow "Sourcing an AI News
+   story" below as well (a day can carry Cyber News, AI News, and its
+   planned pillar topic all at once if the calendar lines up that way).
 
 2. **Write the carousel copy** for all 4 slides, following the established
    structure (see "Standard workflow for 'make today's post'" earlier in this
@@ -338,13 +360,62 @@ When this pillar comes up:
    from the Content Philosophy section — a Cyber News post should end with
    something concrete the reader can actually do, not just "this is scary."
 
+### Sourcing an AI News story (2x/week, when scheduled)
+
+AI News exists specifically to close the gap documented in "Content
+Balance" above: **what happens to a normal person's own data when they use
+an AI tool** — not general AI industry news (model releases, benchmarks,
+funding rounds, capability demos). It runs twice a week, is never
+pre-written in `CALENDAR.md`, and pairs alongside whatever else is
+scheduled that day rather than taking its own dedicated slot — same
+mechanism as Cyber News. Uses the existing `ai-watch` pillar/color.
+
+1. **Search for a current story** (published within roughly the last 3-5
+   days) using these criteria, in priority order:
+   - Involves what happens to a person's *own* data through an AI feature
+     they use — a chatbot conversation, an AI photo/video tool, a voice
+     assistant, an app that added an AI feature and changed its data
+     handling, a policy or legal change around AI training data
+   - Has a clear, explainable "what should I actually do about this" angle
+     (a setting to check, an opt-out to find, a habit to change)
+   - Doesn't require prior AI or security knowledge to understand the
+     headline
+
+2. **Preferred sources**, roughly in order of how consumer-relevant their
+   coverage tends to be:
+   - **The Markup, WIRED (privacy/AI coverage), The Verge** — strong on
+     consumer-facing AI/privacy stories with practical detail
+   - **Electronic Frontier Foundation (eff.org)** — deep, credible coverage
+     of data rights and AI policy, written to be broadly understandable
+   - **Official statements, privacy policy changes, or terms-of-service
+     updates from the company involved** — for verifying facts and for
+     stories where the "news" is the company's own policy change
+   - **Hacker News (news.ycombinator.com)** — useful for surfacing what's
+     trending, but only use a story from here if it clearly meets criteria
+     #1 and #2 above, same caveat as Cyber News
+
+3. **Do not fabricate or guess at details.** If a search doesn't turn up a
+   story that clearly meets the "your own data, explainable, recent" bar,
+   say so explicitly and skip that slot rather than stretching a general
+   AI-industry story to fit — a generic "new model released" story does not
+   qualify, even if it's popular that week.
+
+4. **Always cite the source** — include the outlet name and a link in the
+   website article (and note it in the PR description).
+
+5. **Follow the same "no fear-mongering, always pair with an action" rule** —
+   an AI News post should end with something concrete the reader can
+   actually check or change, not just "here's what AI knows about you now."
+
 ### Trigger prompt (for reference)
 
 The owner will typically trigger this with something like:
 
 > "Generate today's post — check CALENDAR.md for the next pending day, [if
 > Cyber News: search for a real current story following the sourcing
-> criteria in CLAUDE.md], write the carousel copy plus all four platform
+> criteria in CLAUDE.md], [if an AI News slot is open this week: search for
+> a real AI-and-your-own-data story following the same kind of criteria],
+> write the carousel copy plus all four platform
 > captions/thread, generate all 4 slides, build the LinkedIn PDF, verify
 > none of the slides are blank and the PDF/captions/thread all check out,
 > write the matching posts.json entry, update CALENDAR.md, run all
