@@ -41,14 +41,14 @@
   <div class="section-inner">
     <div class="section-eyebrow reveal">// BREACH EXPOSURE CHECK</div>
     <h2 class="reveal">Has this password already leaked?</h2>
-    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:600px;">Checks a password against <a href="https://haveibeenpwned.com/Passwords" target="_blank" rel="noopener" style="color:var(--orange);">Have I Been Pwned</a>'s database of over 800 million breached passwords — without ever sending your actual password anywhere.</p>
+    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:860px;">Checks a password against <a href="https://haveibeenpwned.com/Passwords" target="_blank" rel="noopener" style="color:var(--orange);">Have I Been Pwned</a>'s database of over 800 million breached passwords — without ever sending your actual password anywhere.</p>
 
-    <div class="warn-box reveal" style="margin:24px 0 0; max-width:600px;">
+    <div class="warn-box reveal" style="margin:24px 0 0; max-width:860px;">
       <div class="label">⚠ THE ONE EXTERNAL CALL ON THIS SITE</div>
       <p>Your password is hashed (SHA-1) right here in your browser first. Only the <b>first 5 characters</b> of that hash ever get sent anywhere — never your actual password, and not even your full hash. This is called k-anonymity, and it's the same method most password managers use for this exact check.</p>
     </div>
 
-    <div style="max-width:600px; margin-top:24px;">
+    <div style="max-width:860px; margin-top:24px;">
       <input type="password" id="bcInput" placeholder="Type a password to check…" autocomplete="off" style="width:100%; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 18px; color:var(--cream); font-family:'JetBrains Mono', monospace; font-size:15px;" />
       <button class="btn-primary" id="bcCheckBtn" style="margin-top:14px; cursor:pointer;">Check it →</button>
       <div id="bcResults" style="margin-top:24px;"></div>
