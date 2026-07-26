@@ -415,7 +415,8 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 @media (max-width:760px){ .tool-cols{grid-template-columns:1fr; gap:16px;} }
 
 /* ============ AI PASSWORD COACH ============ */
-.pw-display{font-family:'JetBrains Mono', monospace; font-size:19px; font-weight:700; color:var(--cream); background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:14px 16px; letter-spacing:0.5px; word-break:break-all; margin:14px 0;}
+.pw-display{font-family:'JetBrains Mono', monospace; font-size:19px; font-weight:700; color:var(--cream); background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:14px 16px; letter-spacing:0.5px; word-break:break-all; margin:14px 0 8px;}
+.pw-once-note{font-size:12px; color:var(--cream-dim); margin-bottom:14px;}
 .pw-actions{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;}
 .pw-actions .copy-md-btn, .pw-actions .btn-secondary{margin-bottom:0;}
 .tool-card.pw-recommended{position:relative; border-color:var(--orange); border-style:dashed;}
