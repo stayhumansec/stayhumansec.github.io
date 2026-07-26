@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scam & Phishing Inspector — stay(human).sec</title>
+<link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<nav class="topnav" id="topnav">
+  <a href="index.html" class="nav-brand">
+    <span id="navIcon"></span>
+    <span>stay<span class="b-accent">(human)</span>.sec</span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html#posts">Posts</a>
+    <a href="tools.html">Utilities</a>
+    <a href="index.html#youcheck">You, Check.</a>
+    <a href="glossary.html">Glossary</a>
+  </div>
+  <div class="nav-right">
+    <button class="nav-prompt-btn" id="cmdkTrigger" aria-label="Open navigation and search">
+      <span class="prompt-lead">stay(human).sec:~$</span>
+      <span class="prompt-text">explore</span><span class="prompt-cursor">_</span>
+    </button>
+    <a href="#" class="nav-cta">Follow @stayhumansec</a>
+  </div>
+</nav>
+
+<div class="path-bar">
+  <div class="path-bar-inner">
+    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ ./scam-inspector.sh</div>
+    <div class="win-controls"><span class="wc-min"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="19"/></svg></span><span class="wc-max"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg></span><span class="wc-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span></div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">// SCAM &amp; PHISHING INSPECTOR</div>
+    <h2 class="reveal">Paste it here before you click it.</h2>
+    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:600px;">Drop in a suspicious link or the full text of a message. Every check below runs instantly in your browser — nothing you paste is sent anywhere unless you explicitly ask for the optional AI deep-dive.</p>
+
+    <div style="max-width:680px; margin-top:32px;">
+      <textarea id="siInput" rows="5" placeholder="Paste a link or the full message text here…" style="width:100%; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; color:var(--cream); font-family:'JetBrains Mono', monospace; font-size:14px; resize:vertical;"></textarea>
+      <button class="btn-primary" id="siCheckBtn" style="margin-top:14px; cursor:pointer;">Check it →</button>
+      <div id="siResults" style="margin-top:24px;"></div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand-col">
+      <div class="footer-brand"><span id="footerIcon"></span><span>stay<span>(human)</span>.sec</span></div>
+      <p class="footer-tagline">Cybersecurity, AI, and privacy explained properly — one fact, one fix, every day.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="index.html#intro">What we are</a>
+      <a href="index.html#posts">All posts</a>
+      <a href="tools.html">All tools</a>
+    </div>
+    <div class="footer-col">
+      <h4>Follow</h4>
+      <div class="social-row">
+        <a href="#" title="Instagram" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+        </a>
+        <a href="#" title="Telegram" aria-label="Telegram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </a>
+        <a href="#" title="Email" aria-label="Email">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>new file added every day — <a href="#">follow @stayhumansec</a></div>
+    <div>stay(human).sec</div>
+  </div>
+</footer>
+
+<script src="site.js?v=2"></script>
+<script>
+  if (typeof brandIconSVG !== 'function') {
+    document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
+    throw new Error('site.js not loaded.');
+  }
+
+  document.getElementById('navIcon').innerHTML = brandIconSVG(26);
+  document.getElementById('footerIcon').innerHTML = brandIconSVG(24);
+  initBootSequence(initPageFade);
+  setupNavScroll();
+  initScrollProgress();
+  initCursorFX();
+  initCommandPalette();
+  initMobileNav();
+  initScrambleReveal('.section-eyebrow');
+  initScrollReveal();
+
+  var SHORTENERS = ['bit.ly', 'tinyurl.com', 't.co', 'goo.gl', 'ow.ly', 'is.gd', 'buff.ly', 'rebrand.ly'];
+  var BRAND_NAMES = ['paypal', 'amazon', 'apple', 'google', 'microsoft', 'netflix', 'bankofamerica', 'chase', 'wellsfargo', 'irs', 'usps', 'fedex', 'ups', 'dhl'];
+  var URGENCY_PHRASES = ['act now', 'act immediately', 'verify immediately', 'within 24 hours', 'account will be suspended', 'account has been locked', 'urgent action required', 'limited time', 'offer expires', 'final notice', 'last chance'];
+  var SENSITIVE_REQUESTS = ['social security', 'ssn', 'one-time code', 'otp', 'verification code', 'card number', 'cvv', 'password', 'pin number', 'wire transfer', 'gift card'];
+
+  /** Runs only if the input looks like a URL (link or bare domain) — returns null otherwise so the caller falls back to message analysis. */
+  function analyzeURL(raw) {
+    var trimmed = raw.trim();
+    var isLikelyURL = /^(https?:\/\/|www\.)/i.test(trimmed) || /^[a-z0-9.-]+\.[a-z]{2,}(\/|$|\?)/i.test(trimmed);
+    if (!isLikelyURL) return null;
+
+    var normalized = /^https?:\/\//i.test(trimmed) ? trimmed : 'http://' + trimmed;
+    var url;
+    try { url = new URL(normalized); } catch (e) {
+      return { flags: [{ tag: 'MALFORMED', text: "This doesn't parse as a valid web address at all — often a sign of a deliberately obfuscated link." }], host: trimmed };
+    }
+    var host = url.hostname;
+    var flags = [];
+
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) {
+      flags.push({ tag: 'IP ADDRESS', text: 'This links straight to a numeric IP address instead of a real domain name — legitimate companies essentially never do this.' });
+    }
+    if (host.indexOf('xn--') !== -1) {
+      flags.push({ tag: 'LOOKALIKE CHARACTERS', text: 'This domain uses punycode encoding, often used to fake letters that look identical to a real brand\'s domain.' });
+    }
+    if (url.protocol !== 'https:') {
+      flags.push({ tag: 'NOT SECURE', text: 'This link doesn\'t use HTTPS — anything typed on it could be visible to whoever is intercepting the connection.' });
+    }
+    var subdomainCount = host.split('.').length - 2;
+    if (subdomainCount >= 3) {
+      flags.push({ tag: 'EXCESSIVE SUBDOMAINS', text: 'This domain has an unusually deep chain of subdomains (' + host + ') — a common trick to bury the real domain where it\'s easy to miss.' });
+    }
+    var atIndex = trimmed.indexOf('@');
+    if (atIndex !== -1 && atIndex < trimmed.indexOf(host)) {
+      flags.push({ tag: 'REDIRECT TRICK', text: 'There\'s an @ symbol before the actual domain — browsers ignore everything before it, so the "safe-looking" part isn\'t where this actually goes.' });
+    }
+    if (SHORTENERS.indexOf(host.replace('www.', '')) !== -1) {
+      flags.push({ tag: 'LINK SHORTENER', text: 'This is a shortened link — it hides the real destination until you click, which is exactly what scam links rely on.' });
+    }
+    var hostParts = host.replace('www.', '').split('.');
+    var registrable = hostParts.length >= 2 ? hostParts[hostParts.length - 2] : host;
+    BRAND_NAMES.forEach(function (brand) {
+      if (host.indexOf(brand) !== -1 && registrable !== brand) {
+        flags.push({ tag: 'BRAND IMPERSONATION', text: 'This mentions "' + brand + '" in the address, but the real domain is "' + registrable + '." Genuine ' + brand + ' links come from ' + brand + '.com, not a lookalike.' });
+      }
+    });
+
+    return { flags: flags, host: host };
+  }
+
+  function analyzeMessage(text) {
+    var flags = [];
+    var lower = text.toLowerCase();
+    URGENCY_PHRASES.forEach(function (p) {
+      if (lower.indexOf(p) !== -1) flags.push({ tag: 'MANUFACTURED URGENCY', text: 'Uses the phrase "' + p + '" — designed to make you act before you think it through.' });
+    });
+    SENSITIVE_REQUESTS.forEach(function (p) {
+      if (lower.indexOf(p) !== -1) flags.push({ tag: 'ASKS FOR SENSITIVE INFO', text: 'Mentions "' + p + '" — no legitimate company asks for this over text or email.' });
+    });
+    if (/\$[\d,]+|\d+\s*(usd|dollars)/i.test(text) && /win|won|prize|reward|claim/i.test(lower)) {
+      flags.push({ tag: 'TOO GOOD TO BE TRUE', text: 'Combines a specific dollar amount with "win/won/prize/claim" language — the classic prize-scam structure.' });
+    }
+    if (/dear (customer|user|valued|sir|madam)/i.test(text)) {
+      flags.push({ tag: 'GENERIC GREETING', text: 'Uses a generic greeting instead of your name — real account notices almost always address you by name.' });
+    }
+    return flags;
+  }
+
+  function riskMeta(count) {
+    if (count === 0) return { label: 'LOW RISK', color: 'var(--green)', bg: 'rgba(63,207,142,0.15)' };
+    if (count <= 2) return { label: 'MEDIUM RISK', color: 'var(--gold)', bg: 'rgba(232,167,0,0.15)' };
+    return { label: 'HIGH RISK', color: 'var(--pink)', bg: 'rgba(232,90,130,0.15)' };
+  }
+
+  var lastCheckedText = '';
+
+  function runCheck() {
+    var input = document.getElementById('siInput').value;
+    if (!input.trim()) return;
+    lastCheckedText = input;
+
+    var urlResult = analyzeURL(input);
+    var flags = urlResult ? urlResult.flags : analyzeMessage(input);
+    var mode = urlResult ? 'link' : 'message';
+    var risk = riskMeta(flags.length);
+
+    var flagsHTML = flags.length
+      ? '<ul class="pattern-list reveal is-visible">' + flags.map(function (f) {
+          return '<li><span class="ptag">' + escapeHTML(f.tag) + '</span><span>' + escapeHTML(f.text) + '</span></li>';
+        }).join('') + '</ul>'
+      : '<p style="color:var(--cream-dim); font-size:14.5px;">Nothing suspicious found in the ' + mode + ' itself. That\'s a good sign, but it\'s not a guarantee — when in doubt, go to the official app or site directly instead of clicking through.</p>';
+
+    document.getElementById('siResults').innerHTML =
+      '<div class="quiz-result-badge" style="background:' + risk.bg + '; color:' + risk.color + '; border:1px solid ' + risk.color + ';">' + risk.label + ' — ' + flags.length + ' FLAG' + (flags.length === 1 ? '' : 'S') + '</div>' +
+      '<div style="margin-top:16px;">' + flagsHTML + '</div>' +
+      '<div id="siAiSection"></div>';
+
+    setupAiSection(input, mode, flags);
+  }
+
+  function setupAiSection(input, mode, flags) {
+    var section = document.getElementById('siAiSection');
+    var boxEl = document.createElement('div');
+    section.appendChild(boxEl);
+    var actionEl = document.createElement('div');
+    section.appendChild(actionEl);
+
+    function refreshAction(key) {
+      if (!key) { actionEl.innerHTML = ''; return; }
+      actionEl.innerHTML = '<button class="btn-secondary" id="siAiBtn" style="cursor:pointer; margin-top:14px;">🧠 Get the AI\'s take</button>';
+      document.getElementById('siAiBtn').addEventListener('click', function () { runAiDeepDive(input, mode, flags, key); });
+    }
+
+    renderApiKeyBox(boxEl, refreshAction);
+    refreshAction(getStoredApiKey());
+  }
+
+  async function runAiDeepDive(input, mode, flags, apiKey) {
+    var actionEl = document.getElementById('siAiBtn').parentElement;
+    actionEl.innerHTML = '<div class="ai-loading">Asking Claude to take a closer look<span class="dots-anim"></span></div>';
+
+    var systemPrompt = 'You are a calm, plain-language cybersecurity explainer for a non-technical audience, in the voice of a helpful friend, not a corporate security team. You review a possible scam/phishing ' + mode + ' and explain in 3-5 short sentences whether it looks like a scam and why, referencing specific manipulation techniques if present. Never alarmist. End with one clear, concrete next step. Do not repeat the input verbatim back at length.';
+    var userPrompt = 'Here is the ' + mode + ' to review:\n\n' + input + '\n\nRule-based checks already found ' + flags.length + ' flag(s): ' + (flags.map(function (f) { return f.tag; }).join(', ') || 'none') + '. Give your own independent read.';
+
+    try {
+      var reply = await callClaude(apiKey, systemPrompt, userPrompt, { maxTokens: 400 });
+      actionEl.innerHTML =
+        '<div class="ai-result-box reveal is-visible"><div class="label">🧠 AI DEEP-DIVE</div><p>' + escapeHTML(reply) + '</p></div>' +
+        '<button class="btn-secondary" id="siAiBtn" style="cursor:pointer; margin-top:14px;">↻ Ask again</button>';
+      document.getElementById('siAiBtn').addEventListener('click', function () { runAiDeepDive(input, mode, flags, apiKey); });
+    } catch (err) {
+      actionEl.innerHTML =
+        '<div class="ai-result-box reveal is-visible" style="border-color:var(--pink); background:rgba(232,90,130,0.08);"><div class="label" style="color:var(--pink);">⚠ AI REQUEST FAILED</div><p>' + escapeHTML(err.message) + '</p></div>' +
+        '<button class="btn-secondary" id="siAiBtn" style="cursor:pointer; margin-top:14px;">↻ Try again</button>';
+      document.getElementById('siAiBtn').addEventListener('click', function () { runAiDeepDive(input, mode, flags, apiKey); });
+    }
+  }
+
+  document.getElementById('siCheckBtn').addEventListener('click', runCheck);
+  document.getElementById('siInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) runCheck();
+  });
+</script>
+
+</body>
+</html>
