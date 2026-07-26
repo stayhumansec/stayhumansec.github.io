@@ -64,8 +64,8 @@ Defined by convention across `index.html` (pillar-card grid) and each post's `pi
 
 | pillar slug | label | color | cadence |
 |---|---|---|---|
-| `cyber-news` | Cyber News | `var(--blue)` | Daily |
-| `ai-news` | AI News | `var(--violet)` | 2x/week |
+| `cyber-news` | Cyber News | `var(--blue)` | Alternates daily w/ AI News |
+| `ai-news` | AI News | `var(--violet)` | Alternates daily w/ Cyber News |
 | `stay-safe` | Stay Safe | `var(--orange)` | Daily |
 | `cyber-basics` | Cyber Basics | `var(--green)` | Daily |
 | `ai-watch` | AI Watch | `var(--violet)` | Weekly |
@@ -75,6 +75,8 @@ Defined by convention across `index.html` (pillar-card grid) and each post's `pi
 | `story-time` | Story Time | `#ff8a6a` (one-off, not a CSS var) | Occasional |
 
 `ai-news` deliberately shares `ai-watch`'s violet accent rather than getting its own color — they read as siblings (both AI-related), and it avoids introducing a new CSS custom property just to distinguish them. What *does* distinguish them is the pillar slug itself: `ai-news` is always live-sourced, never pre-planned, while `ai-watch` covers the deliberately-written AI Watch topics in `CALENDAR.md`. This is a deliberate exception to "one color per pillar" — every other pillar still gets its own distinct color. A dedicated Privacy pillar was considered and rejected for the same reason `ai-news` almost was: privacy content stays distributed across Myth Busting/Cyber Basics/Stay Safe rather than adding a 10th pillar card.
+
+**Cyber News and AI News are a hard 50/50, not a daily-vs-occasional split.** They alternate daily — one runs each day, never both, never neither — specifically because the earlier setup (Cyber News daily, AI News twice a week) worked out to roughly 78/22 in practice, the same one-day-at-a-time drift that caused the imbalance in "Content Balance" below. See `AUTOMATED-WORKFLOW.md` for the exact alternation rule and sourcing criteria for both.
 
 ## Content Balance
 

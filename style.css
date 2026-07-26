@@ -285,6 +285,18 @@ body::after{
 .news-source-link svg{width:11px; height:11px;}
 .news-empty{padding:40px 26px; border-radius:16px; background:var(--card); border:1px dashed var(--line); text-align:center; color:var(--cream-dim); font-size:14.5px;}
 
+/* ============ HOMEPAGE NEWS TICKER (quiet teaser toward news.html) ============ */
+.news-ticker-bar{max-width:640px; margin:28px auto 0; padding:0 24px; text-align:center;}
+.news-ticker-link{display:inline-flex; align-items:center; gap:9px; max-width:100%; font-family:'JetBrains Mono', monospace; font-size:12.5px; color:var(--cream-dim); text-decoration:none; transition:color .2s ease;}
+.news-ticker-link:hover{color:var(--cream);}
+.news-ticker-prompt{color:var(--orange); flex-shrink:0; opacity:0.85;}
+.news-ticker-link:hover .news-ticker-prompt{opacity:1;}
+.news-ticker-text{color:var(--cream-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:400px;}
+.news-ticker-link:hover .news-ticker-text{color:var(--cream);}
+.news-ticker-cursor{color:var(--orange); animation:blink .85s step-end infinite; flex-shrink:0;}
+@media (max-width:700px){ .news-ticker-text{max-width:60vw;} }
+@media (prefers-reduced-motion: reduce){ .news-ticker-cursor{animation:none;} }
+
 /* ============ COMMAND PALETTE ============ */
 .palette-overlay{position:fixed; inset:0; z-index:100; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); display:flex; align-items:flex-start; justify-content:center; padding:12vh 20px 20px; opacity:0; pointer-events:none; transition:opacity .2s ease;}
 .palette-overlay.open{opacity:1; pointer-events:auto;}

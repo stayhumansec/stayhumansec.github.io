@@ -16,6 +16,19 @@ The website grows automatically as posts are added — no manual review gate,
 The owner reviews every generated slide, PDF, caption, and thread and posts
 them manually, on their own schedule, per platform.
 
+**Cyber News and AI News are a genuine 50/50, not a daily-vs-occasional
+split.** They alternate daily — exactly one of the two runs on any given
+day, never both, never neither. Concretely: odd calendar days get Cyber
+News, even calendar days get AI News, and that assignment flips at the
+start of each new month so neither pillar permanently sits on the
+short end of a 7-day week. This is a hard rule, not a target to
+approximate — the previous setup (Cyber News daily, AI News twice a
+week) worked out to roughly 78/22 in practice, which is exactly the kind
+of one-day-at-a-time drift that caused the imbalance documented in
+`CLAUDE.md`'s "Content Balance" section in the first place. If a future
+session is ever unsure which one today is, check yesterday's post: today
+is whichever pillar *didn't* run yesterday.
+
 ## Standard workflow for "make today's post"
 
 The Instagram carousel is always exactly 4 slides, each rendered with
@@ -88,14 +101,13 @@ there's no per-platform subdirectory.
 
 ## Standard steps
 
-1. **Check `CALENDAR.md`** for the next day marked "Pending." If the day's
-   pillar is Cyber News, or if today's slot includes Cyber News alongside
-   another pillar, follow the "Sourcing a Cyber News story" process below
-   before writing anything. Separately, AI News runs twice a week regardless
-   of what else is scheduled that day — check whether one of this week's two
-   AI News slots is still open, and if so, follow "Sourcing an AI News
-   story" below as well (a day can carry Cyber News, AI News, and its
-   planned pillar topic all at once if the calendar lines up that way).
+1. **Check `CALENDAR.md`** for the next day marked "Pending," then check
+   which of Cyber News or AI News today's turn belongs to — they alternate
+   daily (see "How this gets triggered" above for the exact 50/50 rule).
+   Follow "Sourcing a Cyber News story" or "Sourcing an AI News story"
+   below, whichever applies to today, before writing anything else (a day
+   can carry its live-sourced story *and* its planned pillar topic at once
+   if the calendar lines up that way — they're independent).
 
 2. **Write the carousel copy** for all 4 slides, following the established
    structure (see "Standard workflow for 'make today's post'" earlier in this
@@ -166,7 +178,7 @@ there's no per-platform subdirectory.
 8. **Report back** with a summary — either "verified and merged, live now" or
    "verification failed on [X], PR opened for review instead" — then stop.
 
-## Sourcing a Cyber News story (when the day's pillar requires it)
+## Sourcing a Cyber News story (alternating days, 50/50 with AI News)
 
 Cyber News exists to cover **real, current stories that affect normal
 people** — not deep technical CVE writeups aimed at security professionals.
@@ -211,14 +223,25 @@ When this pillar comes up:
    end with something concrete the reader can actually do, not just "this is
    scary."
 
-## Sourcing an AI News story (2x/week, when scheduled)
+## Sourcing an AI News story (alternating days, 50/50 with Cyber News)
 
 AI News exists specifically to close the gap documented in `CLAUDE.md`'s
 "Content Balance" section: **what happens to a normal person's own data
-when they use an AI tool** — not general AI industry news (model releases,
-benchmarks, funding rounds, capability demos). It runs twice a week, is
-never pre-written in `CALENDAR.md`, and pairs alongside whatever else is
-scheduled that day rather than taking its own dedicated slot — same
+when they use an AI tool.** Two categories of story explicitly do NOT
+qualify for this slot, even though both are AI-related and both are
+tempting to reach for:
+
+- **General AI industry news** — model releases, benchmarks, funding
+  rounds, capability demos. Not about a person's own data at all.
+- **AI-as-attack-tool stories** — deepfakes, voice cloning, AI-written
+  phishing. These are real and worth covering, but that's what `ai-watch`
+  (the planned, evergreen pillar) already does — routing them into AI News
+  instead would quietly recreate the exact 100%-AI-as-attacker imbalance
+  the "Content Balance" audit found and this pillar was created to fix.
+
+AI News alternates daily with Cyber News (see "How this gets triggered"
+above), is never pre-written in `CALENDAR.md`, and pairs alongside whatever
+else is scheduled that day rather than taking its own dedicated slot — same
 mechanism as Cyber News. **Uses its own `ai-news` pillar** (see `CLAUDE.md`'s
 pillar table) — distinct from `ai-watch`, so the News page can cleanly tell
 "this is breaking news" apart from "this is a planned AI Watch explainer,"
@@ -267,11 +290,10 @@ even though both currently share the violet accent color.
 
 The owner will typically trigger this with something like:
 
-> "Generate today's post — check CALENDAR.md for the next pending day, [if
-> Cyber News: search for a real current story following the sourcing
-> criteria in AUTOMATED-WORKFLOW.md], [if an AI News slot is open this week:
-> search for a real AI-and-your-own-data story following the same kind of
-> criteria], write the carousel copy plus all four platform
+> "Generate today's post — check CALENDAR.md for the next pending day, check
+> whether today is a Cyber News day or an AI News day (they alternate
+> daily), and search for a real current story following the matching
+> sourcing criteria in AUTOMATED-WORKFLOW.md, write the carousel copy plus all four platform
 > captions/thread, generate all 4 slides, build the LinkedIn PDF, verify
 > none of the slides are blank and the PDF/captions/thread all check out,
 > write the matching posts.json entry (with sourceUrl/sourceName/date if
