@@ -237,9 +237,11 @@
         '<div class="eyebrow">' + escapeHTML(post.next.eyebrow) + '</div>' +
         '<div class="next-title">' + escapeHTML(post.next.title) + '</div>' +
         '<div class="next-desc">' + escapeHTML(post.next.desc) + '</div>' +
-      '</' + nextTag + '>';
+      '</' + nextTag + '>' +
+      '<button class="download-pdf-btn reveal" id="downloadPdfBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg><span>Download as PDF</span></button>';
 
     setupCopyMdButton(document.getElementById('copyMdBtn'), post);
+    setupDownloadPdfButton(document.getElementById('downloadPdfBtn'), post);
     initScrollReveal({ stagger: false });
     buildTOC(post.sections);
     initGlossaryTooltips(document.getElementById('articleRoot'));
