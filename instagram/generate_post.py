@@ -99,6 +99,35 @@ def circle_pts(cx, cy, r, step_deg=8):
             for d in range(0, 361, step_deg)]
 
 
+def rounded_rect_points(x0, y0, x1, y1, radius, arc_step_deg=8, edge_step=10):
+    """Ordered perimeter points for a rounded rectangle -- straight edges plus
+    four corner arcs, walked clockwise from the top-left corner back to itself.
+    Exists so a rectangular shape (a phone body, a card outline, etc.) can be
+    fed into wobbly()/wobbly_animated() exactly like any other point list --
+    those two functions don't care whether the points came from a bezier
+    curve or a straight edge, they just jitter-and-stamp whatever they're given."""
+    r = radius
+    pts = []
+
+    def edge(p0, p1):
+        n = max(2, int(math.hypot(p1[0] - p0[0], p1[1] - p0[1]) / edge_step))
+        return [(p0[0] + (p1[0] - p0[0]) * t / n, p0[1] + (p1[1] - p0[1]) * t / n) for t in range(n + 1)]
+
+    def arc(cx, cy, start_deg, end_deg):
+        return [(cx + r * math.cos(math.radians(d)), cy + r * math.sin(math.radians(d)))
+                for d in range(start_deg, end_deg + 1, arc_step_deg)]
+
+    pts += edge((x0 + r, y0), (x1 - r, y0))
+    pts += arc(x1 - r, y0 + r, -90, 0)
+    pts += edge((x1, y0 + r), (x1, y1 - r))
+    pts += arc(x1 - r, y1 - r, 0, 90)
+    pts += edge((x1 - r, y1), (x0 + r, y1))
+    pts += arc(x0 + r, y1 - r, 90, 180)
+    pts += edge((x0, y1 - r), (x0, y0 + r))
+    pts += arc(x0 + r, y0 + r, 180, 270)
+    return pts
+
+
 def draw_thick_path(draw, points, offx, offy, iscale, color, width):
     r = max(width * iscale / 2, 1.6)
     for (x, y) in points:
