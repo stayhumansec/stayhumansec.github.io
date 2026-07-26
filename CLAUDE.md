@@ -10,7 +10,7 @@ post.html             Article template — renders one post from posts.json base
 quiz.html             Redirect shim to index.html#youcheck — the quiz used to live here as its own page
 toolkit.html          Curated tool recommendations (password managers, VPNs, etc.), self-contained data
 tools.html            Utilities hub — links to every small in-browser tool below
-password-coach.html   AI Password Coach — teaches the passphrase method, generates real random examples
+password-coach.html   Password Coach — teaches the passphrase method, generates real random examples
 recovery-kit.html     2FA Recovery Kit Builder — printable "if I lose my phone" plan, localStorage only
 breach-check.html     Breach Exposure Check — k-anonymity password breach lookup via HaveIBeenPwned
 ask.html              Search the Archive — local keyword search over posts.json + glossary, optional AI answer
@@ -111,7 +111,7 @@ Orange is the single primary accent (CTAs, active states, hover borders). Green 
 
 ### Current utilities (in `tools.html`)
 
-- `password-coach.html` — AI Password Coach. Teaches the passphrase method rather than handing over a copy-paste password.
+- `password-coach.html` — Password Coach. Teaches the passphrase method rather than handing over a copy-paste password.
 - `recovery-kit.html` — 2FA Recovery Kit Builder. Pure offline form + localStorage, no AI, no network calls.
 - `breach-check.html` — Breach Exposure Check. Real k-anonymity math against HaveIBeenPwned; the password itself never leaves the browser, only a SHA-1 hash prefix does.
 - `ask.html` — Search the Archive. Local keyword search over `posts.json` + glossary, with an optional BYOK AI deep-dive on top. Renamed from "Ask the Archive" since the default experience is search, not Q&A — kept for now but not fully proven out; a genuinely synthesizing version may replace it later as its own task.
