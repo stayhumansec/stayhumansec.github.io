@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2FA Recovery Kit Builder — stay(human).sec</title>
+<link rel="stylesheet" href="style.css?v=2">
+<style>
+  @media print {
+    .topnav, .path-bar, .site-footer, .scroll-progress, #rkForm, #rkIntro, #rkEducation, .btn-secondary { display:none !important; }
+    body{ background:#fff; color:#000; }
+    .rk-print-title{ display:block !important; }
+    .rk-item{ border-color:#999 !important; color:#000 !important; }
+    .rk-item b, .rk-item span{ color:#000 !important; }
+  }
+  .rk-print-title{ display:none; }
+</style>
+</head>
+<body>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<nav class="topnav" id="topnav">
+  <a href="index.html" class="nav-brand">
+    <span id="navIcon"></span>
+    <span>stay<span class="b-accent">(human)</span>.sec</span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html#posts">Posts</a>
+    <a href="tools.html">Utilities</a>
+    <a href="index.html#youcheck">You, Check.</a>
+    <a href="glossary.html">Glossary</a>
+  </div>
+  <div class="nav-right">
+    <button class="nav-prompt-btn" id="cmdkTrigger" aria-label="Open navigation and search">
+      <span class="prompt-lead">stay(human).sec:~$</span>
+      <span class="prompt-text">explore</span><span class="prompt-cursor">_</span>
+    </button>
+    <a href="#" class="nav-cta">Follow @stayhumansec</a>
+  </div>
+</nav>
+
+<div class="path-bar">
+  <div class="path-bar-inner">
+    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ ./recovery-kit.sh</div>
+    <div class="win-controls"><span class="wc-min"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="19"/></svg></span><span class="wc-max"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg></span><span class="wc-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span></div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="rk-print-title" style="margin-bottom:20px;"><b style="font-size:20px;">My Account Recovery Kit</b><div style="font-size:13px; color:#444;">Built with stay(human).sec — keep this somewhere offline, not on the phone it's meant to help you recover.</div></div>
+
+    <div id="rkIntro">
+      <div class="section-eyebrow reveal">// 2FA RECOVERY KIT BUILDER</div>
+      <h2 class="reveal">If you lost your phone tonight, would you panic?</h2>
+      <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:600px;">Two-factor authentication is great, right up until the device it lives on is gone. Build a short list of which accounts need which recovery method — then print it and keep it somewhere that isn't the phone itself.</p>
+    </div>
+
+    <div id="rkForm" style="max-width:640px; margin-top:32px;">
+      <div class="quiz-card reveal is-visible" style="text-align:left; max-width:none;">
+        <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:12px; margin-bottom:12px;">
+          <input type="text" id="rkAccount" placeholder="Account name (e.g. Gmail, Bank of America)" style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:11px 14px; color:var(--cream); font-family:'Poppins',sans-serif; font-size:14px;" />
+          <select id="rkMethod" style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:11px 14px; color:var(--cream); font-family:'Poppins',sans-serif; font-size:14px;">
+            <option value="Backup codes">Backup codes</option>
+            <option value="Authenticator app">Authenticator app</option>
+            <option value="Security key">Security key</option>
+            <option value="Trusted contact">Trusted contact</option>
+            <option value="SMS to backup number">SMS to backup number</option>
+          </select>
+        </div>
+        <input type="text" id="rkNote" placeholder="Optional note (e.g. \"codes are in the safe\", not the actual codes)" style="width:100%; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:11px 14px; color:var(--cream); font-family:'Poppins',sans-serif; font-size:14px; margin-bottom:14px;" />
+        <button class="btn-primary" id="rkAddBtn" style="cursor:pointer;">+ Add to my kit</button>
+      </div>
+    </div>
+
+    <div id="rkListWrap" style="max-width:640px; margin-top:28px;">
+      <div class="listing-label" id="rkCount">no accounts added yet</div>
+      <div id="rkList"></div>
+      <div id="rkActions" style="display:none; gap:10px; margin-top:18px;">
+        <button class="btn-secondary" id="rkPrintBtn" style="cursor:pointer;">🖨 Print my kit</button>
+        <button class="btn-secondary" id="rkClearBtn" style="cursor:pointer;">Clear all</button>
+      </div>
+    </div>
+
+    <div id="rkEducation" style="max-width:640px; margin-top:56px;">
+      <div class="section-eyebrow reveal is-visible">// HOW TO ACTUALLY USE THIS</div>
+      <h2 class="reveal is-visible" style="margin-bottom:22px;">A recovery kit only works if it's actually recoverable.</h2>
+      <div class="step reveal is-visible"><p><b style="color:var(--cream);">Never store this on the same phone it's meant to recover</b></p><p>If your phone is what's lost, stolen, or broken, a note saved on it doesn't help. Print this, or save it somewhere you can reach from a different device — a password manager's secure notes, a printed copy in a drawer, or with someone you trust.</p></div>
+      <div class="step reveal is-visible"><p><b style="color:var(--cream);">Never write the actual codes here</b></p><p>This tool is for tracking <i>which method</i> recovers each account, not the backup codes themselves. Keep the real codes wherever your password manager or the account's own instructions recommend.</p></div>
+      <div class="step reveal is-visible"><p><b style="color:var(--cream);">Start with the accounts that matter most</b></p><p>Your primary email first — it can usually reset everything else. Then banking, then anything with 2FA you'd genuinely be stuck without.</p></div>
+      <div class="step reveal is-visible"><p><b style="color:var(--cream);">Everything stays in your browser</b></p><p>This list is saved to this browser's local storage only — nothing is sent anywhere. Clearing your browser data will clear this list too, so print or export it once it's useful.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand-col">
+      <div class="footer-brand"><span id="footerIcon"></span><span>stay<span>(human)</span>.sec</span></div>
+      <p class="footer-tagline">Cybersecurity, AI, and privacy explained properly — one fact, one fix, every day.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="index.html#intro">What we are</a>
+      <a href="index.html#posts">All posts</a>
+      <a href="tools.html">All tools</a>
+    </div>
+    <div class="footer-col">
+      <h4>Follow</h4>
+      <div class="social-row">
+        <a href="#" title="Instagram" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+        </a>
+        <a href="#" title="Telegram" aria-label="Telegram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </a>
+        <a href="#" title="Email" aria-label="Email">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>new file added every day — <a href="#">follow @stayhumansec</a></div>
+    <div>stay(human).sec</div>
+  </div>
+</footer>
+
+<script src="site.js?v=2"></script>
+<script>
+  if (typeof brandIconSVG !== 'function') {
+    document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
+    throw new Error('site.js not loaded.');
+  }
+
+  document.getElementById('navIcon').innerHTML = brandIconSVG(26);
+  document.getElementById('footerIcon').innerHTML = brandIconSVG(24);
+  initBootSequence(initPageFade);
+  setupNavScroll();
+  initScrollProgress();
+  initCursorFX();
+  initCommandPalette();
+  initMobileNav();
+  initScrambleReveal('.section-eyebrow');
+  initScrollReveal();
+
+  var STORAGE_KEY = 'shs_recovery_kit';
+
+  function loadKit() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function saveKit(items) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) {}
+  }
+
+  var items = loadKit();
+
+  function render() {
+    var listEl = document.getElementById('rkList');
+    var countEl = document.getElementById('rkCount');
+    var actionsEl = document.getElementById('rkActions');
+
+    countEl.textContent = items.length ? ('$ ' + items.length + ' account' + (items.length === 1 ? '' : 's') + ' in your kit') : 'no accounts added yet';
+    actionsEl.style.display = items.length ? 'flex' : 'none';
+
+    listEl.innerHTML = items.map(function (item, i) {
+      return '<div class="file-row rk-item" style="min-height:auto; padding:16px 18px; margin-bottom:10px; flex-direction:row; align-items:center; justify-content:space-between; cursor:default;">' +
+        '<div>' +
+          '<div class="title" style="font-size:15px;">' + escapeHTML(item.account) + '</div>' +
+          '<div class="desc" style="margin-top:4px;"><span style="color:var(--orange);">' + escapeHTML(item.method) + '</span>' + (item.note ? ' — ' + escapeHTML(item.note) : '') + '</div>' +
+        '</div>' +
+        '<button class="btn-secondary" data-remove="' + i + '" style="cursor:pointer; padding:7px 14px; font-size:12px; flex-shrink:0;">Remove</button>' +
+      '</div>';
+    }).join('');
+
+    listEl.querySelectorAll('[data-remove]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        items.splice(parseInt(btn.getAttribute('data-remove'), 10), 1);
+        saveKit(items);
+        render();
+      });
+    });
+  }
+
+  document.getElementById('rkAddBtn').addEventListener('click', function () {
+    var account = document.getElementById('rkAccount').value.trim();
+    if (!account) return;
+    var method = document.getElementById('rkMethod').value;
+    var note = document.getElementById('rkNote').value.trim();
+    items.push({ account: account, method: method, note: note });
+    saveKit(items);
+    document.getElementById('rkAccount').value = '';
+    document.getElementById('rkNote').value = '';
+    document.getElementById('rkAccount').focus();
+    render();
+  });
+
+  document.getElementById('rkAccount').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('rkAddBtn').click();
+  });
+
+  document.getElementById('rkPrintBtn').addEventListener('click', function () { window.print(); });
+  document.getElementById('rkClearBtn').addEventListener('click', function () {
+    if (!confirm('Clear every account from your recovery kit? This can\'t be undone.')) return;
+    items = [];
+    saveKit(items);
+    render();
+  });
+
+  render();
+</script>
+
+</body>
+</html>
