@@ -532,6 +532,14 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
    classes default to hidden until scrolled into view, and printing shouldn't depend on how
    far someone happened to scroll first. */
 @media print {
+  /* Browsers reserve their own @page margin outside the document's own box, and that strip
+     never picks up our background color no matter what print-color-adjust says — it's paper
+     color by definition, so it reads as a big white border around an otherwise dark page.
+     Margin:0 tells the browser to use the smallest margin the output device allows; the
+     breathing room readers actually see comes back from our own padding below instead, which
+     — unlike the @page margin — is inside our dark background and prints the right color. */
+  @page { margin: 0; }
+
   *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
 
   html, body{ background:var(--bg) !important; }
@@ -561,9 +569,9 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
   .article-wrap{ max-width:var(--read-max) !important; margin:0 auto !important; }
 
   .path-bar{ position:static !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
-  .path-bar-inner{ padding:14px 24px !important; }
+  .path-bar-inner{ padding:20px 36px !important; }
 
-  .article{ padding:24px !important; }
+  .article{ padding:36px !important; }
 
   a{ text-decoration:none !important; color:inherit !important; }
 
