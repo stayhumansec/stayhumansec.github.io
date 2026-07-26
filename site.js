@@ -615,14 +615,30 @@ function setupDownloadPdfButton(btn, post) {
       hideWrap.appendChild(el);
       document.body.appendChild(hideWrap);
 
-      return window.html2pdf().set({
-        margin: 0,
-        filename: post.slug + '.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, backgroundColor: '#000000', useCORS: true },
-        jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      }).from(el).save().then(function () {
+      // Two more failure modes beyond the zero-height one above:
+      // 1) Capturing before the Poppins/JetBrains Mono web fonts (loaded async via style.css's
+      //    @import) have actually finished swapping in can leave html2canvas measuring/painting
+      //    text against fonts that aren't ready yet. document.fonts.ready plus a couple of
+      //    animation-frame turns guarantees a real paint has happened against final fonts before
+      //    capture starts.
+      // 2) image.type:'jpeg' has no alpha channel — if html2canvas leaves any part of the
+      //    canvas unpainted (even a sliver), the browser's canvas->JPEG encoder composites that
+      //    transparency as solid BLACK, not white or "nothing." PNG preserves alpha instead of
+      //    silently blacking out unpainted regions, which removes that whole failure class.
+      return document.fonts.ready.then(function () {
+        return new Promise(function (resolve) {
+          requestAnimationFrame(function () { requestAnimationFrame(resolve); });
+        });
+      }).then(function () {
+        return window.html2pdf().set({
+          margin: 0,
+          filename: post.slug + '.pdf',
+          image: { type: 'png' },
+          html2canvas: { scale: 1, backgroundColor: '#000000', useCORS: true },
+          jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] }
+        }).from(el).save();
+      }).then(function () {
         document.body.removeChild(hideWrap);
       }, function (err) {
         document.body.removeChild(hideWrap);
