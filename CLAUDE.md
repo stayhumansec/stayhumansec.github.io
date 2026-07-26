@@ -157,6 +157,40 @@ separate, always-manual step: **this workflow never posts to Instagram under
 any circumstances.** The owner reviews the generated slides and posts them
 manually, on their own schedule.
 
+### Standard workflow for "make today's post"
+
+The Instagram carousel is always exactly 4 slides, each rendered with
+`instagram/generate_post.py`, following this fixed structure:
+
+- **Slide 1 — Hook.** A `tag_pill()` labeling the content type (e.g. "QUICK
+  QUESTION", "MYTH BUSTED", "TRUE STORY", "STAY SAFE") plus one short,
+  attention-grabbing line — a question, a surprising fact, or a stat — that
+  states the topic without giving away the fix. Ends with `draw_swipe_hook()`
+  to pull the reader into slide 2. No body copy beyond the hook line itself.
+
+- **Slide 2 — Why this matters.** Grounds the hook in a real stake or
+  consequence: what actually happens if this goes unaddressed, in plain,
+  non-alarmist language (per "Writing" in Utility & Content Philosophy — real
+  risk, not fear-mongering). Ends with another `draw_swipe_hook()`.
+
+- **Slide 3 — Main content.** The actual fact or fix — the one concrete,
+  doable thing this post is teaching. This is the slide that has to stand
+  alone if someone only reads one of the four. Ends with another
+  `draw_swipe_hook()`.
+
+- **Slide 4 — Close.** Wraps up with a one-line takeaway, a curiosity tease
+  for tomorrow's post (mirrors the website's `next` box), and a plain
+  Like / Comment / Follow prompt. This is the only slide with no
+  `draw_swipe_hook()` call, since there's nothing after it to swipe to.
+
+Every slide uses `base_card()` + `linux_chrome()` for the terminal-window
+frame and `footer()` for the brand mark + slide counter (`"1/4"`–`"4/4"`),
+matching every other slide already produced. Copy for all 4 slides is
+written before any image is rendered, and follows the same tone/voice rules
+as website articles — see "Writing" under Utility & Content Philosophy and
+"Content conventions" for the shared voice, and the pillar table for which
+tag color (`tag_pill(bg=...)`) matches which pillar.
+
 ### Standard steps
 
 1. **Check `CALENDAR.md`** for the next day marked "Pending." If the day's
@@ -168,18 +202,25 @@ manually, on their own schedule.
    structure (see "Standard workflow for 'make today's post'" earlier in this
    file, and the tone/voice rules in "Utility & Content Philosophy").
 
-3. **Generate the 4 slides** using `instagram/generate_post.py`. Save them to
-   `instagram/posts/day_NN_<topic-slug>/slide1.png` through `slide4.png`, plus
-   a `caption.txt` in the same folder with the finished Instagram caption.
+3. **Generate the 4 slides** using `instagram/generate_post.py` (a rendering
+   library, not a script — `from generate_post import *`, see its module
+   docstring for the exact usage pattern and the shared helpers it provides:
+   `base_card`, `linux_chrome`, `tag_pill`, `wrap_text`, `draw_swipe_hook`,
+   `clean_smiley`, `footer`, `verify_slide`). Save the output to
+   `instagram/posts/day_NN_<topic-slug>/slide1.png` through `slide4.png`
+   (paths relative to the repo root), plus a `caption.txt` in the same folder
+   with the finished Instagram caption.
 
 4. **Verify every slide** with `verify_slide()` before considering the post
-   done — checks correct size and confirms the image isn't blank. This step
-   is non-negotiable; this project has hit blank/broken image bugs before.
+   done — checks correct size (1080×1080) and confirms the image isn't
+   blank. This step is non-negotiable; this project has hit blank/broken
+   image bugs before.
 
-5. **Write the matching website article** as a new entry in
-   `website/posts.json`, following the exact schema and block types
-   (`step`, `compare`, `pattern-list`, `warn`, `checklist`, `next`) of
-   existing entries. Include the `pillar`, `pillarLabel`, `pillarColor`, and
+5. **Write the matching website article** as a new entry in `posts.json`
+   (repo root — this is a flat static site, there's no `website/`
+   subdirectory), following the exact schema and block types (`step`,
+   `compare`, `pattern-list`, `warn`, `checklist`, `next`) of existing
+   entries. Include the `pillar`, `pillarLabel`, `pillarColor`, and
    `readMinutes` fields already established in the current schema.
 
 6. **Update `CALENDAR.md`**, marking that day's row as "Done."
