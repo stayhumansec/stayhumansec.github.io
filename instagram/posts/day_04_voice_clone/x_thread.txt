@@ -1,0 +1,18 @@
+1/ "Mom, I need money right now."
+
+It sounds exactly like your kid. It might not be. 🧵
+
+2/ AI voice cloning now needs as little as 3 seconds of audio — a public video, a voicemail greeting, a livestream clip — to convincingly fake someone's voice on a phone call.
+
+3/ The tells:
+— URGENCY: no time to think or call anyone else first
+— PAYMENT: wire transfer, gift cards, or crypto — never traceable
+— SECRECY: "don't tell anyone else" so nobody can check the story
+
+4/ The audio itself is often slightly off too — a bit robotic, oddly paced, or conveniently "breaking up" right when details would get specific.
+
+5/ The fix: hang up, and call them back directly on a number you already have saved. A cloned voice can't answer a callback it never receives. Some families set up a private safe word for exactly this.
+
+6/ Full write-up: https://stayhumansec.github.io/post.html?slug=file_005
+
+Next up: turn on 2FA — what it actually protects.

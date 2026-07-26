@@ -1,0 +1,13 @@
+One setting stops most account takeovers cold, and it takes about five minutes to turn on. Have you actually done it everywhere it matters?
+
+Two-factor authentication (2FA) means proving it's you with something beyond just a password — a code, an app tap, or a hardware key. The reason this matters: your password will leak eventually. Breaches happen to companies, not to careless individuals, and once a password is out there, automated tools try it against every other service you might have reused it on. 2FA is what stops that stolen password from being enough on its own.
+
+Why this matters for your work life: Microsoft has reported that accounts with any form of 2FA enabled block over 99% of automated account-takeover attempts, even when the underlying password is already compromised. If your organization hasn't enforced 2FA across every account with access to sensitive systems, that's one of the highest-leverage, lowest-cost security improvements available — and if it has, this is a good prompt to make sure your personal accounts (which are usually the softer target) match that same standard.
+
+The order that matters most: primary email first (it can reset almost everything else), then banking, then everything else. An authenticator app beats SMS codes wherever it's offered — SMS is vulnerable to SIM-swap attacks.
+
+One thing people skip and shouldn't: save your backup codes somewhere offline, not on the same device, before you need them.
+
+Next up: a real phishing email, broken down line by line.
+
+Is 2FA enforced org-wide where you work, or still opt-in? Curious how common full enforcement actually is.

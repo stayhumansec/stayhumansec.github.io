@@ -1,0 +1,18 @@
+1/ "Your package couldn't be delivered. Click here to fix it." 📦
+
+That text is smishing — SMS phishing. Here's how it actually works. 🧵
+
+2/ The wording changes every time. The pattern underneath almost never does:
+— a name you trust (bank, delivery company, tax office)
+— a manufactured problem that needs fixing right now
+— a link that promises to fix it
+
+3/ Why it works: a text feels more urgent and more "official" than an email ever does, and almost nobody's ever been taught to question one the way they question suspicious emails.
+
+4/ Check the sender, not just the message. Real companies text from consistent, verifiable numbers — the same one every time. Scam texts come from random numbers that change constantly.
+
+5/ The fix: never tap the link. Open the company's official app instead, or type their website in yourself. If something's genuinely wrong, it'll be sitting right there too.
+
+6/ Full write-up: https://stayhumansec.github.io/post.html?slug=file_003
+
+Next up: incognito mode doesn't make you anonymous.

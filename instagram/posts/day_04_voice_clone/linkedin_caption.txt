@@ -1,0 +1,13 @@
+"Mom, I need money right now." The voice on the other end sounds exactly right. It might not be a real call at all.
+
+AI voice cloning now needs as little as 3 seconds of sample audio — a public video, a voicemail greeting, a conference talk clip — to produce a convincing fake of someone's voice in real time on a phone call. Combined with a panicked, urgent story and a request to move money fast, it's a scam specifically engineered to bypass judgment before judgment has time to engage.
+
+Why this matters for your work life: the exact same technique is being used against businesses, not just families — a cloned "executive" voice calling or leaving a voicemail authorizing an urgent wire transfer, sometimes paired with a spoofed email to add credibility. Several well-documented corporate losses have come from exactly this pattern. If your organization has a "verbal authorization" step anywhere in a payment process, this is worth flagging to whoever owns that process.
+
+The tells are consistent whether it's a family scam or a business one: manufactured urgency, a request for an untraceable or unusual payment method, and pressure not to verify through a second channel.
+
+The fix: hang up (or don't act on the voicemail), and reach the person back through a channel you already control — a number you already have, not one the caller/message provides. A cloned voice can't answer a callback it never receives.
+
+Next up: turn on 2FA — what it actually protects.
+
+Has anyone here seen this pattern show up in a work context? Curious how organizations are training people to catch it.

@@ -1,0 +1,19 @@
+1/ The password mistake nobody thinks is a big deal.
+
+You're probably doing it right now. 🔑
+
+2/ The spoiler: reusing the same password on more than one site.
+
+Feels harmless — until one random site you signed up for years ago gets breached, and every other account where you reused it is suddenly at risk too.
+
+3/ It's called credential stuffing. A leaked password from one breach gets tried against hundreds of other sites automatically. A machine does it in seconds, not a person.
+
+4/ The fix doesn't need memorizing anything. Run your phone's built-in password checkup:
+— iPhone: Settings → Passwords → Security Recommendations
+— Android/Chrome: passwords.google.com
+
+5/ Then let a password manager — already on your phone, free — generate a unique password for each account going forward. Start with email, banking, and payment-linked accounts first.
+
+6/ Full write-up (with exact steps for both platforms): https://stayhumansec.github.io/post.html?slug=file_002
+
+Next up: what is smishing? (SMS phishing, explained)

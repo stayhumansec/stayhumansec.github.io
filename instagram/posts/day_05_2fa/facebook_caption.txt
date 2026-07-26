@@ -1,0 +1,13 @@
+One setting stops most account takeovers cold. Have you turned it on? 🔐
+
+Two-factor authentication (2FA) means proving it's you with something beyond just a password — a code, an app tap, or a security key. Your password will leak eventually, because breaches happen to companies, not just people, and once a password's out there it gets tried everywhere you might have reused it. 2FA is what stops that stolen password from being enough on its own.
+
+Turn it on in this order: email first (it can reset almost everything else), then banking, then everything else. Pick an authenticator app over text-message codes where you can — SMS codes can be intercepted.
+
+Five minutes today, one less way in, forever. Just remember to save your backup codes somewhere offline — not on the phone itself.
+
+This is a great one to sit down and do together with a family member who's never gotten around to it. Takes five minutes with someone helping.
+
+Next up: a real phishing email, broken down line by line.
+
+Turned it on today? Tell me which account you started with. 💬

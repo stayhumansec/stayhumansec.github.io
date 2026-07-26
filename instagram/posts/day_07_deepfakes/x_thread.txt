@@ -1,0 +1,18 @@
+1/ The old deepfake tells don't work anymore.
+
+Here's what still does. 🎭 🧵
+
+2/ Bad blinking used to give it away. Not anymore — newer models fixed the classic visual tells. "Does it look real" is a much weaker test than it used to be.
+
+3/ What still holds up:
+— PHYSICS: lighting/reflections that don't quite match
+— HANDS & EDGES: still where most models struggle most
+— THE ASK: a request for money/credentials matters more than any glitch
+
+4/ Another tell: you're only being reached one way, with no way offered to confirm through a second channel. A real urgent request usually survives being double-checked.
+
+5/ When in doubt: verify through a channel the other person doesn't control. Call them back, ask a mutual contact, or check an official source. A fake can't answer what it's never heard.
+
+6/ Full write-up: https://stayhumansec.github.io/post.html?slug=file_008
+
+More files drop every day. Follow along.

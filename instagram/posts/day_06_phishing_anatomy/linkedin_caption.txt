@@ -1,0 +1,11 @@
+A real phishing email, broken down line by line. Every part of it is doing a specific job, and once you know what each part is actually doing, most of them fall apart in seconds.
+
+The sender name is not the sender — anyone can set their display name to "IT Support" or "Payroll." That's just a label. What actually matters is the email address underneath it, which most inboxes hide by default unless you tap to expand it. A real message from your organization will come from its actual domain, not a look-alike or a generic address.
+
+Why this matters for your work life specifically: phishing is still the single most common entry point into corporate networks, and it's rarely the obviously bad emails that succeed — it's the ones that borrow just enough legitimacy to get a busy person to click without checking. The red flags hold whether it's a consumer scam or a targeted spear-phishing attempt at work: a generic greeting instead of your actual name, manufactured urgency designed to short-circuit careful reading, and a link whose visible text doesn't match its real destination when you hover over it.
+
+The fix costs nothing and takes seconds: don't click, and don't open unexpected attachments. Go to the official app or portal directly instead. If something's genuinely wrong, it'll be there too — no risky link required.
+
+Next up: how to spot a deepfake in 2026 — the old tells don't work anymore.
+
+What's the most convincing phishing attempt you've personally seen get through? (No need to name the company.)
