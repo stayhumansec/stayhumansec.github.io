@@ -385,12 +385,10 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .copy-md-btn.copied{border-color:var(--green); color:var(--green);}
 .article-meta-row{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px;}
 
-/* ============ DOWNLOAD-AS-PDF BUTTON ============ */
-.download-pdf-btn{display:inline-flex; align-items:center; gap:8px; font-family:'JetBrains Mono', monospace; font-size:12.5px; color:var(--cream-dim); background:transparent; border:1px solid var(--line); padding:9px 16px; border-radius:20px; cursor:pointer; margin-top:28px; transition:border-color .2s ease, color .2s ease;}
-.download-pdf-btn:hover{border-color:var(--orange); color:var(--cream);}
-.download-pdf-btn:disabled{opacity:0.6; cursor:default;}
-.download-pdf-btn svg{width:13px; height:13px;}
-.download-pdf-btn.pdf-error{border-color:var(--pink); color:var(--pink);}
+/* ============ PRINT / SAVE AS PDF BUTTON ============ */
+.print-pdf-btn{display:inline-flex; align-items:center; gap:8px; font-family:'JetBrains Mono', monospace; font-size:12.5px; color:var(--cream-dim); background:transparent; border:1px solid var(--line); padding:9px 16px; border-radius:20px; cursor:pointer; margin-top:28px; transition:border-color .2s ease, color .2s ease;}
+.print-pdf-btn:hover{border-color:var(--orange); color:var(--cream);}
+.print-pdf-btn svg{width:13px; height:13px;}
 
 /* ============ GLOSSARY PAGE ============ */
 .glossary-grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:18px; margin-top:36px;}
@@ -525,4 +523,51 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 @media (max-width:600px){
   .section{padding:60px 20px;}
   .listing-label{margin:24px 0 16px;}
+}
+
+/* ============ PRINT (article pages — "Print / Save as PDF" button) ============
+   Browsers strip background colors/images by default when printing, so without the
+   print-color-adjust properties below every page would print on plain white regardless of
+   everything else here. Reveal/declassify animations are forced fully visible too — those
+   classes default to hidden until scrolled into view, and printing shouldn't depend on how
+   far someone happened to scroll first. */
+@media print {
+  *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+
+  html, body{ background:var(--bg) !important; }
+  body::after{ display:none !important; } /* grain/noise texture — pointless in print, just adds ink */
+  .cursor-glow{ display:none !important; }
+
+  .reveal, .declass{ opacity:1 !important; transform:none !important; clip-path:none !important; transition:none !important; }
+
+  /* chrome/navigation that only makes sense in a browser, not on paper */
+  .scroll-progress,
+  .topnav,
+  footer.site-footer,
+  .win-controls,
+  .toc,
+  .copy-md-btn,
+  .print-pdf-btn,
+  .glossary-nudge,
+  .related-reads,
+  .next-box,
+  footer.article-footer,
+  .mobile-nav-backdrop,
+  .mobile-nav-panel,
+  .palette-overlay,
+  .boot-overlay{ display:none !important; }
+
+  .article-layout{ display:block !important; max-width:100% !important; padding:0 !important; margin:0 !important; }
+  .article-wrap{ max-width:var(--read-max) !important; margin:0 auto !important; }
+
+  .path-bar{ position:static !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+  .path-bar-inner{ padding:14px 24px !important; }
+
+  .article{ padding:24px !important; }
+
+  a{ text-decoration:none !important; color:inherit !important; }
+
+  /* let long articles paginate naturally instead of being sliced mid-block */
+  h1, h2, .tag, .tag-chip, .warn-box, .compare, .pattern-list li, .step{ break-inside:avoid; page-break-inside:avoid; }
+  h2{ break-after:avoid; page-break-after:avoid; }
 }
