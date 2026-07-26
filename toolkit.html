@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Toolkit — stay(human).sec</title>
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 
@@ -127,6 +127,41 @@
           features: ['Tracker and third-party cookie blocking on by default, out of the box', 'Open-source codebase', 'Regularly updated with security patches'],
           advantages: ['Meaningfully more private than Chrome\'s defaults with zero setup', 'Free, and available on every major platform'],
           disadvantages: ['Some banking, government, or enterprise sites are still built assuming Chrome and may behave oddly', 'Brave\'s built-in crypto/rewards features are unrelated to privacy and can be safely ignored']
+        },
+        {
+          name: 'Signal', cat: 'Messaging', price: 'Free',
+          what: 'A messaging app that encrypts every message, call, and file end-to-end by default — including group chats — so not even Signal itself can read your conversations.',
+          features: ['End-to-end encryption on by default for everything, not an opt-in setting', 'Disappearing messages, screen-lock, and app-lock built in', 'Voice and video calls encrypted the same way as text', 'Open-source client and server code, independently audited'],
+          advantages: ['The encryption protocol it popularized is now used by WhatsApp and others, but Signal itself collects almost no metadata about who you talk to', 'Free, with no ads and no data-selling business model — funded by a nonprofit foundation'],
+          disadvantages: ['Only useful if the people you\'re messaging also use it — the classic network-effect problem', 'Fewer built-in extras (stickers, payments, business tools) than WhatsApp or Telegram']
+        },
+        {
+          name: 'Standard Notes', cat: 'Notes', price: 'Free (paid tier optional)',
+          what: 'A simple, end-to-end encrypted note-taking app — for the everyday notes, lists, and private thoughts you don\'t want sitting in plain text in some company\'s database.',
+          features: ['End-to-end encryption on every note, every plan, including free', 'Open-source apps and encryption code, independently audited', 'Cross-platform: web, desktop, and phone, all synced', 'Offline-first — notes are usable without an internet connection'],
+          advantages: ['Free tier is genuinely usable long-term, not a trial', 'Because it\'s encrypted client-side, Standard Notes itself can\'t read your notes even if asked to'],
+          disadvantages: ['Free tier\'s editor is intentionally plain — rich formatting, to-do lists, and file attachments are a paid upgrade', 'Smaller ecosystem than Evernote/Notion means fewer templates and integrations']
+        },
+        {
+          name: 'Thunderbird', cat: 'Email Client', price: 'Free',
+          what: 'A free, open-source email app for your desktop that pulls in accounts from Gmail, Outlook, or anywhere else — one inbox, without handing a company like Google your entire email habit to analyze.',
+          features: ['Built-in ad and tracker blocking for images embedded in emails', 'Supports every major email provider via standard protocols (IMAP/POP)', 'Add-ons for extra encryption (PGP) built directly into the app', 'Maintained by the nonprofit behind Firefox'],
+          advantages: ['Keeps your email-reading habits off a third party\'s ad-targeting systems, unlike using a provider\'s own web interface', 'Free forever, no account required to use it'],
+          disadvantages: ['Desktop only — no official mobile app (K-9 Mail, also open-source, is the closest Android equivalent)', 'Initial account setup takes a little more manual effort than opening a provider\'s own app']
+        },
+        {
+          name: 'Syncthing', cat: 'File Sync / Backup', price: 'Free',
+          what: 'Syncs files and folders directly between your own devices — phone to laptop, laptop to backup drive — without uploading anything to a company\'s cloud in between.',
+          features: ['Peer-to-peer sync directly between your devices, encrypted in transit', 'Open-source, with no company or account behind it to eventually monetize your data', 'Works across Windows, Mac, Linux, and Android'],
+          advantages: ['Your files never sit on someone else\'s server, since there\'s no cloud middleman at all', 'No storage limits or subscription — you\'re limited by your own devices\' storage, not a plan tier'],
+          disadvantages: ['No official iOS app (Apple\'s rules make background peer-to-peer sync difficult) — workarounds exist but aren\'t as smooth', 'Both devices generally need to be online at the same time to sync, unlike cloud storage which is always available']
+        },
+        {
+          name: 'LibreOffice', cat: 'Office Suite', price: 'Free',
+          what: 'A free, full-featured alternative to Microsoft Office — documents, spreadsheets, and presentations that open and save in the same formats, without a subscription.',
+          features: ['Reads and writes .docx/.xlsx/.pptx alongside its own open formats', 'No account, subscription, or internet connection required to use it', 'Regularly updated, open-source, cross-platform'],
+          advantages: ['One-time install, free forever — no recurring cost or forced cloud upload of your documents', 'Works fully offline, so nothing has to leave your device unless you choose to share it'],
+          disadvantages: ['Complex documents with heavy Microsoft-specific formatting can shift slightly when opened', 'No real-time multi-person co-editing like Google Docs offers']
         }
       ]
     },
@@ -173,11 +208,15 @@
     return '<div class="tool-card declass">' +
       '<div class="tool-card-head"><span class="tool-name">' + escapeHTML(t.name) + '</span><span class="tool-cat">' + escapeHTML(t.cat) + ' · ' + escapeHTML(t.price) + '</span></div>' +
       '<p class="tool-what">' + escapeHTML(t.what) + '</p>' +
-      '<div class="tool-cols">' +
+      '<button class="tool-toggle" type="button" aria-expanded="false">' +
+        '<span class="tool-toggle-label">See features, pros &amp; cons</span>' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>' +
+      '</button>' +
+      '<div class="tool-details"><div class="tool-details-inner"><div class="tool-cols">' +
         '<div class="tool-col features"><h4>Key Features</h4><ul>' + t.features.map(function (f) { return '<li>' + escapeHTML(f) + '</li>'; }).join('') + '</ul></div>' +
         '<div class="tool-col advantages"><h4>Advantages</h4><ul>' + t.advantages.map(function (a) { return '<li>' + escapeHTML(a) + '</li>'; }).join('') + '</ul></div>' +
         '<div class="tool-col disadvantages"><h4>Disadvantages</h4><ul>' + t.disadvantages.map(function (d) { return '<li>' + escapeHTML(d) + '</li>'; }).join('') + '</ul></div>' +
-      '</div>' +
+      '</div></div></div>' +
     '</div>';
   }
 
@@ -188,6 +227,16 @@
       '<div class="tool-grid">' + tier.tools.map(toolCard).join('') + '</div>' +
     '</div>';
   }).join('');
+
+  // cards start collapsed (name + what-it-is only); clicking reveals features/pros/cons
+  document.getElementById('toolTiers').addEventListener('click', function (e) {
+    var btn = e.target.closest('.tool-toggle');
+    if (!btn) return;
+    var card = btn.closest('.tool-card');
+    var open = card.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.querySelector('.tool-toggle-label').textContent = open ? 'Hide details' : 'See features, pros & cons';
+  });
 
   initScrollReveal({ stagger: true });
   initDeclassify({ stagger: true });
