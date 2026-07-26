@@ -1,0 +1,11 @@
+"Incognito mode makes you anonymous." Nope. 🕵️
+
+Here's what it actually does: stops your browser from saving history, cookies, and autofill. That's it. Your ISP, your Wi-Fi network, and the websites you visit can all still see exactly what you're doing — incognito was never built to hide any of that.
+
+If you want real privacy, that's what a VPN is for — not a browser mode. There's a free, open-source pick for one in the Toolkit (link in bio).
+
+Next up: the AI phone call that sounds exactly like your kid. It's not.
+
+Which myth should I bust next? Drop it in the comments. 👇
+
+#privacytips #incognitomode #cybersecurity #onlineprivacy #vpn #mythbusted #staysafeonline

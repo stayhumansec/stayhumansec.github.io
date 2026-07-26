@@ -307,15 +307,474 @@
         "Knows what to do if a link was already tapped"
       ],
       "next": {
-        "slug": null,
-        "eyebrow": "MORE FILES COMING SOON",
-        "title": "A new one drops every day",
-        "desc": "Follow along so you don't miss the next one."
+        "slug": "file_004",
+        "eyebrow": "FILE_004.md — coming next",
+        "title": "Incognito mode doesn't make you anonymous",
+        "desc": "It hides your history from the next person on this computer. That's all it ever did."
       },
       "pillar": "cyber-basics",
       "pillarLabel": "Cyber Basics",
       "pillarColor": "var(--green)",
       "readMinutes": 3
+    },
+    {
+      "slug": "file_004",
+      "filename": "FILE_004.md",
+      "badge": "live",
+      "freq": "weekly",
+      "stripeColor": "var(--gold)",
+      "tagColor": "var(--pink)",
+      "tag": "MYTH BUSTED",
+      "title": "Incognito mode doesn't make you anonymous",
+      "titleAccent": "anonymous",
+      "listDesc": "It hides your history from the next person on this computer. It was never designed to hide you from anyone else.",
+      "intro": "Incognito (or \"private\") mode is one of the most misunderstood buttons in your browser. People treat it like an invisibility cloak. It's really just a note that says \"don't remember this\" — and only your own browser reads that note.",
+      "tldr": "Incognito mode only stops your browser from saving local history, cookies, and autofill. It does nothing to hide you from your Wi-Fi network, your employer or school, or the websites you actually visit — you're not anonymous, just forgetful on purpose.",
+      "statLine": "$ context — a 2018 Google-commissioned study found most people believe incognito mode hides their activity from their internet provider. It doesn't, and it never has.",
+      "sections": [
+        {
+          "num": "01",
+          "title": "What incognito actually turns off",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "Incognito mode does exactly three things: it stops your browser from saving new history, it doesn't keep cookies after you close the window, and it doesn't save anything you type into forms. That's the whole feature.",
+                "It's genuinely useful for that — checking someone else's email on a shared laptop, or shopping for a gift without your browser suggesting it to the person you're buying it for. It was built to solve <b>that</b> problem, not the problem people think it solves."
+              ]
+            }
+          ]
+        },
+        {
+          "num": "02",
+          "title": "What it was never designed to hide",
+          "blocks": [
+            {
+              "type": "compare",
+              "bad": {
+                "label": "What people think happens",
+                "text": "My internet provider, my Wi-Fi network, and the websites I visit have no idea it's me."
+              },
+              "good": {
+                "label": "What actually happens",
+                "text": "Your internet provider and network can still see every site you visit. The websites themselves can still see your IP address and fingerprint your device."
+              }
+            },
+            {
+              "type": "step",
+              "paragraphs": [
+                "None of that visibility depends on cookies or saved history — it happens at the network and server level, which incognito mode never touches. If you're on a work or school network, whoever manages it can very likely still see exactly what you looked at."
+              ]
+            }
+          ]
+        },
+        {
+          "num": "03",
+          "title": "What actually gets you closer to private",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "A VPN hides your traffic from your network and ISP — that's a real privacy layer incognito mode isn't. A tracker-blocking browser cuts down on cross-site tracking. Neither makes you invisible, but both do something incognito mode structurally can't.",
+                "The <a href=\"toolkit.html\">Toolkit</a> has free, open-source picks for both if you want to actually close this gap instead of assuming a button already closed it."
+              ]
+            }
+          ]
+        }
+      ],
+      "quiz": {
+        "question": "Before reading this, did you think incognito mode hid your browsing from your Wi-Fi network or ISP?",
+        "riskyLabel": "Yes, I assumed it did",
+        "safeLabel": "No, I knew it was local-only"
+      },
+      "warn": {
+        "label": "⚠ IF YOU'VE BEEN RELYING ON IT",
+        "text": "If you've used incognito mode assuming it hid something sensitive from your network administrator or ISP, it didn't — that visibility was there the whole time. Going forward, a VPN is the tool that actually addresses that, not a browser mode."
+      },
+      "checklist": [
+        "Knows incognito mode only stops local history, cookies, and autofill from saving",
+        "Understands your ISP and network can still see every site visited",
+        "Knows websites can still see your IP address and device fingerprint",
+        "Has a real privacy tool (VPN) in mind for when that actually matters"
+      ],
+      "next": {
+        "slug": "file_005",
+        "eyebrow": "FILE_005.md — coming next",
+        "title": "The AI phone call that sounds exactly like your kid",
+        "desc": "Voice cloning scams are already this good. Here's the one habit that defeats them."
+      },
+      "pillar": "myth-busting",
+      "pillarLabel": "Myth Busting",
+      "pillarColor": "var(--gold)",
+      "readMinutes": 3
+    },
+    {
+      "slug": "file_005",
+      "filename": "FILE_005.md",
+      "badge": "live",
+      "freq": "weekly",
+      "stripeColor": "var(--violet)",
+      "tagColor": "var(--pink)",
+      "tag": "AI WATCH",
+      "title": "The AI phone call that sounds exactly like your kid",
+      "titleAccent": "your kid",
+      "listDesc": "It only takes a few seconds of audio from a social media video to clone a voice convincingly enough to fool a parent.",
+      "intro": "\"Mom, I'm in trouble, please don't tell Dad, I need money right now.\" The voice is shaking. It sounds exactly like your kid — because in a growing number of these calls, it's an AI clone built from a few seconds of their voice pulled off a public video.",
+      "tldr": "AI can clone a convincing voice from just a few seconds of audio, which is exactly what these fake emergency calls use. The defense isn't spotting a fake voice — it's hanging up and calling back on a number you already know, every single time.",
+      "statLine": "$ context — the FTC has warned that voice-cloning tools now need as little as 3 seconds of sample audio to produce a convincing clone, most of which people post publicly without a second thought.",
+      "sections": [
+        {
+          "num": "01",
+          "title": "How the scam actually works",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "A scammer pulls a short clip of someone's voice — a public video, a voicemail greeting, a livestream — and feeds it into a voice-cloning tool. Minutes later, they can make that cloned voice say anything, in real time, over a phone call.",
+                "The call comes in from an unknown or spoofed number. The \"kid\" is crying, panicked, in some kind of trouble — a car accident, an arrest, a medical emergency — and needs money sent immediately, usually by wire transfer, gift cards, or crypto."
+              ]
+            }
+          ]
+        },
+        {
+          "num": "02",
+          "title": "The tells that give it away almost every time",
+          "blocks": [
+            {
+              "type": "pattern-list",
+              "items": [
+                {
+                  "tag": "URGENCY",
+                  "text": "You're pushed to act in minutes, with no time to think, verify, or call anyone else first."
+                },
+                {
+                  "tag": "PAYMENT",
+                  "text": "The request is for wire transfer, gift cards, or crypto — never a normal, traceable, reversible payment method."
+                },
+                {
+                  "tag": "SECRECY",
+                  "text": "You're told not to tell another family member — a classic move to stop anyone from checking the story."
+                },
+                {
+                  "tag": "BAD LINE",
+                  "text": "The audio is often slightly off — a bit robotic, oddly paced, or conveniently \"breaking up\" right when details would get specific."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "num": "03",
+          "title": "The one habit that defeats it",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "Hang up, and call that person back directly on a number you already have saved — not a number the caller gives you. If they're genuinely fine, you'll know in under a minute. If it was a scam, it ends right there.",
+                "Some families set up a private \"safe word\" nobody outside the family knows, to ask for on any call like this. It's a small thing, but a cloned voice can't guess a word it's never heard."
+              ]
+            }
+          ]
+        }
+      ],
+      "quiz": {
+        "question": "You get a call that sounds exactly like your kid, panicked, asking you to send money right now. What do you do?",
+        "riskyLabel": "Send the money immediately",
+        "safeLabel": "Hang up and call them back directly"
+      },
+      "warn": {
+        "label": "⚠ IF YOU'VE ALREADY SENT MONEY",
+        "text": "Contact your bank or payment provider immediately — the faster you report it, the better the odds of stopping or reversing the transfer. Then file a report with the FTC (reportfraud.ftc.gov) so the pattern gets tracked."
+      },
+      "checklist": [
+        "Knows a convincing voice clone can be made from just a few seconds of audio",
+        "Recognizes the urgency + secrecy + untraceable-payment pattern",
+        "Has a habit of hanging up and calling back on a known number",
+        "Knows what to do if money was already sent"
+      ],
+      "next": {
+        "slug": "file_006",
+        "eyebrow": "FILE_006.md — coming next",
+        "title": "Turn on 2FA — here's what it actually protects",
+        "desc": "The single biggest security upgrade you can make today, in under five minutes."
+      },
+      "pillar": "ai-watch",
+      "pillarLabel": "AI Watch",
+      "pillarColor": "var(--violet)",
+      "readMinutes": 4
+    },
+    {
+      "slug": "file_006",
+      "filename": "FILE_006.md",
+      "badge": "live",
+      "freq": "daily",
+      "stripeColor": "var(--orange)",
+      "tagColor": "var(--blue)",
+      "tag": "STEP-BY-STEP",
+      "title": "Turn on 2FA — here's what it actually protects",
+      "titleAccent": "actually protects",
+      "listDesc": "A stolen password alone stops working the moment 2FA is on. It's the single biggest upgrade available to you, and it takes about five minutes.",
+      "intro": "Two-factor authentication (2FA) means proving it's you with something beyond just a password — a code, an app tap, or a physical key. If your password ever leaks in a breach, and eventually one will, 2FA is what stands between that leak and someone actually getting into your account.",
+      "tldr": "2FA stops a stolen or leaked password from being enough to get into your account on its own. Turn it on for email first, then banking, then anything else — an authenticator app beats SMS codes, which can be intercepted.",
+      "statLine": "$ context — Microsoft has reported that accounts with any form of 2FA enabled block over 99% of automated account-takeover attempts, even when the password itself is already compromised.",
+      "sections": [
+        {
+          "num": "01",
+          "title": "What 2FA actually stops",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "A password is one proof of identity — something you know. 2FA adds a second, different kind of proof — something you have (your phone, a security key) or something you are (a fingerprint). An attacker who steals your password from a breach still doesn't have the second piece.",
+                "This is exactly what stops <b>credential stuffing</b> — the automated attack where a password leaked from one site gets tried against hundreds of others, betting you reused it. With 2FA on, that stolen password alone just isn't enough anymore."
+              ]
+            }
+          ]
+        },
+        {
+          "num": "02",
+          "title": "Turning it on, platform by platform",
+          "blocks": [
+            {
+              "type": "step",
+              "platform": "iPhone",
+              "paragraphs": [
+                "Start with your Apple ID: Settings → [your name] → Sign-In & Security → Two-Factor Authentication. Then repeat the same search inside each app you use most — email, banking, and social media all have a \"Security\" or \"Two-Factor Authentication\" setting in their own account settings."
+              ]
+            },
+            {
+              "type": "step",
+              "platform": "Android",
+              "paragraphs": [
+                "Start with your Google Account: Settings → Google → Manage your Google Account → Security → 2-Step Verification. Then do the same inside each of your other important apps — the setting is almost always under Settings → Security."
+              ]
+            }
+          ]
+        },
+        {
+          "num": "03",
+          "title": "Which method to actually pick",
+          "blocks": [
+            {
+              "type": "compare",
+              "bad": {
+                "label": "SMS codes",
+                "text": "Better than nothing, but vulnerable to SIM-swap attacks where someone convinces your carrier to move your number to their phone."
+              },
+              "good": {
+                "label": "Authenticator app or security key",
+                "text": "Codes generate on your device itself, with nothing to intercept over the phone network. This is the stronger default whenever a site offers it."
+              }
+            },
+            {
+              "type": "step",
+              "paragraphs": [
+                "The <a href=\"toolkit.html\">Toolkit</a> has free authenticator app picks if you don't already have one set up."
+              ]
+            }
+          ]
+        }
+      ],
+      "warn": {
+        "label": "⚠ IF YOU THINK YOU'VE LOST 2FA ACCESS",
+        "text": "Most services let you generate backup codes when you first turn on 2FA — save those somewhere offline, not on the same phone. If you're setting up 2FA today, build your <a href=\"recovery-kit.html\">2FA Recovery Kit</a> at the same time so you're never locked out."
+      },
+      "checklist": [
+        "Turned on 2FA for primary email first — it can reset almost everything else",
+        "Turned on 2FA for banking and anything holding payment info",
+        "Chose an authenticator app or security key over SMS where available",
+        "Saved backup codes somewhere offline, not on the phone itself"
+      ],
+      "next": {
+        "slug": "file_007",
+        "eyebrow": "FILE_007.md — coming next",
+        "title": "Anatomy of a phishing email, line by line",
+        "desc": "A real phishing email, broken down piece by piece — so you can spot the next one in seconds."
+      },
+      "pillar": "stay-safe",
+      "pillarLabel": "Stay Safe",
+      "pillarColor": "var(--orange)",
+      "readMinutes": 4
+    },
+    {
+      "slug": "file_007",
+      "filename": "FILE_007.md",
+      "badge": "live",
+      "freq": "weekly",
+      "stripeColor": "var(--pink)",
+      "tagColor": "var(--gold)",
+      "tag": "CASE FILE",
+      "title": "Anatomy of a phishing email, line by line",
+      "titleAccent": "line by line",
+      "listDesc": "Every part of a phishing email is doing a specific job. Once you know what to look for, most of them fall apart in seconds.",
+      "intro": "Phishing emails aren't random — every line is built to do a specific job: borrow trust, manufacture urgency, and get you to click before you look too closely. Once you know what each part is actually doing, they stop being convincing.",
+      "tldr": "Phishing emails combine a spoofed sender name, generic greeting, manufactured urgency, and a link whose real destination doesn't match its text. Check the actual sending address and hover the link before clicking — those two checks catch almost all of them.",
+      "statLine": "$ context — the sender name you see in your inbox can say literally anything; it's the underlying email address, which most inboxes hide by default, that actually tells you where a message came from.",
+      "sections": [
+        {
+          "num": "01",
+          "title": "The sender name is not the sender",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "Anyone can set their display name to \"Bank Support\" or \"Amazon\" — that's just a label, not proof. What actually matters is the email address underneath it, which most inboxes hide unless you tap the sender name to expand it.",
+                "A real company's email will almost always come from its actual domain (like <code>@amazon.com</code>), not a look-alike (<code>@amaz0n-support.com</code>) or a generic address (<code>@gmail.com</code>)."
+              ]
+            }
+          ]
+        },
+        {
+          "num": "02",
+          "title": "The red flags, one by one",
+          "blocks": [
+            {
+              "type": "pattern-list",
+              "items": [
+                {
+                  "tag": "GREETING",
+                  "text": "\"Dear Customer\" instead of your actual name — real companies you have accounts with usually know it."
+                },
+                {
+                  "tag": "URGENCY",
+                  "text": "\"Your account will be suspended in 24 hours\" — manufactured pressure to stop you from thinking it through."
+                },
+                {
+                  "tag": "LINK TEXT",
+                  "text": "The visible link text says one thing, but hovering over it (without clicking) shows a completely different, unrelated web address."
+                },
+                {
+                  "tag": "ATTACHMENT",
+                  "text": "An unexpected invoice, shipping label, or \"document\" attached that you never asked for."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "num": "03",
+          "title": "What to do instead of clicking",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "Don't click the link, and don't open the attachment. If the email claims there's a real problem with an account, open that company's app or type its website address in yourself — if something's genuinely wrong, it'll show up there too, with no risky link required.",
+                "If you're ever unsure whether a message is real, that uncertainty is itself the answer: legitimate companies don't rely on manufactured panic to get you to act."
+              ]
+            }
+          ]
+        }
+      ],
+      "warn": {
+        "label": "⚠ IF YOU'VE ALREADY CLICKED",
+        "text": "If you entered a password or payment details on a page you reached from an email link, change that password immediately and check your accounts and statements for anything unfamiliar over the next few days. If you opened an attachment, run a security scan on your device."
+      },
+      "checklist": [
+        "Checks the actual sending email address, not just the display name",
+        "Notices generic greetings and manufactured urgency for what they are",
+        "Hovers links to check the real destination before ever clicking",
+        "Goes to the official app or site directly instead of clicking through"
+      ],
+      "next": {
+        "slug": "file_008",
+        "eyebrow": "FILE_008.md — coming next",
+        "title": "How to spot a deepfake in 2026",
+        "desc": "The tells that still work, even as the fakes get better."
+      },
+      "pillar": "case-file",
+      "pillarLabel": "Case File",
+      "pillarColor": "var(--pink)",
+      "readMinutes": 4
+    },
+    {
+      "slug": "file_008",
+      "filename": "FILE_008.md",
+      "badge": "live",
+      "freq": "weekly",
+      "stripeColor": "var(--violet)",
+      "tagColor": "var(--green)",
+      "tag": "AI WATCH",
+      "title": "How to spot a deepfake in 2026",
+      "titleAccent": "in 2026",
+      "listDesc": "The obvious tells from a few years ago mostly don't work anymore. Here's what actually still catches a fake.",
+      "intro": "Deepfakes used to be easy to catch — flickering edges, weird blinking, a voice that sounded slightly off. Most of those tells are gone now. The good news: a smaller set of tells still hold up, and they're less about pixels and more about context.",
+      "tldr": "Old deepfake tells (bad blinking, flickering edges) mostly don't work anymore. What still holds up: checking whether the request itself makes sense, verifying through a second channel, and watching for small physics mistakes like lighting and reflections.",
+      "statLine": "$ context — deepfake detection researchers now describe the arms race as roughly even: as fast as visual tells get fixed by newer models, new ones take their place, which is why context matters more than appearance now.",
+      "sections": [
+        {
+          "num": "01",
+          "title": "Why deepfakes are harder to catch now",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "Early deepfakes struggled with natural blinking, consistent lighting, and lip-sync — those were the classic tells. Newer models have largely fixed all three. Judging a video by \"does it look believable\" alone is a much weaker test than it used to be.",
+                "That's why the more reliable checks have shifted away from appearance and toward context: does this request make sense, and can it be verified some other way?"
+              ]
+            }
+          ]
+        },
+        {
+          "num": "02",
+          "title": "The tells that still work",
+          "blocks": [
+            {
+              "type": "pattern-list",
+              "items": [
+                {
+                  "tag": "PHYSICS",
+                  "text": "Lighting on the face that doesn't quite match the background, or reflections (in glasses, windows) that don't line up with what's on screen."
+                },
+                {
+                  "tag": "HANDS & EDGES",
+                  "text": "Hands, ears, and hairlines are still where most models struggle most — look for warping or blurring at the edges of a moving face."
+                },
+                {
+                  "tag": "THE ASK",
+                  "text": "A request for money, credentials, or urgent action is a bigger red flag than any visual glitch — that's the actual goal of most deepfake scams."
+                },
+                {
+                  "tag": "SINGLE CHANNEL",
+                  "text": "You're only being reached one way, with no way offered to confirm through a second channel — a real, urgent request usually survives being double-checked."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "num": "03",
+          "title": "What to do when you're not sure",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "Verify through a channel the other person doesn't control — call them back on a number you already have, message a mutual contact, or ask something only the real person would know. A deepfake can mimic a face and voice; it can't answer a question it was never fed.",
+                "If it's a public figure or a viral clip, a quick search for the same moment from an official or verified source usually settles it fast — real news breaks in more than one place at once."
+              ]
+            }
+          ]
+        }
+      ],
+      "warn": {
+        "label": "⚠ IF YOU'VE ALREADY ACTED ON ONE",
+        "text": "If you sent money, shared credentials, or made a decision based on a video or call that turns out to have been faked, treat it the same as any other scam: contact your bank if money moved, change any passwords involved, and report it — the earlier, the better."
+      },
+      "checklist": [
+        "Knows old tells like bad blinking mostly don't apply anymore",
+        "Checks lighting, reflections, hands, and edges when something feels off",
+        "Verifies urgent or unusual requests through a second channel",
+        "Cross-checks viral clips against official sources before trusting them"
+      ],
+      "next": {
+        "slug": null,
+        "eyebrow": "MORE FILES COMING SOON",
+        "title": "A new one drops every day",
+        "desc": "Follow along so you don't miss the next one."
+      },
+      "pillar": "ai-watch",
+      "pillarLabel": "AI Watch",
+      "pillarColor": "var(--violet)",
+      "readMinutes": 4
     }
   ]
 }

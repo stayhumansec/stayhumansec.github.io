@@ -1,0 +1,13 @@
+A real phishing email. Broken down, line by line. 🔍
+
+The sender name is not the sender — anyone can type "Bank Support" as their display name. It's the actual email address underneath that tells you where a message really came from, and most inboxes hide it by default.
+
+The red flags: a generic "Dear Customer" greeting, manufactured urgency ("suspended in 24 hours"), and a link whose visible text doesn't match where it actually goes when you hover over it.
+
+Don't click. Go to the official app or type the site in yourself instead — if something's genuinely wrong, it'll show up there too, with no risky link required.
+
+Next up: how to spot a deepfake in 2026 — the old tells don't work anymore.
+
+Ever caught one of these yourself? Tell me the tell that gave it away. 👇
+
+#phishing #cybersecurity #emailsecurity #scamalert #staysafeonline #onlinesafety
