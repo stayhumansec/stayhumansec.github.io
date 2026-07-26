@@ -570,9 +570,72 @@ function sanitizePdfText(str) {
     .replace(/☐/g, '[ ]');
 }
 
+/**
+ * The site's actual Poppins/JetBrains Mono TTF files, fetched directly from Google's static
+ * font host (fonts.gstatic.com — the same origin the page's own @font-face rules resolve to)
+ * so the PDF uses the real brand fonts instead of jsPDF's built-in Helvetica/Courier
+ * substitutes. These are the literal file URLs the browser would request; fetching a static
+ * font file doesn't depend on any request header a page script can't set, so this works from
+ * plain browser fetch() despite Google's font *CSS* API varying by User-Agent.
+ */
+var PDF_FONT_FILES = {
+  sansRegular: 'https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrFJA.ttf',
+  sansBold: 'https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7V1s.ttf',
+  monoRegular: 'https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPQ.ttf',
+  monoBold: 'https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8L6tjPQ.ttf'
+};
+var _pdfFontDataCache = null;
+
+function arrayBufferToBase64(buffer) {
+  var bytes = new Uint8Array(buffer);
+  var binary = '';
+  var chunkSize = 0x8000;
+  for (var i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+/**
+ * Fetches the real brand font files as base64, once, caching the result (not tied to any
+ * particular jsPDF document — each generatePostPdf() call embeds fresh into its own doc).
+ * Resolves to null on any failure so callers can fall back to jsPDF's built-in
+ * helvetica/courier — a visitor should always get a working PDF, exact font or not.
+ */
+function loadPdfFontData() {
+  if (_pdfFontDataCache) return _pdfFontDataCache;
+  _pdfFontDataCache = Promise.all(Object.keys(PDF_FONT_FILES).map(function (key) {
+    return fetch(PDF_FONT_FILES[key]).then(function (res) {
+      if (!res.ok) throw new Error('font fetch failed: ' + key);
+      return res.arrayBuffer();
+    }).then(function (buf) {
+      return [key, arrayBufferToBase64(buf)];
+    });
+  })).then(function (entries) {
+    var data = {};
+    entries.forEach(function (e) { data[e[0]] = e[1]; });
+    return data;
+  }).catch(function () {
+    return null;
+  });
+  return _pdfFontDataCache;
+}
+
 /** Builds the full PDF document for a post using jsPDF's native drawing API. Returns the jsPDF instance. */
-function generatePostPdf(post) {
+function generatePostPdf(post, fontData) {
   var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+  var fonts = { sans: 'helvetica', mono: 'courier' };
+  if (fontData) {
+    doc.addFileToVFS('sansRegular.ttf', fontData.sansRegular);
+    doc.addFont('sansRegular.ttf', 'PdfSans', 'normal');
+    doc.addFileToVFS('sansBold.ttf', fontData.sansBold);
+    doc.addFont('sansBold.ttf', 'PdfSans', 'bold');
+    doc.addFileToVFS('monoRegular.ttf', fontData.monoRegular);
+    doc.addFont('monoRegular.ttf', 'PdfMono', 'normal');
+    doc.addFileToVFS('monoBold.ttf', fontData.monoBold);
+    doc.addFont('monoBold.ttf', 'PdfMono', 'bold');
+    fonts = { sans: 'PdfSans', mono: 'PdfMono' };
+  }
   var pageW = doc.internal.pageSize.getWidth();
   var pageH = doc.internal.pageSize.getHeight();
   var marginX = 50, marginTop = 44, marginBottom = 50;
@@ -592,7 +655,7 @@ function generatePostPdf(post) {
       setColor('setFillColor', c);
       doc.circle(marginX - 30 + i * 11, chromeH / 2, 2.6, 'F');
     });
-    doc.setFont('courier', 'normal');
+    doc.setFont(fonts.mono, 'normal');
     doc.setFontSize(8);
     setColor('setTextColor', PDF_BRAND_COLORS.creamDim);
     doc.text(sanitizePdfText('stay(human).sec:~$ cat ' + post.filename), marginX, chromeH / 2 + 3);
@@ -612,7 +675,7 @@ function generatePostPdf(post) {
     opts = opts || {};
     var size = opts.size || 10.5;
     var lineH = opts.lineH || size * 1.5;
-    doc.setFont(opts.font || 'helvetica', opts.style || 'normal');
+    doc.setFont(opts.font || fonts.sans, opts.style || 'normal');
     doc.setFontSize(size);
     setColor('setTextColor', opts.color || PDF_BRAND_COLORS.cream);
     var lines = doc.splitTextToSize(sanitizePdfText(text), contentW - (opts.indent || 0));
@@ -638,7 +701,7 @@ function generatePostPdf(post) {
 
   // tag pill
   var tagRGB = pdfColorFromVar(post.tagColor);
-  doc.setFont('courier', 'normal');
+  doc.setFont(fonts.mono, 'normal');
   doc.setFontSize(8);
   var tagText = sanitizePdfText(post.tag);
   var tagW = doc.getTextWidth(tagText) + 16;
@@ -649,7 +712,7 @@ function generatePostPdf(post) {
   doc.text(tagText, marginX + 8, y + 1);
   y += 26;
 
-  writeWrapped(post.title, { size: 19, font: 'helvetica', style: 'bold', color: PDF_BRAND_COLORS.cream, lineH: 23, gapAfter: 10 });
+  writeWrapped(post.title, { size: 19, font: fonts.sans, style: 'bold', color: PDF_BRAND_COLORS.cream, lineH: 23, gapAfter: 10 });
   writeWrapped(post.intro, { size: 10.5, color: PDF_BRAND_COLORS.creamDim, lineH: 15, gapAfter: 6 });
   drawDivider();
 
@@ -659,7 +722,7 @@ function generatePostPdf(post) {
     sec.blocks.forEach(function (block) {
       if (block.type === 'step') {
         if (block.platform) {
-          writeWrapped(block.platform.toUpperCase(), { size: 8.5, font: 'courier', color: PDF_BRAND_COLORS.green, lineH: 11, gapAfter: 3 });
+          writeWrapped(block.platform.toUpperCase(), { size: 8.5, font: fonts.mono, color: PDF_BRAND_COLORS.green, lineH: 11, gapAfter: 3 });
         }
         block.paragraphs.forEach(function (p) {
           writeWrapped(stripTagsForPdf(p), { size: 10, color: PDF_BRAND_COLORS.creamDim, lineH: 14.5, gapAfter: 8 });
@@ -679,7 +742,7 @@ function generatePostPdf(post) {
   // warn box
   ensureSpace(50);
   var warnTop = y;
-  writeWrapped(post.warn.label, { size: 9, font: 'courier', color: PDF_BRAND_COLORS.pink, lineH: 12, gapAfter: 4 });
+  writeWrapped(post.warn.label, { size: 9, font: fonts.mono, color: PDF_BRAND_COLORS.pink, lineH: 12, gapAfter: 4 });
   writeWrapped(post.warn.text, { size: 9.5, indent: 10, color: PDF_BRAND_COLORS.creamDim, lineH: 13.5 });
   setColor('setDrawColor', PDF_BRAND_COLORS.pink);
   doc.roundedRect(marginX - 8, warnTop - 14, contentW + 16, y - warnTop + 20, 6, 6, 'S');
@@ -697,7 +760,7 @@ function generatePostPdf(post) {
     doc.setPage(i);
     setColor('setDrawColor', PDF_BRAND_COLORS.line);
     doc.line(marginX, pageH - 34, pageW - marginX, pageH - 34);
-    doc.setFont('courier', 'normal');
+    doc.setFont(fonts.mono, 'normal');
     doc.setFontSize(7.5);
     setColor('setTextColor', PDF_BRAND_COLORS.creamDim);
     doc.text('stay(human).sec — plain-language cybersecurity, AI & privacy — stayhumansec.github.io', pageW / 2, pageH - 20, { align: 'center' });
@@ -722,8 +785,9 @@ function setupDownloadPdfButton(btn, post) {
     btn.classList.remove('pdf-error');
     labelEl.textContent = 'Generating…';
 
-    loadScriptOnce(JSPDF_CDN_URL).then(function () {
-      var doc = generatePostPdf(post);
+    Promise.all([loadScriptOnce(JSPDF_CDN_URL), loadPdfFontData()]).then(function (results) {
+      var fontData = results[1];
+      var doc = generatePostPdf(post, fontData);
       doc.save(post.slug + '.pdf');
     }).then(function () {
       btn.disabled = false;
