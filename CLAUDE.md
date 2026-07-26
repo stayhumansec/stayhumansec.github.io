@@ -10,7 +10,7 @@ post.html             Article template — renders one post from posts.json base
 quiz.html             Redirect shim to index.html#youcheck — the quiz used to live here as its own page
 toolkit.html          Curated tool recommendations (password managers, VPNs, etc.), self-contained data
 tools.html            Utilities hub — links to every small in-browser tool below
-password-coach.html   AI Password Coach — teaches the passphrase method, generates real random examples
+password-coach.html   Password Coach — teaches the passphrase method, generates real random examples
 recovery-kit.html     2FA Recovery Kit Builder — printable "if I lose my phone" plan, localStorage only
 breach-check.html     Breach Exposure Check — k-anonymity password breach lookup via HaveIBeenPwned
 ask.html              Search the Archive — local keyword search over posts.json + glossary, optional AI answer
@@ -111,7 +111,7 @@ Orange is the single primary accent (CTAs, active states, hover borders). Green 
 
 ### Current utilities (in `tools.html`)
 
-- `password-coach.html` — AI Password Coach. Teaches the passphrase method rather than handing over a copy-paste password.
+- `password-coach.html` — Password Coach. Teaches the passphrase method rather than handing over a copy-paste password.
 - `recovery-kit.html` — 2FA Recovery Kit Builder. Pure offline form + localStorage, no AI, no network calls.
 - `breach-check.html` — Breach Exposure Check. Real k-anonymity math against HaveIBeenPwned; the password itself never leaves the browser, only a SHA-1 hash prefix does.
 - `ask.html` — Search the Archive. Local keyword search over `posts.json` + glossary, with an optional BYOK AI deep-dive on top. Renamed from "Ask the Archive" since the default experience is search, not Q&A — kept for now but not fully proven out; a genuinely synthesizing version may replace it later as its own task.
@@ -123,6 +123,7 @@ Orange is the single primary accent (CTAs, active states, hover borders). Green 
 - Real data (an actual breach database, actual math), real computation (client-side crypto, real randomness), or the user's own structured input (a form, a checklist) — never an approximate judgment call on open-ended or ambiguous text. A confidently-wrong security tool is worse than no tool at all.
 - Prefer tools that teach the underlying method or skill over tools that just generate a finished answer to copy-paste. The goal is someone leaves having learned something they can do themselves forever, not a one-time output they'll forget the origin of.
 - Never name a tool "AI [X]" unless AI is doing genuine, load-bearing work in the *default* experience. If AI is an optional bring-your-own-key extra layered on top of a working non-AI tool, it must never be required for the tool to be useful, and the name shouldn't imply AI is core to it.
+- Any "save," "export," or "download" feature (Copy-as-markdown, Download as PDF, and anything added later in this family) generates its output entirely client-side and triggers a direct browser download or clipboard write — no server round-trip, no email capture, no data collected anywhere. This is a firm precedent for the whole site, not a case-by-case call: it's the same "nothing leaves the browser unless you explicitly ask for the BYOK AI extra" guarantee applied to exports specifically.
 
 ### Writing (Instagram captions and website articles alike)
 
@@ -138,4 +139,5 @@ Orange is the single primary accent (CTAs, active states, hover borders). Green 
 - **Closers**: nearly every post ends the same way — a warning box for "if this already happened to you," then a "60-second version" checklist, then a "next file" teaser box linking to the next post (or a placeholder if none exists yet).
 - **New post checklist**: add an entry to `posts.json` following an existing post's shape exactly; pick a `pillar` from the table above (reuse its exact `pillarColor`); keep `stripeColor`/`tagColor` as `var(--...)` references, not hex; keep `next.slug` of the *previous* most-recent post pointing at the new one, and set the new post's own `next` to `null` until a following post exists.
 - **Copy-as-markdown**: `post.html` includes a "Copy as .md" button; `generateMarkdown()` in `site.js` reconstructs a markdown version of a post straight from its JSON shape, so any post added to `posts.json` gets this for free with no extra work.
+- **Download as PDF**: `post.html` includes a "Download as PDF" button below the next-post box. `buildPdfExportDOM()` in `site.js` reconstructs the post as an off-screen, brand-styled DOM node (dark background, cream/orange palette, terminal-chrome header, Poppins/JetBrains Mono), and `setupDownloadPdfButton()` lazy-loads html2pdf.js from a CDN only on first click, rasterizes that node, and triggers a direct download — entirely client-side, no server, no email, nothing collected. Same free-for-every-post guarantee as Copy-as-markdown.
 - **Escaping**: all post-derived text is passed through `escapeHTML()` before insertion, *except* `step` block `paragraphs`, which are treated as trusted raw HTML (so `<code>` tags work) — never put user-supplied or untrusted content there.

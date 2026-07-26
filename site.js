@@ -344,7 +344,7 @@ function initCommandPalette() {
     { title: 'You, Check.', sub: 'index.html#youcheck — the quick gut-check quiz', href: 'index.html#youcheck', color: 'var(--pink)' },
     { title: 'Toolkit', sub: 'toolkit.html — recommended tools', href: 'toolkit.html', color: 'var(--gold)' },
     { title: 'Utilities', sub: 'tools.html — every small tool in one place', href: 'tools.html', color: 'var(--violet)' },
-    { title: 'AI Password Coach', sub: 'password-coach.html — memorable, genuinely strong passwords', href: 'password-coach.html', color: 'var(--violet)' },
+    { title: 'Password Coach', sub: 'password-coach.html — memorable, genuinely strong passwords', href: 'password-coach.html', color: 'var(--violet)' },
     { title: '2FA Recovery Kit Builder', sub: 'recovery-kit.html — build a printable recovery plan', href: 'recovery-kit.html', color: 'var(--green)' },
     { title: 'Breach Exposure Check', sub: 'breach-check.html — check if a password has already leaked', href: 'breach-check.html', color: 'var(--gold)' },
     { title: 'Search the Archive', sub: 'ask.html — search this site\'s posts and glossary', href: 'ask.html', color: 'var(--orange)' },
@@ -498,6 +498,138 @@ function fallbackCopy(text, done) {
   ta.select();
   try { document.execCommand('copy'); done(); } catch (e) {}
   document.body.removeChild(ta);
+}
+
+/**
+ * Loads a <script src="..."> exactly once, caching the in-flight/settled promise so a
+ * second call (e.g. clicking "Download as PDF" twice) reuses the same load instead of
+ * injecting the tag again.
+ */
+var _scriptLoadPromises = {};
+function loadScriptOnce(src) {
+  if (!_scriptLoadPromises[src]) {
+    _scriptLoadPromises[src] = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { delete _scriptLoadPromises[src]; reject(new Error('Failed to load ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  return _scriptLoadPromises[src];
+}
+
+var HTML2PDF_CDN_URL = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+
+/**
+ * Builds an off-screen, brand-styled DOM snapshot of a post for PDF export — same content
+ * shape as generateMarkdown(), but as real elements so html2pdf.js/html2canvas can rasterize
+ * it with the site's actual fonts and colors instead of laying out text manually in jsPDF.
+ * Strips HTML from step paragraphs since a rasterized PDF has no use for <code> styling.
+ */
+function buildPdfExportDOM(post) {
+  var el = document.createElement('div');
+  el.className = 'pdf-export-root';
+
+  function stripTags(html) { return html.replace(/<[^>]+>/g, ''); }
+
+  var sectionsHTML = post.sections.map(function (sec) {
+    var blocksHTML = sec.blocks.map(function (block) {
+      if (block.type === 'step') {
+        var platform = block.platform ? '<div class="pdf-platform">' + escapeHTML(block.platform) + '</div>' : '';
+        var paras = block.paragraphs.map(function (p) { return '<p>' + escapeHTML(stripTags(p)) + '</p>'; }).join('');
+        return '<div class="pdf-step">' + platform + paras + '</div>';
+      }
+      if (block.type === 'compare') {
+        return '<div class="pdf-compare">' +
+          '<p>✕ <b>' + escapeHTML(block.bad.label) + ':</b> ' + escapeHTML(block.bad.text) + '</p>' +
+          '<p>✓ <b>' + escapeHTML(block.good.label) + ':</b> ' + escapeHTML(block.good.text) + '</p>' +
+        '</div>';
+      }
+      if (block.type === 'pattern-list') {
+        return '<ul class="pdf-pattern-list">' + block.items.map(function (it) {
+          return '<li><b>' + escapeHTML(it.tag) + ':</b> ' + escapeHTML(it.text) + '</li>';
+        }).join('') + '</ul>';
+      }
+      return '';
+    }).join('');
+    return '<h2 class="pdf-h2">' + escapeHTML(sec.num) + ' — ' + escapeHTML(sec.title) + '</h2>' + blocksHTML;
+  }).join('');
+
+  var checklistHTML = post.checklist.map(function (c) { return '<li>' + escapeHTML(c) + '</li>'; }).join('');
+
+  el.innerHTML =
+    '<div class="pdf-chrome">' +
+      '<span class="pdf-dot" style="background:#ff5f57;"></span>' +
+      '<span class="pdf-dot" style="background:#febc2e;"></span>' +
+      '<span class="pdf-dot" style="background:#28c840;"></span>' +
+      '<span class="pdf-chrome-path">stay(human).sec:~$ cat ' + escapeHTML(post.filename) + '</span>' +
+    '</div>' +
+    '<div class="pdf-body">' +
+      '<div class="pdf-tag" style="color:' + post.tagColor + '; border-color:' + post.tagColor + ';">' + escapeHTML(post.tag) + '</div>' +
+      '<h1 class="pdf-title">' + escapeHTML(post.title) + '</h1>' +
+      '<p class="pdf-intro">' + escapeHTML(post.intro) + '</p>' +
+      '<hr class="pdf-divider">' +
+      sectionsHTML +
+      '<div class="pdf-warn"><div class="pdf-warn-label">' + escapeHTML(post.warn.label) + '</div><p>' + escapeHTML(post.warn.text) + '</p></div>' +
+      '<h2 class="pdf-h2">The 60-second version</h2>' +
+      '<ul class="pdf-checklist">' + checklistHTML + '</ul>' +
+    '</div>' +
+    '<div class="pdf-footer">stay(human).sec — plain-language cybersecurity, AI &amp; privacy — stayhumansec.github.io</div>';
+
+  return el;
+}
+
+/**
+ * Wires up a "Download as PDF" button. Lazy-loads html2pdf.js from a CDN only on first
+ * click (so articles that are never exported never pay for the library), renders the post
+ * into an off-screen brand-styled DOM node, and hands it to html2pdf.js to rasterize and
+ * download — entirely in the browser. No server round-trip, no email capture, nothing sent
+ * or stored anywhere.
+ */
+function setupDownloadPdfButton(btn, post) {
+  if (!btn) return;
+  var labelEl = btn.querySelector('span');
+  var originalLabel = labelEl.textContent;
+
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    btn.classList.remove('pdf-error');
+    labelEl.textContent = 'Generating…';
+
+    loadScriptOnce(HTML2PDF_CDN_URL).then(function () {
+      var el = buildPdfExportDOM(post);
+      el.style.position = 'fixed';
+      el.style.left = '-9999px';
+      el.style.top = '0';
+      document.body.appendChild(el);
+
+      return window.html2pdf().set({
+        margin: 0,
+        filename: post.slug + '.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, backgroundColor: '#000000', useCORS: true },
+        jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      }).from(el).save().then(function () {
+        document.body.removeChild(el);
+      }, function (err) {
+        document.body.removeChild(el);
+        throw err;
+      });
+    }).then(function () {
+      btn.disabled = false;
+      labelEl.textContent = originalLabel;
+    }).catch(function () {
+      btn.disabled = false;
+      btn.classList.add('pdf-error');
+      labelEl.textContent = 'Couldn’t generate — try again';
+      setTimeout(function () {
+        btn.classList.remove('pdf-error');
+        labelEl.textContent = originalLabel;
+      }, 3000);
+    });
+  });
 }
 
 /** Fills a thin fixed bar across the top of the viewport as the person scrolls down the page. */

@@ -149,7 +149,7 @@
       if (count > 0) {
         resultsEl.innerHTML =
           '<div class="warn-box reveal is-visible"><div class="label">⚠ FOUND IN ' + fmtCount(count) + ' BREACH' + (count === 1 ? '' : 'ES') + '</div>' +
-          '<p>This exact password has shown up in known data breaches ' + fmtCount(count) + ' time' + (count === 1 ? '' : 's') + '. If you use it anywhere, change it now — attackers run lists of exactly these leaked passwords against other sites automatically. Try the <a href="password-coach.html" style="color:var(--orange);">AI Password Coach</a> for a real replacement.</p></div>';
+          '<p>This exact password has shown up in known data breaches ' + fmtCount(count) + ' time' + (count === 1 ? '' : 's') + '. If you use it anywhere, change it now — attackers run lists of exactly these leaked passwords against other sites automatically. Try the <a href="password-coach.html" style="color:var(--orange);">Password Coach</a> for a real replacement.</p></div>';
       } else {
         resultsEl.innerHTML =
           '<div class="quiz-result-badge" style="background:rgba(63,207,142,0.15); color:var(--green); border:1px solid var(--green);">NOT FOUND</div>' +
