@@ -501,17 +501,370 @@ function fallbackCopy(text, done) {
 }
 
 /**
- * Wires up the "Print / Save as PDF" button: just calls window.print(). Print output is
- * styled entirely by the @media print rules in style.css — this deliberately doesn't try to
- * approximate the page with a library. An earlier html2canvas/html2pdf.js approach went
- * through several rounds of real-world blank/broken PDFs that never reproduced in testing,
- * because rasterizing a DOM clone through a third-party library is only ever an approximation
- * of what the browser's own rendering engine already does correctly. window.print() uses that
- * real rendering engine directly, so there's no approximation to get wrong.
+ * Download-as-PDF, take three. v1 (html2canvas/html2pdf.js rasterizing a styled DOM clone) and
+ * v2 (window.print() + a print stylesheet) both failed for real visitors in ways that never
+ * reproduced in testing — v1's canvas silently painted nothing in some browsers, v2 depended on
+ * the visitor's OS/browser print pipeline, which on at least one real machine rasterized the
+ * whole page through a "Print to PDF" driver instead of producing real text. Neither failure
+ * mode is something this site's code can fully control, because both hand the actual rendering
+ * off to something else (a canvas library, a print driver) and hope it behaves.
+ *
+ * This version draws the PDF directly with jsPDF's own text/shape API — no canvas, no print
+ * dialog, no dependency on how a particular OS's print pipeline chooses to handle the page.
+ * It's also a deliberately different, standalone document design (light/cream background,
+ * Poppins headings, plain body copy) rather than a copy of the dark on-screen theme, since a
+ * downloadable brand resource and a webpage don't need to look identical.
  */
-function setupPrintPdfButton(btn) {
+var PDF_LIGHT_COLORS = {
+  bg: [250, 247, 240],
+  ink: [30, 27, 22],
+  inkMuted: [107, 101, 88],
+  line: [228, 220, 205],
+  orange: [255, 122, 61],
+  greenDark: [27, 122, 78],
+  pinkBorder: [232, 90, 130],
+  pinkFill: [253, 238, 242]
+};
+
+var PDF_HEADING_FONT_FILES = {
+  headingRegular: 'https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrFJA.ttf',
+  headingBold: 'https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7V1s.ttf'
+};
+var _pdfHeadingFontCache = null;
+
+function arrayBufferToBase64(buffer) {
+  var bytes = new Uint8Array(buffer);
+  var binary = '';
+  var chunkSize = 0x8000;
+  for (var i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+/**
+ * Fetches Poppins (the site's real heading font) as base64, once, for embedding into the PDF.
+ * Resolves to null on any failure so the PDF still generates with jsPDF's built-in Helvetica
+ * standing in for headings — a visitor should always get a working PDF, exact font or not.
+ */
+function loadPdfHeadingFontData() {
+  if (_pdfHeadingFontCache) return _pdfHeadingFontCache;
+  _pdfHeadingFontCache = Promise.all(Object.keys(PDF_HEADING_FONT_FILES).map(function (key) {
+    return fetch(PDF_HEADING_FONT_FILES[key]).then(function (res) {
+      if (!res.ok) throw new Error('font fetch failed: ' + key);
+      return res.arrayBuffer();
+    }).then(function (buf) {
+      return [key, arrayBufferToBase64(buf)];
+    });
+  })).then(function (entries) {
+    var data = {};
+    entries.forEach(function (e) { data[e[0]] = e[1]; });
+    return data;
+  }).catch(function () {
+    return null;
+  });
+  return _pdfHeadingFontCache;
+}
+
+/**
+ * jsPDF's built-in fonts only support the WinAnsi glyph set — no arrows or checkmark symbols.
+ * Post content routinely uses "→" for step sequences, and some posts.json fields (compare
+ * block labels) already embed their own ✕/✓ prefix. Every string reaching doc.text()/
+ * splitTextToSize() goes through this first.
+ */
+function sanitizePdfText(str) {
+  return String(str)
+    .replace(/→/g, '->')
+    .replace(/^[✕✓]\s*/, '')
+    .replace(/⚠\s*/g, '')
+    .replace(/☐/g, '');
+}
+
+function stripTagsForPdf(html) { return html.replace(/<[^>]+>/g, ''); }
+
+/**
+ * Draws the brand icon (the two curved-bracket "parentheses" + orange face from
+ * brandIconSVG()) using the exact same bezier curve data as the real SVG, just recolored for
+ * a light background. `x,y` is the top-left of the icon's bounding box; `h` is the icon's
+ * rendered height in pt (the source viewBox is 150x100, so width follows at h*1.5).
+ */
+function drawPdfBrandIcon(doc, x, y, h) {
+  var s = h / 100;
+  doc.setDrawColor(30, 27, 22);
+  doc.setLineCap('round');
+
+  doc.setLineWidth(7 * s);
+  doc.lines([[-9 * s, 9 * s, -18 * s, 17 * s, -18 * s, 34 * s], [0, 17 * s, 9 * s, 25 * s, 18 * s, 34 * s]], x + 38 * s, y + 16 * s, [1, 1], 'S');
+  doc.lines([[9 * s, 9 * s, 18 * s, 17 * s, 18 * s, 34 * s], [0, 17 * s, -9 * s, 25 * s, -18 * s, 34 * s]], x + 112 * s, y + 16 * s, [1, 1], 'S');
+
+  doc.setFillColor.apply(doc, PDF_LIGHT_COLORS.orange);
+  doc.circle(x + 75 * s, y + 38 * s, 13 * s, 'F');
+
+  doc.setDrawColor.apply(doc, PDF_LIGHT_COLORS.orange);
+  doc.setLineWidth(5 * s);
+  doc.lines([[0, -10 * s, 7 * s, -17 * s, 17 * s, -17 * s], [10 * s, 0, 17 * s, 7 * s, 17 * s, 17 * s]], x + 58 * s, y + 78 * s, [1, 1], 'S');
+}
+
+/** Small drawn checkmark for the checklist — avoids jsPDF's built-in fonts not having a ✓ glyph. */
+function drawPdfCheck(doc, x, y, size) {
+  doc.setDrawColor.apply(doc, PDF_LIGHT_COLORS.orange);
+  doc.setLineWidth(1.3);
+  doc.setLineCap('round');
+  doc.lines([[size * 0.35, size * 0.35], [size * 0.65, -size * 0.75]], x, y, [1, 1], 'S');
+}
+
+/** Builds the full PDF document for a post using jsPDF's native drawing API. Returns the jsPDF instance. */
+function generatePostPdf(post, headingFontData) {
+  var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+  var pageW = doc.internal.pageSize.getWidth();
+  var pageH = doc.internal.pageSize.getHeight();
+  var marginX = 50, marginTop = 54, marginBottom = 60;
+  var contentW = pageW - marginX * 2;
+  var y = marginTop;
+
+  var headingFont = 'helvetica';
+  if (headingFontData) {
+    doc.addFileToVFS('headingRegular.ttf', headingFontData.headingRegular);
+    doc.addFont('headingRegular.ttf', 'Heading', 'normal');
+    doc.addFileToVFS('headingBold.ttf', headingFontData.headingBold);
+    doc.addFont('headingBold.ttf', 'Heading', 'bold');
+    headingFont = 'Heading';
+  }
+  var bodyFont = 'helvetica';
+
+  function setColor(method, rgb) { doc[method](rgb[0], rgb[1], rgb[2]); }
+
+  function paintPageBg() {
+    setColor('setFillColor', PDF_LIGHT_COLORS.bg);
+    doc.rect(0, 0, pageW, pageH, 'F');
+  }
+
+  function newPage() {
+    doc.addPage();
+    paintPageBg();
+    y = marginTop;
+  }
+
+  function ensureSpace(h) {
+    if (y + h > pageH - marginBottom) newPage();
+  }
+
+  function writeWrapped(text, opts) {
+    opts = opts || {};
+    var size = opts.size || 10.5;
+    var lineH = opts.lineH || size * 1.5;
+    doc.setFont(opts.font || bodyFont, opts.style || 'normal');
+    doc.setFontSize(size);
+    setColor('setTextColor', opts.color || PDF_LIGHT_COLORS.ink);
+    var lines = doc.splitTextToSize(sanitizePdfText(text), contentW - (opts.indent || 0));
+    lines.forEach(function (line) {
+      ensureSpace(lineH);
+      doc.text(line, marginX + (opts.indent || 0), y, opts.charSpace ? { charSpace: opts.charSpace } : undefined);
+      y += lineH;
+    });
+    y += opts.gapAfter || 0;
+  }
+
+  function drawDivider() {
+    ensureSpace(18);
+    setColor('setDrawColor', PDF_LIGHT_COLORS.line);
+    doc.setLineWidth(0.75);
+    doc.line(marginX, y, pageW - marginX, y);
+    y += 18;
+  }
+
+  paintPageBg();
+
+  // header: icon + wordmark
+  var iconH = 15;
+  drawPdfBrandIcon(doc, marginX, y - 2, iconH);
+  doc.setFont(headingFont, 'bold');
+  doc.setFontSize(12.5);
+  setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+  var wmX = marginX + iconH * 1.5 + 8;
+  doc.text('stay', wmX, y + 9);
+  var wStay = doc.getTextWidth('stay');
+  setColor('setTextColor', PDF_LIGHT_COLORS.orange);
+  doc.text('(human)', wmX + wStay, y + 9);
+  var wHuman = doc.getTextWidth('(human)');
+  setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+  doc.text('.sec', wmX + wStay + wHuman, y + 9);
+  y += iconH + 16;
+
+  writeWrapped(post.title, { size: 21, font: headingFont, style: 'bold', color: PDF_LIGHT_COLORS.ink, lineH: 25, gapAfter: 8 });
+
+  doc.setFont(bodyFont, 'bold');
+  doc.setFontSize(8.5);
+  setColor('setTextColor', PDF_LIGHT_COLORS.orange);
+  var tagText = sanitizePdfText((post.tag || '').toUpperCase());
+  doc.text(tagText, marginX, y, { charSpace: 0.6 });
+  var tagW = doc.getTextWidth(tagText) + 6 * tagText.length * 0.06;
+  setColor('setTextColor', PDF_LIGHT_COLORS.inkMuted);
+  doc.setFont(bodyFont, 'normal');
+  doc.setFontSize(9);
+  doc.text('·  ' + (post.readMinutes || 3) + ' min read', marginX + tagW + 8, y);
+  y += 22;
+
+  drawDivider();
+
+  writeWrapped(post.intro, { size: 10.5, color: PDF_LIGHT_COLORS.inkMuted, lineH: 15.5, gapAfter: 10 });
+  drawDivider();
+
+  post.sections.forEach(function (sec) {
+    ensureSpace(30);
+    doc.setFont(bodyFont, 'bold');
+    doc.setFontSize(13);
+    setColor('setTextColor', PDF_LIGHT_COLORS.orange);
+    doc.text(sanitizePdfText(sec.num), marginX, y);
+    var numW = doc.getTextWidth(sec.num) + 10;
+    doc.setFont(headingFont, 'bold');
+    doc.setFontSize(13.5);
+    setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+    var titleLines = doc.splitTextToSize(sanitizePdfText(sec.title), contentW - numW);
+    titleLines.forEach(function (line, i) {
+      doc.text(line, marginX + numW, y + i * 16);
+    });
+    y += Math.max(16, titleLines.length * 16) + 8;
+
+    sec.blocks.forEach(function (block) {
+      if (block.type === 'step') {
+        if (block.platform) {
+          writeWrapped(block.platform.toUpperCase(), { size: 8.5, font: bodyFont, style: 'bold', color: PDF_LIGHT_COLORS.orange, lineH: 11, gapAfter: 3, charSpace: 0.4 });
+        }
+        block.paragraphs.forEach(function (p) {
+          writeWrapped(stripTagsForPdf(p), { size: 10, color: PDF_LIGHT_COLORS.ink, lineH: 14.5, gapAfter: 8 });
+        });
+      } else if (block.type === 'compare') {
+        var badLabel = block.bad.label.replace(/^[✕✓]\s*/, '');
+        var goodLabel = block.good.label.replace(/^[✕✓]\s*/, '');
+        writeWrapped('AVOID — ' + badLabel + ': ' + block.bad.text, { size: 9.5, color: PDF_LIGHT_COLORS.inkMuted, lineH: 13.5, gapAfter: 4 });
+        writeWrapped('DO — ' + goodLabel + ': ' + block.good.text, { size: 9.5, color: PDF_LIGHT_COLORS.greenDark, lineH: 13.5, gapAfter: 8 });
+      } else if (block.type === 'pattern-list') {
+        block.items.forEach(function (it) {
+          doc.setFont(bodyFont, 'bold');
+          doc.setFontSize(9.5);
+          setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+          ensureSpace(14);
+          doc.text(sanitizePdfText(it.tag) + ':', marginX, y);
+          var tW = doc.getTextWidth(it.tag + ': ') + 4;
+          doc.setFont(bodyFont, 'normal');
+          setColor('setTextColor', PDF_LIGHT_COLORS.inkMuted);
+          var itLines = doc.splitTextToSize(sanitizePdfText(it.text), contentW - tW);
+          itLines.forEach(function (line, i) {
+            if (i > 0) ensureSpace(13.5);
+            doc.text(line, marginX + tW, y + i * 13.5);
+          });
+          y += Math.max(13.5, itLines.length * 13.5) + 4;
+        });
+        y += 4;
+      }
+    });
+  });
+
+  // warning box
+  var warnLines = doc.splitTextToSize(sanitizePdfText(post.warn.text), contentW - 20);
+  var warnLabelText = sanitizePdfText(post.warn.label);
+  var warnBoxH = 14 + 14 + warnLines.length * 13.5 + 16;
+  ensureSpace(warnBoxH + 10);
+  var warnTop = y;
+  setColor('setFillColor', PDF_LIGHT_COLORS.pinkFill);
+  setColor('setDrawColor', PDF_LIGHT_COLORS.pinkBorder);
+  doc.setLineWidth(1);
+  doc.roundedRect(marginX, warnTop, contentW, warnBoxH, 8, 8, 'FD');
+  y = warnTop + 20;
+  doc.setFont(bodyFont, 'bold');
+  doc.setFontSize(9);
+  setColor('setTextColor', PDF_LIGHT_COLORS.pinkBorder);
+  doc.text(warnLabelText, marginX + 16, y, { charSpace: 0.3 });
+  y += 16;
+  doc.setFont(bodyFont, 'normal');
+  doc.setFontSize(9.5);
+  setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+  warnLines.forEach(function (line) {
+    doc.text(line, marginX + 16, y);
+    y += 13.5;
+  });
+  y = warnTop + warnBoxH + 22;
+
+  drawDivider();
+  writeWrapped('The 60-second version', { size: 13.5, font: headingFont, style: 'bold', color: PDF_LIGHT_COLORS.ink, lineH: 18, gapAfter: 6 });
+  post.checklist.forEach(function (c) {
+    var lines = doc.splitTextToSize(sanitizePdfText(c), contentW - 22);
+    ensureSpace(lines.length * 14.5 + 4);
+    drawPdfCheck(doc, marginX + 2, y - 8, 9);
+    doc.setFont(bodyFont, 'normal');
+    doc.setFontSize(10);
+    setColor('setTextColor', PDF_LIGHT_COLORS.ink);
+    lines.forEach(function (line, i) {
+      doc.text(line, marginX + 20, y + i * 14.5);
+    });
+    y += lines.length * 14.5 + 6;
+  });
+
+  // footer on every page
+  var pageCount = doc.internal.getNumberOfPages();
+  for (var i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    setColor('setDrawColor', PDF_LIGHT_COLORS.line);
+    doc.setLineWidth(0.75);
+    doc.line(marginX, pageH - 36, pageW - marginX, pageH - 36);
+    doc.setFont(bodyFont, 'normal');
+    doc.setFontSize(8.5);
+    setColor('setTextColor', PDF_LIGHT_COLORS.inkMuted);
+    doc.text('stayhumansec.github.io', marginX, pageH - 22);
+    doc.text('Page ' + i + ' of ' + pageCount, pageW - marginX, pageH - 22, { align: 'right' });
+  }
+
+  return doc;
+}
+
+var JSPDF_CDN_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+var _scriptLoadPromises = {};
+function loadScriptOnce(src) {
+  if (!_scriptLoadPromises[src]) {
+    _scriptLoadPromises[src] = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { delete _scriptLoadPromises[src]; reject(new Error('Failed to load ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  return _scriptLoadPromises[src];
+}
+
+/**
+ * Wires up a "Download as PDF" button. Lazy-loads jsPDF from a CDN only on first click,
+ * builds the PDF natively via generatePostPdf(), and triggers a direct download — entirely in
+ * the browser, one click, no print dialog. No server round-trip, no email capture, nothing
+ * sent or stored anywhere.
+ */
+function setupDownloadPdfButton(btn, post) {
   if (!btn) return;
-  btn.addEventListener('click', function () { window.print(); });
+  var labelEl = btn.querySelector('span');
+  var originalLabel = labelEl.textContent;
+
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    btn.classList.remove('pdf-error');
+    labelEl.textContent = 'Generating…';
+
+    Promise.all([loadScriptOnce(JSPDF_CDN_URL), loadPdfHeadingFontData()]).then(function (results) {
+      var doc = generatePostPdf(post, results[1]);
+      doc.save(post.slug + '.pdf');
+    }).then(function () {
+      btn.disabled = false;
+      labelEl.textContent = originalLabel;
+    }).catch(function () {
+      btn.disabled = false;
+      btn.classList.add('pdf-error');
+      labelEl.textContent = 'Couldn’t generate — try again';
+      setTimeout(function () {
+        btn.classList.remove('pdf-error');
+        labelEl.textContent = originalLabel;
+      }, 3000);
+    });
+  });
 }
 
 /** Fills a thin fixed bar across the top of the viewport as the person scrolls down the page. */
