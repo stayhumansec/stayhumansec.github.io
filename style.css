@@ -403,11 +403,18 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .toolkit-tier-desc{color:var(--cream-dim); font-size:14px; max-width:620px; margin-bottom:22px;}
 .tool-grid{display:grid; gap:18px;}
 .tool-card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px 26px; transition:border-color .2s ease;}
+.tool-card.open, .tool-card:hover{border-color:var(--orange);}
 .tool-card-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:4px;}
 .tool-name{font-weight:700; font-size:17px;}
 .tool-cat{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--cream-dim);}
-.tool-what{color:var(--cream-dim); font-size:14.5px; margin:8px 0 18px; line-height:1.65;}
-.tool-cols{display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;}
+.tool-what{color:var(--cream-dim); font-size:14.5px; margin:8px 0 4px; line-height:1.65;}
+.tool-toggle{display:inline-flex; align-items:center; gap:6px; background:transparent; border:none; color:var(--orange); font-family:'JetBrains Mono', monospace; font-size:12.5px; cursor:pointer; padding:6px 0 0; margin:0;}
+.tool-toggle svg{width:11px; height:11px; transition:transform .25s var(--ease);}
+.tool-card.open .tool-toggle svg{transform:rotate(180deg);}
+.tool-details{display:grid; grid-template-rows:0fr; transition:grid-template-rows .3s var(--ease);}
+.tool-card.open .tool-details{grid-template-rows:1fr;}
+.tool-details-inner{overflow:hidden;}
+.tool-cols{display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; padding-top:18px;}
 .tool-col h4{font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:10px;}
 .tool-col.features h4{color:var(--cream-dim);}
 .tool-col.advantages h4{color:var(--green);}
@@ -416,6 +423,7 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .tool-col li{font-size:13.5px; color:var(--cream-dim); margin-bottom:9px; padding-left:14px; position:relative; line-height:1.55;}
 .tool-col li::before{content:"—"; position:absolute; left:0; color:var(--line);}
 @media (max-width:760px){ .tool-cols{grid-template-columns:1fr; gap:16px;} }
+@media (prefers-reduced-motion: reduce){ .tool-details, .tool-toggle svg{transition:none;} }
 
 /* ============ AI PASSWORD COACH ============ */
 .pw-display{font-family:'JetBrains Mono', monospace; font-size:19px; font-weight:700; color:var(--cream); background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:14px 16px; letter-spacing:0.5px; word-break:break-all; margin:14px 0 8px;}
