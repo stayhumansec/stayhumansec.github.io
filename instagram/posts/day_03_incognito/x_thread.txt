@@ -1,0 +1,15 @@
+1/ "Incognito mode makes you anonymous."
+
+Nope. Here's what it actually does. 🧵
+
+2/ Incognito mode turns off exactly three things: your browser saving new history, keeping cookies after you close the window, and saving anything you type into forms. That's the whole feature.
+
+3/ What it does NOT do: hide anything from your ISP, your Wi-Fi network, or the websites you visit. That visibility happens at the network/server level — incognito mode never touches it.
+
+4/ If you're on a work or school network, whoever manages it can very likely still see exactly what you looked at, incognito or not.
+
+5/ Want actual privacy from your network or ISP? That's what a VPN is for — a completely different tool than a browser mode.
+
+6/ Full write-up: https://stayhumansec.github.io/post.html?slug=file_004
+
+Next up: the AI phone call that sounds exactly like your kid. It's not.

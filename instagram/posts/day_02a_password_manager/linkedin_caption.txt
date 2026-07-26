@@ -1,0 +1,13 @@
+The password mistake nobody thinks is a big deal: reusing the same one across multiple accounts. I'd bet most of us have done it at some point — it's just easier to remember one password than fifty.
+
+Here's why it's worth five minutes to fix. When a random site gets breached — and eventually, one of the sites you've signed up for will be — that leaked email/password combination gets automatically tried against hundreds of other services. It's called credential stuffing, and it's fully automated. If you reused that password anywhere else, including a work account, that account is now exposed too, with zero effort from the attacker.
+
+The fix is simpler than people expect. Your phone almost certainly already has a free password manager built in (iCloud Keychain or Google Password Manager) that can run a checkup showing exactly which passwords are reused or already compromised, then generate a unique one for each account going forward.
+
+Why this matters for your work life specifically: IT security teams spend a lot of effort on perimeter defense, but a reused personal password is a door that bypasses all of it. Fixing your own password hygiene is one of the few security improvements an individual can make that has zero dependency on your employer's tooling.
+
+Start with email, banking, and payment-linked accounts first — the rest can catch up over time.
+
+Next up: what is smishing? (SMS phishing, explained)
+
+Have you run a password checkup recently? Curious how common reused passwords still are.

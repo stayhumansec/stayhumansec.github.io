@@ -1,0 +1,17 @@
+1/ One setting stops most account takeovers cold.
+
+Have you turned it on? 🔐 🧵
+
+2/ Two-factor authentication (2FA) means proving it's you with something beyond just a password — a code, an app tap, or a security key.
+
+3/ Why it matters: your password will leak eventually. Breaches happen to companies, not just people. Once a password's out there, it gets tried everywhere you might have reused it.
+
+4/ 2FA is what stops that stolen password from being enough on its own. Microsoft reports accounts with any 2FA block over 99% of automated takeover attempts — even with a compromised password.
+
+5/ Turn it on in this order: email first (it can reset almost everything else), then banking, then everything else. Authenticator app beats SMS where available — SMS can be intercepted via SIM-swap.
+
+6/ Save your backup codes somewhere offline, not on the phone itself.
+
+Full write-up: https://stayhumansec.github.io/post.html?slug=file_006
+
+Next up: a real phishing email, broken down line by line.

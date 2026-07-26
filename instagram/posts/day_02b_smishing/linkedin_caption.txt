@@ -1,0 +1,11 @@
+"Your package couldn't be delivered. Click here to fix it." I'd guess most of us have gotten a text like this in the last month.
+
+It's called smishing — SMS phishing. The specific wording changes constantly, but the underlying pattern almost never does: a name you'd trust (a delivery company, a bank), a manufactured problem that needs fixing immediately, and a link that promises the fix. It works because a text message reads as more urgent and more "official" than an email — and most people have never been trained to question one the way email phishing awareness has trained us to question suspicious emails.
+
+Why this matters for your work life: the same pattern shows up in "smishing" attacks targeting employees directly — a fake text from "IT" about a password reset, or from "HR" about a benefits update, both designed to harvest login credentials through a link that looks legitimate at a glance. The defense is identical to the consumer version.
+
+The fix: don't tap the link. Open the company's (or your organization's) official app or portal directly, or type the address in yourself. If something's genuinely wrong, it'll show up there too — with no risky link required.
+
+Next up: incognito mode doesn't make you anonymous.
+
+Has your organization run smishing-awareness training alongside the usual email-phishing training? Curious how common that is.

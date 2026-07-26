@@ -1,0 +1,20 @@
+1/ A real phishing email. Broken down, line by line. 🔍
+
+Every part of it is doing a specific job. 🧵
+
+2/ The sender name is not the sender. Anyone can type "Bank Support" as their display name — that's just a label. The actual email address underneath is what tells you where it really came from.
+
+3/ Most inboxes hide that address by default. Tap the sender name to expand it and check.
+
+4/ The red flags:
+— "Dear Customer" instead of your real name
+— "Suspended in 24 hours" — manufactured urgency
+— Link text that doesn't match where it actually goes when you hover
+
+5/ An unexpected attachment (invoice, shipping label, "document") you never asked for is another common one.
+
+6/ Don't click. Go to the official app or type the site in yourself instead.
+
+Full write-up: https://stayhumansec.github.io/post.html?slug=file_007
+
+Next up: how to spot a deepfake in 2026.

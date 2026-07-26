@@ -1,0 +1,11 @@
+"Incognito mode makes me anonymous." I've heard some version of this from a surprising number of people — including a few who really should know better.
+
+Here's what incognito (or "private") mode actually does: it stops your browser from saving new history, cookies, and autofill data locally. That's the entire feature. It says nothing about what your internet provider, your Wi-Fi network, or the websites you visit can see — all of that visibility happens at the network and server level, which incognito mode never touches.
+
+Why this matters for your work life: if you're on a company or client network doing anything in "private" browsing, assume whoever manages that network can still see exactly what you accessed — incognito mode provides zero protection against that. It also doesn't protect you on public Wi-Fi at a coffee shop or airport, a scenario a lot of remote and traveling professionals run into regularly.
+
+If you actually need to keep your traffic private from the network you're connected to, that's a VPN's job — a fundamentally different tool solving a different problem than a browser mode ever could.
+
+Next up: the AI phone call that sounds exactly like your kid. It's not.
+
+Curious how common this misconception is — anyone else run into it on their team?

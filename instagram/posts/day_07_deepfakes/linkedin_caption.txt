@@ -1,0 +1,11 @@
+The old deepfake tells don't work anymore. Here's what still does.
+
+Bad blinking used to give it away. Not anymore — newer models have largely fixed the classic visual tells (natural blinking, consistent lighting, lip-sync). Judging a video by "does it look believable" alone is a much weaker test than it used to be, and the detection arms race is roughly even: as fast as visual tells get fixed, new ones take their place.
+
+Why this matters for your work life: deepfakes are no longer just a misinformation problem, they're a fraud vector. Fabricated video or audio of executives authorizing transactions, fake "verification calls" during recruitment, and manipulated clips used in social engineering are all active categories of attack right now, not hypotheticals.
+
+What still holds up, because it's about context rather than pixels: lighting and reflections that don't quite match the scene, hands and edges that warp under close attention, and — most reliably — the actual ask. A request for money, credentials, or urgent action is a bigger red flag than any visual artifact, because that's the actual goal of most deepfake-enabled scams.
+
+The practical defense: verify through a channel the other party doesn't control. Call back on a known number, loop in a colleague, or check an official source. A fake can't answer a question it's never been fed.
+
+Has anyone here dealt with a deepfake or voice-clone attempt targeting your organization? Would be useful to hear how it played out.
