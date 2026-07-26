@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ask the Archive — stay(human).sec</title>
+<title>Search the Archive — stay(human).sec</title>
 <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
@@ -33,21 +33,21 @@
 
 <div class="path-bar">
   <div class="path-bar-inner">
-    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ ./ask.sh</div>
+    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ ./search.sh</div>
     <div class="win-controls"><span class="wc-min"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="19"/></svg></span><span class="wc-max"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg></span><span class="wc-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span></div>
   </div>
 </div>
 
 <section class="section">
   <div class="section-inner">
-    <div class="section-eyebrow reveal">// ASK THE ARCHIVE</div>
-    <h2 class="reveal">A question, answered from what's actually here.</h2>
-    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:860px;">Ask anything about cybersecurity, privacy, or AI safety. Answers are grounded in this site's own posts and glossary — and it'll say so when a question falls outside what's actually been written here yet.</p>
+    <div class="section-eyebrow reveal">// SEARCH THE ARCHIVE</div>
+    <h2 class="reveal">Search what's actually written here.</h2>
+    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:860px;">Search for anything about cybersecurity, privacy, or AI safety — matched against this site's own posts and glossary. Nothing turns up? Try different words, or browse everything directly.</p>
 
     <div style="max-width:860px; margin-top:32px;">
       <div style="display:flex; gap:10px;">
-        <input type="text" id="askInput" placeholder="e.g. Is it safe to use public Wi-Fi without a VPN?" style="flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 16px; color:var(--cream); font-family:'Poppins',sans-serif; font-size:14px;" />
-        <button class="btn-primary" id="askSendBtn" style="cursor:pointer; white-space:nowrap;">Ask →</button>
+        <input type="text" id="askInput" placeholder="e.g. public wifi vpn" style="flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 16px; color:var(--cream); font-family:'Poppins',sans-serif; font-size:14px;" />
+        <button class="btn-primary" id="askSendBtn" style="cursor:pointer; white-space:nowrap;">Search →</button>
       </div>
       <div id="askResults" style="margin-top:24px;"></div>
     </div>

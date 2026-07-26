@@ -347,7 +347,7 @@ function initCommandPalette() {
     { title: 'AI Password Coach', sub: 'password-coach.html — memorable, genuinely strong passwords', href: 'password-coach.html', color: 'var(--violet)' },
     { title: '2FA Recovery Kit Builder', sub: 'recovery-kit.html — build a printable recovery plan', href: 'recovery-kit.html', color: 'var(--green)' },
     { title: 'Breach Exposure Check', sub: 'breach-check.html — check if a password has already leaked', href: 'breach-check.html', color: 'var(--gold)' },
-    { title: 'Ask the Archive', sub: 'ask.html — ask a security question, grounded in this site', href: 'ask.html', color: 'var(--orange)' },
+    { title: 'Search the Archive', sub: 'ask.html — search this site\'s posts and glossary', href: 'ask.html', color: 'var(--orange)' },
     { title: 'Glossary', sub: 'glossary.html — plain-language terms', href: 'glossary.html', color: 'var(--blue)' }
   ];
   var items = staticPages.slice();
@@ -630,7 +630,7 @@ function setStoredApiKey(key) {
  *
  * `userPromptOrMessages` accepts either a plain string (single-turn — wrapped into a
  * one-message array) or an already-built array of {role, content} messages for multi-turn
- * conversations like the Ask the Archive chat.
+ * conversations like Search the Archive's optional AI deep-dive.
  */
 async function callClaude(apiKey, systemPrompt, userPromptOrMessages, opts) {
   opts = opts || {};

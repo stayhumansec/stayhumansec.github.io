@@ -13,7 +13,7 @@ tools.html            Utilities hub — links to every small in-browser tool bel
 password-coach.html   AI Password Coach — teaches the passphrase method, generates real random examples
 recovery-kit.html     2FA Recovery Kit Builder — printable "if I lose my phone" plan, localStorage only
 breach-check.html     Breach Exposure Check — k-anonymity password breach lookup via HaveIBeenPwned
-ask.html              Ask the Archive — local keyword search over posts.json + glossary, optional AI answer
+ask.html              Search the Archive — local keyword search over posts.json + glossary, optional AI answer
 glossary.html         Full glossary, rendered from the GLOSSARY_TERMS array in site.js
 404.html              Not-found page, styled as a failed `cat` command
 style.css             All styles for every page (one shared stylesheet, no per-page CSS files)
@@ -114,7 +114,7 @@ Orange is the single primary accent (CTAs, active states, hover borders). Green 
 - `password-coach.html` — AI Password Coach. Teaches the passphrase method rather than handing over a copy-paste password.
 - `recovery-kit.html` — 2FA Recovery Kit Builder. Pure offline form + localStorage, no AI, no network calls.
 - `breach-check.html` — Breach Exposure Check. Real k-anonymity math against HaveIBeenPwned; the password itself never leaves the browser, only a SHA-1 hash prefix does.
-- `ask.html` — Ask the Archive. Local keyword search over `posts.json` + glossary, with an optional BYOK AI answer on top. Kept for now but not fully proven out — see below.
+- `ask.html` — Search the Archive. Local keyword search over `posts.json` + glossary, with an optional BYOK AI deep-dive on top. Renamed from "Ask the Archive" since the default experience is search, not Q&A — kept for now but not fully proven out; a genuinely synthesizing version may replace it later as its own task.
 
 **Removed**: Scam & Phishing Inspector and Privacy Policy Reader (both deleted, along with every link/reference to them). Both worked by regex pattern-matching over arbitrary user-pasted text — a scam message or a policy document — and presenting the result as a verdict. That's an approximate judgment call dressed up as a finding, not a real check, and a security education brand can't afford a tool that's confidently wrong. Do not rebuild either of these, or anything with the same shape (open-ended text in, "risk" verdict out from string matching), even if asked to make it "smarter" — the fix for a heuristic-only tool giving false confidence is not adding more heuristics, it's not shipping it as a verdict-giving tool at all.
 
