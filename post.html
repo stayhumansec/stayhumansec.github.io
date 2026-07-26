@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="view-transition" content="same-origin">
 <title>Loading… | stay(human).sec</title>
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -93,7 +93,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=6"></script>
+<script src="site.js?v=10"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML =
@@ -238,10 +238,10 @@
         '<div class="next-title">' + escapeHTML(post.next.title) + '</div>' +
         '<div class="next-desc">' + escapeHTML(post.next.desc) + '</div>' +
       '</' + nextTag + '>' +
-      '<button class="print-pdf-btn reveal" id="printPdfBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg><span>Print / Save as PDF</span></button>';
+      '<button class="download-pdf-btn reveal" id="downloadPdfBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg><span>Download as PDF</span></button>';
 
     setupCopyMdButton(document.getElementById('copyMdBtn'), post);
-    setupPrintPdfButton(document.getElementById('printPdfBtn'));
+    setupDownloadPdfButton(document.getElementById('downloadPdfBtn'), post);
     initScrollReveal({ stagger: false });
     buildTOC(post.sections);
     initGlossaryTooltips(document.getElementById('articleRoot'));
