@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ask the Archive — stay(human).sec</title>
+<link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<nav class="topnav" id="topnav">
+  <a href="index.html" class="nav-brand">
+    <span id="navIcon"></span>
+    <span>stay<span class="b-accent">(human)</span>.sec</span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html#posts">Posts</a>
+    <a href="tools.html">Utilities</a>
+    <a href="index.html#youcheck">You, Check.</a>
+    <a href="glossary.html">Glossary</a>
+  </div>
+  <div class="nav-right">
+    <button class="nav-prompt-btn" id="cmdkTrigger" aria-label="Open navigation and search">
+      <span class="prompt-lead">stay(human).sec:~$</span>
+      <span class="prompt-text">explore</span><span class="prompt-cursor">_</span>
+    </button>
+    <a href="#" class="nav-cta">Follow @stayhumansec</a>
+  </div>
+</nav>
+
+<div class="path-bar">
+  <div class="path-bar-inner">
+    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ ./ask.sh</div>
+    <div class="win-controls"><span class="wc-min"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="19"/></svg></span><span class="wc-max"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg></span><span class="wc-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span></div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">// ASK THE ARCHIVE</div>
+    <h2 class="reveal">A question, answered from what's actually here.</h2>
+    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:600px;">Ask anything about cybersecurity, privacy, or AI safety. Answers are grounded in this site's own posts and glossary — and it'll say so when a question falls outside what's actually been written here yet.</p>
+
+    <div id="askKeySection" style="max-width:680px; margin-top:28px;"></div>
+
+    <div id="askChatWrap" style="max-width:680px; margin-top:20px; display:none;">
+      <div id="askMessages" style="display:flex; flex-direction:column; gap:14px; margin-bottom:16px;"></div>
+      <div style="display:flex; gap:10px;">
+        <input type="text" id="askInput" placeholder="e.g. Is it safe to use public Wi-Fi without a VPN?" style="flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 16px; color:var(--cream); font-family:'Poppins',sans-serif; font-size:14px;" />
+        <button class="btn-primary" id="askSendBtn" style="cursor:pointer; white-space:nowrap;">Ask →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand-col">
+      <div class="footer-brand"><span id="footerIcon"></span><span>stay<span>(human)</span>.sec</span></div>
+      <p class="footer-tagline">Cybersecurity, AI, and privacy explained properly — one fact, one fix, every day.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="index.html#intro">What we are</a>
+      <a href="index.html#posts">All posts</a>
+      <a href="tools.html">All tools</a>
+    </div>
+    <div class="footer-col">
+      <h4>Follow</h4>
+      <div class="social-row">
+        <a href="#" title="Instagram" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+        </a>
+        <a href="#" title="Telegram" aria-label="Telegram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </a>
+        <a href="#" title="Email" aria-label="Email">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>new file added every day — <a href="#">follow @stayhumansec</a></div>
+    <div>stay(human).sec</div>
+  </div>
+</footer>
+
+<script src="site.js?v=2"></script>
+<script>
+  if (typeof brandIconSVG !== 'function') {
+    document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
+    throw new Error('site.js not loaded.');
+  }
+
+  document.getElementById('navIcon').innerHTML = brandIconSVG(26);
+  document.getElementById('footerIcon').innerHTML = brandIconSVG(24);
+  initBootSequence(initPageFade);
+  setupNavScroll();
+  initScrollProgress();
+  initCursorFX();
+  initCommandPalette();
+  initMobileNav();
+  initScrambleReveal('.section-eyebrow');
+  initScrollReveal();
+
+  var chatHistory = [];
+  var systemPrompt = '';
+
+  function buildSystemPrompt(posts) {
+    var postSummaries = posts.map(function (p) {
+      return '- ' + p.filename + ' ("' + p.title + '", slug=' + p.slug + '): ' + p.intro + ' Checklist covers: ' + p.checklist.join('; ') + '.';
+    }).join('\n');
+    var glossarySummaries = (typeof GLOSSARY_TERMS !== 'undefined' ? GLOSSARY_TERMS : []).map(function (t) {
+      return '- ' + t.term + ': ' + t.def;
+    }).join('\n');
+    return 'You are the plain-language security assistant for stay(human).sec, a cybersecurity/privacy/AI-safety education site with a calm, non-alarmist, no-jargon tone. ' +
+      'Answer in 3-6 short sentences. When a question is directly covered by one of the posts below, mention it by filename (e.g. "covered in FILE_001.md") so the person can read the full walkthrough. ' +
+      'Never invent a post that isn\'t in this list. If a question is outside cybersecurity/privacy/AI, say so briefly and redirect to what this site covers.\n\n' +
+      'Posts on this site:\n' + postSummaries + '\n\nGlossary terms already defined here:\n' + glossarySummaries;
+  }
+
+  function addMessage(role, text) {
+    var wrap = document.getElementById('askMessages');
+    var bubble = document.createElement('div');
+    if (role === 'user') {
+      bubble.style.cssText = 'align-self:flex-end; max-width:80%; background:var(--orange); color:#000; font-weight:600; padding:12px 16px; border-radius:14px 14px 4px 14px; font-size:14.5px;';
+      bubble.textContent = text;
+    } else {
+      bubble.className = 'reveal is-visible';
+      bubble.style.cssText = 'align-self:flex-start; max-width:85%; background:var(--card); border:1px solid var(--line); color:var(--cream-dim); padding:14px 18px; border-radius:14px 14px 14px 4px; font-size:14.5px; line-height:1.65; white-space:pre-wrap;';
+      bubble.textContent = text;
+    }
+    wrap.appendChild(bubble);
+    wrap.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    return bubble;
+  }
+
+  async function sendQuestion() {
+    var input = document.getElementById('askInput');
+    var question = input.value.trim();
+    if (!question) return;
+    var apiKey = getStoredApiKey();
+    if (!apiKey) return;
+
+    input.value = '';
+    addMessage('user', question);
+    chatHistory.push({ role: 'user', content: question });
+
+    var loadingBubble = addMessage('assistant', '…thinking…');
+
+    try {
+      var reply = await callClaude(apiKey, systemPrompt, chatHistory, { maxTokens: 500 });
+      loadingBubble.textContent = reply;
+      chatHistory.push({ role: 'assistant', content: reply });
+    } catch (err) {
+      loadingBubble.style.borderColor = 'var(--pink)';
+      loadingBubble.style.color = 'var(--pink)';
+      loadingBubble.textContent = 'Request failed: ' + err.message;
+      chatHistory.pop();
+    }
+  }
+
+  function initChat(key) {
+    var wrap = document.getElementById('askChatWrap');
+    if (!key) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    if (!document.getElementById('askMessages').children.length) {
+      addMessage('assistant', "Hi — ask me anything about staying safe online, and I'll point you to the relevant post here when there is one.");
+    }
+  }
+
+  document.getElementById('askSendBtn').addEventListener('click', sendQuestion);
+  document.getElementById('askInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendQuestion(); });
+
+  renderApiKeyBox(document.getElementById('askKeySection'), initChat);
+
+  loadPosts().then(function (data) {
+    systemPrompt = buildSystemPrompt(data.posts);
+    initChat(getStoredApiKey());
+  }).catch(function () {
+    systemPrompt = 'You are the plain-language security assistant for stay(human).sec. Answer briefly and calmly.';
+  });
+</script>
+
+</body>
+</html>
