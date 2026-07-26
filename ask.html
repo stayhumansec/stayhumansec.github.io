@@ -44,14 +44,12 @@
     <h2 class="reveal">A question, answered from what's actually here.</h2>
     <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:860px;">Ask anything about cybersecurity, privacy, or AI safety. Answers are grounded in this site's own posts and glossary — and it'll say so when a question falls outside what's actually been written here yet.</p>
 
-    <div id="askKeySection" style="max-width:860px; margin-top:28px;"></div>
-
-    <div id="askChatWrap" style="max-width:860px; margin-top:20px; display:none;">
-      <div id="askMessages" style="display:flex; flex-direction:column; gap:14px; margin-bottom:16px;"></div>
+    <div style="max-width:860px; margin-top:32px;">
       <div style="display:flex; gap:10px;">
         <input type="text" id="askInput" placeholder="e.g. Is it safe to use public Wi-Fi without a VPN?" style="flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 16px; color:var(--cream); font-family:'Poppins',sans-serif; font-size:14px;" />
         <button class="btn-primary" id="askSendBtn" style="cursor:pointer; white-space:nowrap;">Ask →</button>
       </div>
+      <div id="askResults" style="margin-top:24px;"></div>
     </div>
   </div>
 </section>
@@ -108,8 +106,17 @@
   initScrambleReveal('.section-eyebrow');
   initScrollReveal();
 
-  var chatHistory = [];
+  // Local search always works with zero setup — the AI deep-dive (below) is an optional
+  // enhancement on top, same pattern as every other tool here. Without this, a visitor with
+  // no API key would see nothing but an empty input box, which is what got reported as
+  // "incomplete."
+  var STOPWORDS = ['is', 'a', 'an', 'the', 'to', 'of', 'and', 'it', 'in', 'on', 'for', 'my', 'i', 'do', 'does', 'was', 'are', 'be', 'can', 'how', 'what', 'should', 'this', 'that', 'with', 'me'];
+  var sitePosts = [];
   var systemPrompt = '';
+
+  function tokenize(str) {
+    return str.toLowerCase().split(/[^a-z0-9]+/).filter(function (w) { return w.length > 2 && STOPWORDS.indexOf(w) === -1; });
+  }
 
   function buildSystemPrompt(posts) {
     var postSummaries = posts.map(function (p) {
@@ -124,64 +131,95 @@
       'Posts on this site:\n' + postSummaries + '\n\nGlossary terms already defined here:\n' + glossarySummaries;
   }
 
-  function addMessage(role, text) {
-    var wrap = document.getElementById('askMessages');
-    var bubble = document.createElement('div');
-    if (role === 'user') {
-      bubble.style.cssText = 'align-self:flex-end; max-width:80%; background:var(--orange); color:#000; font-weight:600; padding:12px 16px; border-radius:14px 14px 4px 14px; font-size:14.5px;';
-      bubble.textContent = text;
-    } else {
-      bubble.className = 'reveal is-visible';
-      bubble.style.cssText = 'align-self:flex-start; max-width:85%; background:var(--card); border:1px solid var(--line); color:var(--cream-dim); padding:14px 18px; border-radius:14px 14px 14px 4px; font-size:14.5px; line-height:1.65; white-space:pre-wrap;';
-      bubble.textContent = text;
+  function searchArchive(question) {
+    var qWords = tokenize(question);
+    function score(text) {
+      var words = tokenize(text);
+      var s = 0;
+      qWords.forEach(function (qw) { if (words.indexOf(qw) !== -1) s++; });
+      return s;
     }
-    wrap.appendChild(bubble);
-    wrap.scrollIntoView({ block: 'end', behavior: 'smooth' });
-    return bubble;
+    var postResults = sitePosts.map(function (p) {
+      return { type: 'post', item: p, score: score(p.title + ' ' + p.intro + ' ' + p.checklist.join(' ')) };
+    }).filter(function (r) { return r.score > 0; });
+
+    var glossResults = (typeof GLOSSARY_TERMS !== 'undefined' ? GLOSSARY_TERMS : []).map(function (g) {
+      return { type: 'glossary', item: g, score: score(g.term + ' ' + g.def) };
+    }).filter(function (r) { return r.score > 0; });
+
+    return postResults.concat(glossResults).sort(function (a, b) { return b.score - a.score; }).slice(0, 3);
   }
 
-  async function sendQuestion() {
+  function renderResultCard(r) {
+    if (r.type === 'post') {
+      return '<a href="post.html?slug=' + r.item.slug + '" class="file-row" style="min-height:auto; padding:16px 18px; margin-bottom:10px;">' +
+        '<div><div class="filename">' + escapeHTML(r.item.filename) + '</div><div class="title" style="font-size:15px;">' + escapeHTML(r.item.title) + '</div></div>' +
+      '</a>';
+    }
+    return '<div class="file-row" style="min-height:auto; padding:16px 18px; margin-bottom:10px; cursor:default;">' +
+      '<div><div class="filename">GLOSSARY.md</div><div class="title" style="font-size:15px;">' + escapeHTML(r.item.term) + '</div><div class="desc" style="margin-top:4px;">' + escapeHTML(r.item.def) + '</div></div>' +
+    '</div>';
+  }
+
+  function runAsk() {
     var input = document.getElementById('askInput');
     var question = input.value.trim();
     if (!question) return;
-    var apiKey = getStoredApiKey();
-    if (!apiKey) return;
 
-    input.value = '';
-    addMessage('user', question);
-    chatHistory.push({ role: 'user', content: question });
+    var results = searchArchive(question);
+    var html = '';
+    if (results.length) {
+      html += '<div class="listing-label" style="margin-bottom:14px;">$ ' + results.length + ' match' + (results.length === 1 ? '' : 'es') + ' found</div>' +
+        results.map(renderResultCard).join('');
+    } else {
+      html += '<p style="color:var(--cream-dim); font-size:14.5px;">Nothing directly matches that yet on this site. Browse <a href="index.html#posts" style="color:var(--orange);">all posts</a> or the <a href="glossary.html" style="color:var(--orange);">glossary</a> — or try the AI deep-dive below for a broader answer.</p>';
+    }
+    html += '<div id="askAiSection"></div>';
+    document.getElementById('askResults').innerHTML = html;
+    setupAiSection(question);
+  }
 
-    var loadingBubble = addMessage('assistant', '…thinking…');
+  function setupAiSection(question) {
+    var section = document.getElementById('askAiSection');
+    var boxEl = document.createElement('div');
+    section.appendChild(boxEl);
+    var actionEl = document.createElement('div');
+    section.appendChild(actionEl);
+
+    function refreshAction(key) {
+      if (!key) { actionEl.innerHTML = ''; return; }
+      actionEl.innerHTML = '<button class="btn-secondary" id="askAiBtn" style="cursor:pointer; margin-top:14px;">🧠 Get the AI\'s take</button>';
+      document.getElementById('askAiBtn').addEventListener('click', function () { runAiAnswer(question, key); });
+    }
+
+    renderApiKeyBox(boxEl, refreshAction);
+    refreshAction(getStoredApiKey());
+  }
+
+  async function runAiAnswer(question, apiKey) {
+    var actionEl = document.getElementById('askAiBtn').parentElement;
+    actionEl.innerHTML = '<div class="ai-loading">Thinking it through<span class="dots-anim"></span></div>';
 
     try {
-      var reply = await callClaude(apiKey, systemPrompt, chatHistory, { maxTokens: 500 });
-      loadingBubble.textContent = reply;
-      chatHistory.push({ role: 'assistant', content: reply });
+      var reply = await callClaude(apiKey, systemPrompt, question, { maxTokens: 500 });
+      actionEl.innerHTML =
+        '<div class="ai-result-box reveal is-visible"><div class="label">🧠 AI ANSWER</div><p>' + escapeHTML(reply) + '</p></div>' +
+        '<button class="btn-secondary" id="askAiBtn" style="cursor:pointer; margin-top:14px;">↻ Ask again</button>';
+      document.getElementById('askAiBtn').addEventListener('click', function () { runAiAnswer(question, apiKey); });
     } catch (err) {
-      loadingBubble.style.borderColor = 'var(--pink)';
-      loadingBubble.style.color = 'var(--pink)';
-      loadingBubble.textContent = 'Request failed: ' + err.message;
-      chatHistory.pop();
+      actionEl.innerHTML =
+        '<div class="ai-result-box reveal is-visible" style="border-color:var(--pink); background:rgba(232,90,130,0.08);"><div class="label" style="color:var(--pink);">⚠ AI REQUEST FAILED</div><p>' + escapeHTML(err.message) + '</p></div>' +
+        '<button class="btn-secondary" id="askAiBtn" style="cursor:pointer; margin-top:14px;">↻ Try again</button>';
+      document.getElementById('askAiBtn').addEventListener('click', function () { runAiAnswer(question, apiKey); });
     }
   }
 
-  function initChat(key) {
-    var wrap = document.getElementById('askChatWrap');
-    if (!key) { wrap.style.display = 'none'; return; }
-    wrap.style.display = 'block';
-    if (!document.getElementById('askMessages').children.length) {
-      addMessage('assistant', "Hi — ask me anything about staying safe online, and I'll point you to the relevant post here when there is one.");
-    }
-  }
-
-  document.getElementById('askSendBtn').addEventListener('click', sendQuestion);
-  document.getElementById('askInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendQuestion(); });
-
-  renderApiKeyBox(document.getElementById('askKeySection'), initChat);
+  document.getElementById('askSendBtn').addEventListener('click', runAsk);
+  document.getElementById('askInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') runAsk(); });
 
   loadPosts().then(function (data) {
+    sitePosts = data.posts;
     systemPrompt = buildSystemPrompt(data.posts);
-    initChat(getStoredApiKey());
   }).catch(function () {
     systemPrompt = 'You are the plain-language security assistant for stay(human).sec. Answer briefly and calmly.';
   });
