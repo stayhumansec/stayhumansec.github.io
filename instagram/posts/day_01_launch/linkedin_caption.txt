@@ -1,0 +1,13 @@
+I'm starting a daily writing habit: plain-language cybersecurity, AI, and privacy — one real fact, one real fix, every day.
+
+Here's why. Most security advice I come across falls into one of two buckets: it's too technical to actually act on, or it's vague enough to be useless ("just be careful online"). Neither one helps the people I actually know — and in most workplaces, "the people I actually know" are exactly who a phishing email or a reused password ends up costing the most.
+
+So I'm building the middle ground. Daily posts on current threats and everyday safety habits. Weekly breakdowns of real scams and what AI is actually changing about how they work. And a small set of free tools — a password coach, a breach checker, a 2FA recovery kit builder — that teach the underlying habit instead of just handing over a one-time answer.
+
+Why this matters for your work life specifically: the same credential-stuffing attack that empties someone's personal email is the one that gets used against a work account with a reused password. The same AI voice-cloning scam that targets a "grandkid in trouble" call works just as well as a "wire transfer, urgent" call from a spoofed executive. The habits are the same. The stakes are just higher when it's not just your data on the line.
+
+Not a company, not a bot — just one person writing this properly, one post at a time.
+
+Tomorrow's post: the password mistake nobody thinks is a big deal. (It is — and it's probably in your password manager right now.)
+
+Following along, or building something similar for your own team? I'd like to hear about it.
