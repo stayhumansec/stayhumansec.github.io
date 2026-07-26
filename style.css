@@ -424,7 +424,7 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .tool-card.pw-recommended{position:relative; border-color:var(--orange); border-style:dashed;}
 .pw-recommended-badge{position:absolute; top:-11px; right:20px; background:var(--bg); padding:0 8px; font-family:'JetBrains Mono', monospace; font-size:10px; font-weight:700; letter-spacing:0.5px; color:var(--orange);}
 
-/* ============ BYOK AI TOOLS (shared across Scam Inspector, Privacy Policy Reader, Ask the Archive) ============ */
+/* ============ BYOK AI TOOLS (shared with Ask the Archive) ============ */
 .ai-key-box{background:var(--card); border:1px dashed var(--line); border-radius:14px; padding:18px 20px; margin:24px 0;}
 .ai-key-head{font-family:'JetBrains Mono', monospace; font-size:12.5px; color:var(--cream-dim); margin-bottom:12px;}
 .ai-key-row{display:flex; gap:10px; flex-wrap:wrap;}
