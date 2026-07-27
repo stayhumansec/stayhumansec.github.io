@@ -121,7 +121,15 @@ there's no per-platform subdirectory.
 
 3. **Generate the 4 slides** using `instagram/generate_post.py` (a rendering
    library, not a script — `from generate_post import *`, see its module
-   docstring for the exact usage pattern and the shared helpers it provides:
+   docstring for the exact usage pattern and the shared helpers it provides.
+   **This is the standard, non-optional way every carousel gets generated
+   from here forward** — every existing carousel from Day 2 onward
+   (`day_02a_password_manager` through `day_07_deepfakes`, plus
+   `cybernews_20260727_chickfila`) was retrofitted onto it. `day_01_launch`
+   was intentionally left as-is (out of scope, and a bespoke 5-slide
+   structure unlike every other day's 4) — its slide 1 stays the
+   copy-substantiality reference bar regardless. There is no "skip the
+   auto-fit step" path for a new post:
    `base_card`, `linux_chrome`, `tag_pill`, `wrap_text`, `draw_swipe_hook`,
    `clean_smiley`, `footer`, `verify_slide`, `save_pdf_carousel`,
    `verify_pdf_carousel`, `compute_fill_ratio`, `auto_fit_body`,

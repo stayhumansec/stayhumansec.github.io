@@ -317,8 +317,10 @@ def terminal_callout(d, bbox, lines, prompt_color=None, text_color=None,
     (`text_color`) — e.g. lines=["risk_level: HIGH", "3 in 4 reused
     passwords get tried elsewhere within 24h"]. Content is the caller's
     responsibility: pick a real stat or status relevant to the slide's
-    topic, this function only lays it out. Does nothing if bbox has no
-    usable area or `lines` is empty."""
+    topic, this function only lays it out. Each line wraps to fit the box
+    width rather than overflowing the border, and box height grows to fit
+    the wrapped line count. Does nothing if bbox has no usable area or
+    `lines` is empty."""
     prompt_color = prompt_color or orange3
     text_color = text_color or gray_light
     border_color = border_color or (90, 82, 70)
@@ -328,19 +330,30 @@ def terminal_callout(d, bbox, lines, prompt_color=None, text_color=None,
     pad = 28
     line_h = int(font_size * 1.7)
     box_w = min(r - l, 820)
-    box_h = min(pad * 2 + line_h * len(lines), b - t)
+    text_w = box_w - pad * 2
+    prompt_font = font(MONO_BOLD, font_size)
+    output_font = font(MONO_REG, font_size)
+
+    wrapped = []
+    for i, ln in enumerate(lines):
+        raw = ("$ " + ln) if i == 0 else ln
+        f = prompt_font if i == 0 else output_font
+        fill = prompt_color if i == 0 else text_color
+        for sub in wrap_text(d, raw, f, text_w):
+            wrapped.append((sub, f, fill))
+
+    max_lines = max(1, (b - t - pad * 2) // line_h)
+    if len(wrapped) > max_lines:
+        wrapped = wrapped[:max_lines]  # truncate rather than overflow the border
+
+    box_h = pad * 2 + line_h * len(wrapped)
     box_x0 = l + (r - l - box_w) / 2
     box_y0 = t + (b - t - box_h) / 2
     box_x1, box_y1 = box_x0 + box_w, box_y0 + box_h
     d.rounded_rectangle([box_x0, box_y0, box_x1, box_y1], radius=14, outline=border_color, width=2)
-    prompt_font = font(MONO_BOLD, font_size)
-    output_font = font(MONO_REG, font_size)
     y = box_y0 + pad
-    for i, ln in enumerate(lines):
-        if i == 0:
-            d.text((box_x0 + pad, y), "$ " + ln, font=prompt_font, fill=prompt_color)
-        else:
-            d.text((box_x0 + pad, y), ln, font=output_font, fill=text_color)
+    for sub, f, fill in wrapped:
+        d.text((box_x0 + pad, y), sub, font=f, fill=fill)
         y += line_h
 
 
