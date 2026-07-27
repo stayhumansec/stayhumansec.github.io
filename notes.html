@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Notes — stay(human).sec</title>
-<link rel="stylesheet" href="style.css?v=13">
+<title>on(my).mind — stay(human).sec</title>
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 
@@ -18,7 +18,7 @@
   <div class="nav-links">
     <a href="index.html#posts">Posts</a>
     <a href="news.html">News</a>
-    <a href="notes.html">Notes</a>
+    <a href="notes.html">on(my).mind</a>
     <a href="toolkit.html">Toolkit</a>
     <a href="tools.html">Utilities</a>
     <a href="index.html#youcheck">You, Check.</a>
@@ -35,26 +35,26 @@
 
 <div class="path-bar">
   <div class="path-bar-inner">
-    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ cat NOTES.md</div>
+    <div class="path-bar-text"><a href="index.html">on(my).mind</a>:~$ cat THOUGHTS.md</div>
     <div class="win-controls"><span class="wc-min"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="19"/></svg></span><span class="wc-max"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg></span><span class="wc-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span></div>
   </div>
 </div>
 
 <section class="section">
   <div class="section-inner">
-    <div class="section-eyebrow reveal">// NOTES</div>
+    <div class="section-eyebrow reveal">// ON(MY).MIND</div>
     <h2 class="reveal">Unpolished, on purpose.</h2>
     <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:700px;">Separate from the numbered posts — this is where I write freeform: technical explorations, the thinking behind why this project exists, and honest concerns. Less teaching, more journal. Expect a rougher voice than the rest of the site.</p>
 
     <div class="tabs reveal" id="notesTabBar">
-      <button class="tab-btn active" data-tab="all">All notes</button>
+      <button class="tab-btn active" data-tab="all">All</button>
       <button class="tab-btn" data-tab="technical">Technical</button>
       <button class="tab-btn" data-tab="philosophy">Philosophy</button>
       <button class="tab-btn" data-tab="concerns">Concerns</button>
     </div>
 
     <div class="listing-label reveal" id="notesCount">loading notes…</div>
-    <div class="notes-list" id="notesList"></div>
+    <div id="notesList"></div>
   </div>
 </section>
 
@@ -91,7 +91,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=15"></script>
+<script src="site.js?v=16"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
@@ -111,10 +111,11 @@
   initScrollReveal();
 
   var TAG_META = {
-    technical: { label: 'Technical', color: 'var(--blue)' },
-    philosophy: { label: 'Philosophy', color: 'var(--violet)' },
-    concerns: { label: 'Concerns', color: 'var(--pink)' }
+    technical: { label: 'Technical', color: 'var(--blue)', intro: 'Builds, fixes, and the occasional dead end.' },
+    philosophy: { label: 'Philosophy', color: 'var(--violet)', intro: 'The thinking behind why this project exists.' },
+    concerns: { label: 'Concerns', color: 'var(--pink)', intro: 'Honest doubts — including the ones without a tidy resolution.' }
   };
+  var TAG_ORDER = ['technical', 'philosophy', 'concerns'];
 
   function fmtDate(iso) {
     if (!iso) return '';
@@ -139,6 +140,26 @@
     '</div>';
   }
 
+  /** Default "All" view: three distinct chapter-like blocks (Technical /
+   * Philosophy / Concerns), not one flat list with tag as a small chip.
+   * Categories with zero notes are skipped rather than shown empty. */
+  function renderGrouped(notes) {
+    return TAG_ORDER.map(function (tag) {
+      var groupNotes = notes.filter(function (n) { return n.tag === tag; });
+      if (!groupNotes.length) return '';
+      var meta = TAG_META[tag];
+      return '<div class="notes-group">' +
+        '<div class="notes-group-eyebrow" style="color:' + meta.color + ';">// ' + meta.label.toUpperCase() + '</div>' +
+        '<p class="notes-group-intro">' + escapeHTML(meta.intro) + '</p>' +
+        '<div class="notes-list">' + groupNotes.map(noteCard).join('') + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderFlat(notes) {
+    return '<div class="notes-list">' + notes.map(noteCard).join('') + '</div>';
+  }
+
   fetch('notes.json').then(function (r) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return r.json();
@@ -157,19 +178,12 @@
       return;
     }
 
-    list.innerHTML = notes.map(noteCard).join('');
-    initScrollReveal({ stagger: true });
-    initDeclassify({ stagger: true });
-
     function applyFilter(tab) {
-      var cards = list.querySelectorAll('.note-card');
-      var visible = 0;
-      cards.forEach(function (card) {
-        var match = (tab === 'all') || (card.getAttribute('data-tag') === tab);
-        card.style.display = match ? '' : 'none';
-        if (match) visible++;
-      });
-      countEl.textContent = 'total ' + visible + ' note' + (visible === 1 ? '' : 's');
+      var shown = (tab === 'all') ? notes : notes.filter(function (n) { return n.tag === tab; });
+      list.innerHTML = (tab === 'all') ? renderGrouped(notes) : renderFlat(shown);
+      countEl.textContent = 'total ' + shown.length + ' note' + (shown.length === 1 ? '' : 's');
+      initScrollReveal({ stagger: true });
+      initDeclassify({ stagger: true });
     }
 
     applyFilter('all');
