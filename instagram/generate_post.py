@@ -26,10 +26,33 @@ IMPORTANT: after generating each slide, verify it with:
 This project has a history of grid-alignment bugs when patching existing
 images in place — prefer rebuilding a slide fully with this library rather
 than editing pixels of a previous version.
+
+COPY SUBSTANTIALITY: write body copy for how much a slide can actually
+hold, not the bare minimum needed to state the fact. FILE_001's slide 1
+(instagram/posts/day_01_launch/slide1.png) is the reference bar — three
+short headline+subhead pairs plus a two-line closing statement, not a
+single sentence dropped into a mostly-empty card. Thin copy is a content
+problem `auto_fit_body()` below cannot and should not paper over by itself;
+it grows font size/line spacing within a bounded range, it does not invent
+sentences.
+
+AUTO-FIT LAYOUT CHECK: after laying out a slide's body copy, measure actual
+vertical fill against the available body region with `compute_fill_ratio()`,
+or better, use `auto_fit_body()` to drive the whole retry loop: grows font
+size first, then line spacing, within bounded limits; if that still leaves
+real empty space, pass `callout_lines` — a real stat or status line
+relevant to the slide's topic — and it draws a `terminal_callout()` box
+into the leftover space, styled as `$ `-prompted terminal output matching
+`linux_chrome()`'s existing look, instead of stretching text further.
+Reports `ok: False` instead of silently shipping a sparse slide if neither
+stage closes the gap. See that function's docstring for the exact
+`render_fn` contract. Always check `report["ok"]` and flag any `False` in
+the generation report/PR description — don't let a sparse slide through
+quietly.
 """
 
 import os
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageChops
 import math
 import random
 
@@ -254,6 +277,154 @@ def wrap_text(draw, text, font_obj, max_w):
     if cur:
         lines.append(cur)
     return lines
+
+
+def compute_fill_ratio(before_img, after_img, body_top, body_bottom, x0=30, x1=1050):
+    """Measures how much of the vertical band [body_top, body_bottom) got
+    filled by whatever was drawn between `before_img` (the slide rendered up
+    through chrome/tag pill, before body copy) and `after_img` (the same
+    slide with body copy drawn on top). Diffs the two crops directly instead
+    of guessing at a background color, so it's unaffected by the grid lines,
+    dashed rules, or anything else already on the card.
+
+    Returns (ratio, bbox): ratio is filled_height / band_height (0.0-1.0+),
+    bbox is the (l, t, r, b) extent of the added content within the band, or
+    (0.0, None) if nothing changed at all."""
+    before_region = before_img.crop((x0, body_top, x1, body_bottom)).convert("RGB")
+    after_region = after_img.crop((x0, body_top, x1, body_bottom)).convert("RGB")
+    diff = ImageChops.difference(after_region, before_region)
+    bbox = diff.getbbox()
+    if bbox is None:
+        return 0.0, None
+    filled_height = bbox[3] - bbox[1]
+    return filled_height / after_region.size[1], bbox
+
+
+# ============================================================
+# TERMINAL CALLOUT — a small bordered box styled as terminal output that
+# auto_fit_body() can drop into leftover empty space once text growth alone
+# can't close the gap. Reuses the same mono-font, "$ " prompt-line language
+# already established by linux_chrome() at the top of every slide, instead
+# of introducing a new illustration style — it also carries real
+# information (a stat, a status line), not pure decoration.
+# ============================================================
+def terminal_callout(d, bbox, lines, prompt_color=None, text_color=None,
+                      border_color=None, font_size=24):
+    """Draws a rounded-border box styled as terminal output, centered
+    within bbox = (l, t, r, b). `lines` is a list of 1-3 short strings:
+    the first renders as a `$ ` prompt line (mono bold, `prompt_color`),
+    any remaining lines render as plain mono output below it
+    (`text_color`) — e.g. lines=["risk_level: HIGH", "3 in 4 reused
+    passwords get tried elsewhere within 24h"]. Content is the caller's
+    responsibility: pick a real stat or status relevant to the slide's
+    topic, this function only lays it out. Does nothing if bbox has no
+    usable area or `lines` is empty."""
+    prompt_color = prompt_color or orange3
+    text_color = text_color or gray_light
+    border_color = border_color or (90, 82, 70)
+    l, t, r, b = bbox
+    if r <= l or b <= t or not lines:
+        return
+    pad = 28
+    line_h = int(font_size * 1.7)
+    box_w = min(r - l, 820)
+    box_h = min(pad * 2 + line_h * len(lines), b - t)
+    box_x0 = l + (r - l - box_w) / 2
+    box_y0 = t + (b - t - box_h) / 2
+    box_x1, box_y1 = box_x0 + box_w, box_y0 + box_h
+    d.rounded_rectangle([box_x0, box_y0, box_x1, box_y1], radius=14, outline=border_color, width=2)
+    prompt_font = font(MONO_BOLD, font_size)
+    output_font = font(MONO_REG, font_size)
+    y = box_y0 + pad
+    for i, ln in enumerate(lines):
+        if i == 0:
+            d.text((box_x0 + pad, y), "$ " + ln, font=prompt_font, fill=prompt_color)
+        else:
+            d.text((box_x0 + pad, y), ln, font=output_font, fill=text_color)
+        y += line_h
+
+
+def auto_fit_body(render_fn, body_top, body_bottom, x0=30, x1=1050,
+                   base_font_size=30, base_line_spacing=1.35,
+                   font_step=3, spacing_step=0.08,
+                   max_font_size=48, max_line_spacing=1.9,
+                   min_fill=0.80, max_attempts=14,
+                   callout_lines=None, callout_font_size=24,
+                   callout_prompt_color=None, callout_text_color=None):
+    """Auto-adjusting layout check for slide body copy. Sparse slides — a
+    short fact rendered at a fixed font size, leaving a large dead zone
+    between the copy and the swipe-hook/footer — are a known failure mode
+    for this pipeline. Closes that gap in two stages:
+
+      1. Grow the text itself first: render at `base_font_size`/
+         `base_line_spacing`, measure fill via `compute_fill_ratio()`. If
+         under `min_fill` (default 80%), increase font_size in `font_step`
+         increments up to `max_font_size`, then increase line_spacing in
+         `spacing_step` increments up to `max_line_spacing`.
+      2. If text growth alone still leaves the band under `min_fill` and
+         `callout_lines` is given (a list of 1-3 short strings — a real
+         stat or status relevant to the slide's topic, e.g.
+         `["risk_level: HIGH", "3 in 4 reused passwords get tried elsewhere"]`),
+         draw a `terminal_callout()` box into whatever space is left below
+         the copy. This adds real information styled as terminal output —
+         the same `$ ` prompt language already on every slide's chrome bar
+         — rather than an illustration or invented filler copy.
+
+    If neither stage reaches `min_fill` (e.g. no `callout_lines` was given,
+    or the leftover space is too small to hold one legibly), stop and report
+    `ok: False` — the caller MUST check this and flag the slide (e.g. in the
+    generation report/PR description) rather than silently shipping a sparse
+    slide.
+
+    `render_fn` must be `callable(font_size, line_spacing) -> (before_img,
+    after_img)` — before_img is the slide through chrome/tags only, after_img
+    is the same slide with body copy drawn using the given font_size/
+    line_spacing. The caller owns the actual text drawing (wrap_text, font
+    choice, etc.); this function only drives the retry loop, measures, and
+    optionally adds the callout pass.
+
+    Returns (final_img, report) where report is:
+      {"fill_ratio": float, "font_size": int, "line_spacing": float,
+       "attempts": int, "callout_drawn": bool, "ok": bool}
+    """
+    font_size = base_font_size
+    line_spacing = base_line_spacing
+    attempts = 0
+    before_img = after_img = None
+    ratio = 0.0
+    bbox = None
+
+    while attempts < max_attempts:
+        attempts += 1
+        before_img, after_img = render_fn(font_size, line_spacing)
+        ratio, bbox = compute_fill_ratio(before_img, after_img, body_top, body_bottom, x0, x1)
+        if ratio >= min_fill:
+            return after_img, {"fill_ratio": ratio, "font_size": font_size,
+                                "line_spacing": round(line_spacing, 2),
+                                "attempts": attempts, "callout_drawn": False, "ok": True}
+        if font_size < max_font_size:
+            font_size += font_step
+        elif line_spacing < max_line_spacing:
+            line_spacing = round(line_spacing + spacing_step, 2)
+        else:
+            break  # both maxed out — no more room to grow text alone
+
+    callout_drawn = False
+    if callout_lines and bbox is not None:
+        content_bottom = body_top + bbox[3]
+        empty_top = content_bottom + 28
+        if empty_top < body_bottom - 60:  # only draw if a real gap remains
+            d = ImageDraw.Draw(after_img)
+            terminal_callout(d, (x0, empty_top, x1, body_bottom), callout_lines,
+                              prompt_color=callout_prompt_color, text_color=callout_text_color,
+                              font_size=callout_font_size)
+            callout_drawn = True
+            ratio, _ = compute_fill_ratio(before_img, after_img, body_top, body_bottom, x0, x1)
+
+    return after_img, {"fill_ratio": ratio, "font_size": font_size,
+                        "line_spacing": round(line_spacing, 2),
+                        "attempts": attempts, "callout_drawn": callout_drawn,
+                        "ok": ratio >= min_fill}
 
 
 def clean_smiley(d, cx, cy, s=1.0):

@@ -111,7 +111,10 @@ there's no per-platform subdirectory.
 
 2. **Write the carousel copy** for all 4 slides, following the established
    structure (see "Standard workflow for 'make today's post'" earlier in this
-   file, and the tone/voice rules in `CLAUDE.md`). Then write the four
+   file, and the tone/voice rules in `CLAUDE.md`). Write for how much a slide
+   can actually hold, not the bare minimum needed to state the fact —
+   FILE_001's slide 1 (`instagram/posts/day_01_launch/slide1.png`) is the
+   reference bar for "how much copy is enough." Then write the four
    platform captions/thread (Instagram, Facebook, LinkedIn, X) per the
    "Platform-specific packaging" spec above — same fact/fix, different tone
    per platform.
@@ -121,7 +124,20 @@ there's no per-platform subdirectory.
    docstring for the exact usage pattern and the shared helpers it provides:
    `base_card`, `linux_chrome`, `tag_pill`, `wrap_text`, `draw_swipe_hook`,
    `clean_smiley`, `footer`, `verify_slide`, `save_pdf_carousel`,
-   `verify_pdf_carousel`). Save the output to
+   `verify_pdf_carousel`, `compute_fill_ratio`, `auto_fit_body`,
+   `terminal_callout`). For any slide with body copy of variable length
+   (i.e. slides 2 and 3 — the hook and close slides are short by design and
+   don't need this), render it through `auto_fit_body()` instead of a
+   single fixed font size/line spacing. It closes empty vertical space in
+   two stages: first by growing the text itself (font size, then line
+   spacing, within bounded limits — capped at 48px so slides don't read as
+   oversized), and if that still leaves real empty space, by passing
+   `callout_lines` — a real stat or status line relevant to the slide's
+   topic (e.g. `["risk_level: HIGH", "3 in 4 reused passwords get tried
+   elsewhere within 24h"]`) — so a small bordered box styled as terminal
+   output (matching `linux_chrome()`'s existing `$ ` prompt look) finishes
+   the gap with real information instead of a large dead zone below the
+   copy. Save the output to
    `instagram/posts/day_NN_<topic-slug>/slide1.png` through `slide4.png`
    (paths relative to the repo root). In that same folder, write
    `caption.txt` (Instagram), `facebook_caption.txt`, build `linkedin.pdf`
@@ -131,10 +147,15 @@ there's no per-platform subdirectory.
 4. **Verify every slide** with `verify_slide()` before considering the post
    done — checks correct size (1080×1080) and confirms the image isn't
    blank. This step is non-negotiable; this project has hit blank/broken
-   image bugs before. Also run `verify_pdf_carousel(path, 4)` on
-   `linkedin.pdf` to confirm it has exactly 4 pages, each 1080×1080, and
-   confirm `facebook_caption.txt`, `linkedin_caption.txt`, and
-   `x_thread.txt` all exist and are non-empty.
+   image bugs before. **Also check the `report["ok"]` returned by
+   `auto_fit_body()` for every slide it was used on.** If `False`, the copy
+   itself is too thin to fill the slide within `auto_fit_body()`'s bounded
+   growth range — go back and write more substantial copy for that slide
+   (per step 2 above) rather than shipping it sparse or forcing an
+   artificially large font. Note any such flag in the PR description. Also
+   run `verify_pdf_carousel(path, 4)` on `linkedin.pdf` to confirm it has
+   exactly 4 pages, each 1080×1080, and confirm `facebook_caption.txt`,
+   `linkedin_caption.txt`, and `x_thread.txt` all exist and are non-empty.
 
 5. **Write the matching website article** as a new entry in `posts.json`
    (repo root — this is a flat static site, there's no `website/`
@@ -161,6 +182,10 @@ there's no per-platform subdirectory.
      a news-pillar post is a hard verification failure — do not merge.
    - All 4 carousel slide images pass `verify_slide()` (correct size, not
      blank)
+   - Any slide rendered via `auto_fit_body()` (slides 2/3, per step 3 above)
+     has `report["ok"] == True`, or the PR description explicitly notes why
+     it doesn't (i.e. the copy was judged too short and needs a rewrite, not
+     a silently-shipped sparse slide)
    - `linkedin.pdf` passes `verify_pdf_carousel()` (4 pages, each 1080×1080)
    - `facebook_caption.txt`, `linkedin_caption.txt`, and `x_thread.txt` all
      exist in the day's folder and are non-empty
