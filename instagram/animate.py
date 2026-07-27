@@ -55,7 +55,8 @@ class FrameRecorder:
             shutil.rmtree(out_dir)
         os.makedirs(out_dir, exist_ok=True)
         self.index = 1
-        self.click_frames = []  # frame indices where a keystroke sound should land
+        self.click_frames = []    # frame indices where a keystroke sound should land
+        self.scratch_frames = []  # frame indices where a pencil/pen "drawing" sound should land
 
     def snapshot(self):
         path = os.path.join(self.out_dir, f"frame_{self.index:04d}.png")
@@ -326,6 +327,61 @@ def type_and_erase_line(recorder, segments, font_obj, x, y, type_frames=18, hold
     # fully erased -- recorder.img/draw are left untouched (still == base)
 
 
+def draw_terminal_chrome(recorder, prompt_text="user@stayhumansec:~$ ./explore.sh"):
+    """Draws a persistent terminal-window title bar near the top of the
+    card -- a rounded outline, a monospace prompt line on the left, and
+    three window-control glyphs on the right (minimize/maximize/close,
+    stroke icons matching the site's own `.win-controls` SVGs in
+    index.html/post.html/etc., not generic macOS traffic-light dots,
+    to stay on-brand) -- so the type-and-erase lines beneath it read as
+    text appearing inside a real terminal window, not floating on the
+    bare grid. Bakes directly into recorder.img/draw (persists across
+    every subsequent frame until _fade_to_clean_base() removes it), and
+    snapshots once so the chrome itself is visible on its own frame."""
+    from generate_post import font, MONO_REG, gray_light
+
+    d = recorder.draw
+    x0, y0, x1, y1 = 40, 40, 1040, 92
+    border_color = (58, 53, 44)  # matches --line
+    d.rounded_rectangle([x0, y0, x1, y1], radius=10, outline=border_color, width=2)
+    d.line([x0, y1, x1, y1], fill=border_color, width=2)
+
+    prompt_font = font(MONO_REG, 22)
+    d.text((x0 + 20, y0 + 15), prompt_text, font=prompt_font, fill=gray_light)
+
+    icon_y = (y0 + y1) // 2
+    mx = x1 - 96
+    d.line([mx, icon_y, mx + 18, icon_y], fill=cream3, width=2)
+    mx2 = x1 - 62
+    d.rounded_rectangle([mx2, icon_y - 8, mx2 + 16, icon_y + 8], radius=2, outline=cream3, width=2)
+    mx3 = x1 - 28
+    d.line([mx3, icon_y - 8, mx3 + 16, icon_y + 8], fill=cream3, width=2)
+    d.line([mx3, icon_y + 8, mx3 + 16, icon_y - 8], fill=cream3, width=2)
+
+    recorder.snapshot()
+
+
+def _fade_to_clean_base(recorder, num_frames=10):
+    """Cross-dissolves from whatever's currently baked into recorder.img
+    (e.g. draw_terminal_chrome()'s title bar) back to a freshly rendered,
+    empty base_card() -- used to remove a persistent overlay before a
+    differently-styled act begins (Act 3's brand lockup doesn't use the
+    terminal-chrome look Acts 1-2 do), so the handoff is a fade rather
+    than a hard cut. Updates recorder.img/draw to the clean base
+    afterward, same pattern as fade_in_segments."""
+    from generate_post import base_card
+
+    clean_img, clean_d = base_card()
+    start = recorder.img.convert('RGBA')
+    end = clean_img.convert('RGBA')
+    for step in range(1, num_frames + 1):
+        t = step / num_frames
+        frame = Image.blend(start, end, t)
+        frame.convert('RGB').save(os.path.join(recorder.out_dir, f"frame_{recorder.index:04d}.png"))
+        recorder.index += 1
+    recorder.img, recorder.draw = clean_img, clean_d
+
+
 def _smoothstep(t):
     """Eased 0->1 progress curve (3t^2 - 2t^3) instead of linear -- motion
     starts and ends gently instead of at constant speed, which is what
@@ -485,46 +541,89 @@ def assemble_video(frame_dir, output_path, fps=20, pattern="frame_%04d.png"):
     return output_path
 
 
-def _synth_click_samples(sample_rate, tone_freq=2800):
-    """Generates one synthesized terminal keystroke tick as a list of
-    floats in [-1, 1] -- a very short (~6ms), high-pitched sine "tick"
-    under a razor-fast exponential decay, the classic clean digital
-    console beep rather than a physical mechanical-keyboard thock (that
-    two-layer noise+low-resonance version was tried and didn't fit the
-    terminal theme -- it read as a real keyboard, not a CRT/console).
+def _synth_click_samples(sample_rate, tone_freq=520):
+    """Generates one synthesized retro-typewriter keystroke as a list of
+    floats in [-1, 1] -- a sharp noise transient (the strike) layered
+    under a short square-wave "clack" body (rather than a sine, a square
+    wave has harder edges/more harmonics, which is what actually reads as
+    old hardware instead of a clean modern tone), then bitcrushed
+    (quantized to a small number of amplitude levels) for lo-fi retro
+    texture. Two earlier versions were tried and rejected: a two-layer
+    noise+sine "mechanical keyboard" thock (too real/modern-keyboard) and
+    a single clean high-pitched sine tick (too soft/generic, didn't read
+    as a keyboard at all) -- this is the third pass, aimed specifically
+    at "retro keyboard", not either of those.
     tone_freq is randomized per call by the caller for slight per-key
     pitch variation. Pure stdlib (random/math) -- no audio libraries or
     external sound assets, consistent with this pipeline being free and
     fully local."""
-    total_duration = 0.008
+    total_duration = 0.014
     n = max(1, int(sample_rate * total_duration))
+    levels = 12  # bitcrush depth -- fewer levels = grittier/more retro
     samples = []
     for i in range(n):
         t = i / sample_rate
-        env = math.exp(-t / 0.0016)
-        tone = math.sin(2 * math.pi * tone_freq * t) * env
-        samples.append(tone)
+        noise_env = math.exp(-t / 0.0009)
+        noise = random.uniform(-1, 1) * noise_env
+        body_env = math.exp(-t / 0.0045)
+        square = 1.0 if math.sin(2 * math.pi * tone_freq * t) >= 0 else -1.0
+        body = square * body_env
+        raw = noise * 0.5 + body * 0.5
+        samples.append(round(raw * levels) / levels)
     return samples
 
 
-def synthesize_typing_track(click_frames, fps, total_frames, out_wav, sample_rate=44100):
-    """Renders a WAV of synthesized keyboard-click sounds, one per entry
-    in `click_frames` (frame indices recorded by type_text_animated()/
-    type_and_erase_line() every time a character was added or removed),
-    placed at that frame's exact timestamp (click_frame / fps seconds).
-    Each click gets a slightly randomized pitch so a run of keystrokes
-    doesn't sound like a single sample looping. Pure stdlib (wave/struct/
-    math/random) -- no external sound library or downloaded asset.
+def _synth_scratch_samples(sample_rate):
+    """Generates one synthesized pencil/pen "drawing" scratch as a list of
+    floats in [-1, 1] -- white noise passed through a simple one-pole
+    low-pass filter (exponential moving average) so it reads as a soft
+    scribble/scratch rather than static, under a moderate decay envelope.
+    Used under Act 3's icon draw-in, distinct from the sharper keystroke
+    ticks used for typed text elsewhere in the video. Pure stdlib
+    (random/math) -- no audio libraries or external sound assets."""
+    total_duration = 0.03
+    n = max(1, int(sample_rate * total_duration))
+    alpha = 0.35  # low-pass smoothing -- lower = softer/duller scratch
+    samples = []
+    prev = 0.0
+    for i in range(n):
+        t = i / sample_rate
+        raw = random.uniform(-1, 1)
+        prev = prev + alpha * (raw - prev)
+        env = math.exp(-t / 0.012)
+        samples.append(prev * env * 0.6)
+    return samples
+
+
+def synthesize_sound_track(click_frames, scratch_frames, fps, total_frames, out_wav, sample_rate=44100):
+    """Renders a WAV mixing two kinds of synthesized sound effects onto
+    one track: a retro keystroke tick for every entry in `click_frames`
+    (frame indices recorded by type_text_animated()/type_and_erase_line()
+    every time a character was added or removed) and a softer pencil-
+    scratch sound for every entry in `scratch_frames` (frame indices
+    recorded during Act 3's icon draw-in), each placed at that frame's
+    exact timestamp (frame / fps seconds). Each instance gets a slightly
+    randomized pitch so a run of sounds doesn't sound like a single
+    sample looping. Pure stdlib (wave/struct/math/random) -- no external
+    sound library or downloaded asset.
     """
     duration_sec = total_frames / fps
-    n_samples = int(duration_sec * sample_rate) + sample_rate  # 1s pad so late clicks don't clip off
+    n_samples = int(duration_sec * sample_rate) + sample_rate  # 1s pad so late sounds don't clip off
     buf = [0.0] * n_samples
 
     for cf in click_frames:
         start = int((cf / fps) * sample_rate)
-        tone_freq = random.uniform(2400, 3200)  # slight per-key pitch variation
+        tone_freq = random.uniform(420, 680)  # slight per-key pitch variation
         click = _synth_click_samples(sample_rate, tone_freq=tone_freq)
         for i, v in enumerate(click):
+            idx = start + i
+            if idx < n_samples:
+                buf[idx] += v
+
+    for sf in scratch_frames:
+        start = int((sf / fps) * sample_rate)
+        scratch = _synth_scratch_samples(sample_rate)
+        for i, v in enumerate(scratch):
             idx = start + i
             if idx < n_samples:
                 buf[idx] += v
@@ -882,17 +981,22 @@ def animate_brand_story(out_dir, video_path, fps=20):
     video (mux_audio()) automatically before this function returns --
     free/local/synthesized, no downloaded sound asset.
 
-      Act 1: the philosophy, verbatim from index.html's "What we are"
-        section -- "Not a company." / "Not a bot." / "Just one person —
-        explaining this properly."
-      Act 2: a tour of what's actually on the site, six lines typed in
-        turn, pulled from the homepage's own router-card copy and each
-        page's own real header line (You Check / Glossary / Posts /
-        Toolkit / News / on(my).mind), each with a colored bullet
-        matching that section's real accent color.
+      Act 1 (terminal chrome visible): the philosophy, verbatim from
+        index.html's "What we are" section -- "Not a company." / "Not a
+        bot." / "Just one person — explaining this properly."
+      Act 2 (terminal chrome visible): a tour of the site as six
+        question/answer beats -- a question types in, erases, then the
+        answer types in the same spot: the real pillar that question
+        belongs to (Stay Safe / Cyber Basics / Case File / Myth Busting /
+        Cyber News / AI Watch -- see the 9-pillar table in CLAUDE.md),
+        each in that pillar's own real accent color, not a generic
+        descriptor sentence.
+      (chrome fades out here, handing off to the plain brand-lockup look)
       Act 3 (180f / 9.0s): the same brand lockup as animate_brand_intro
         -- icon draws in, wordmark fades in, motto types out, tagline
         fades in -- so it still ends on one screenshot-recognizable frame.
+        The icon draw-in also logs to rec.scratch_frames for a soft
+        pencil/pen sound layered under the keystroke ticks.
       Act 4 (60f / 3.0s): a like/share/follow line fades in beneath the
         still-visible lockup (the lockup itself is never disturbed) --
         "LIKE. SHARE. FOLLOW FOR ONE NEW FILE, EVERY DAY.", matching the
@@ -911,6 +1015,7 @@ def animate_brand_story(out_dir, video_path, fps=20):
 
     img, d = base_card()
     rec = FrameRecorder(img, d, out_dir)
+    draw_terminal_chrome(rec)
 
     TYPE_CPS = 11   # brisk but still readable typing speed -- characters/sec
     ERASE_CPS = 20  # backspacing reads as naturally quicker than typing
@@ -952,24 +1057,33 @@ def animate_brand_story(out_dir, video_path, fps=20):
         x = (1080 - w) / 2
         type_and_erase_line(rec, segments, f, x, y, type_frames, hold_frames, erase_frames)
 
-    def tour_beat(dot_color, headline):
-        typed_center([("● ", dot_color), (headline, cream3)], MONO_BOLD, 42, 510)
+    def tour_beat(dot_color, question, pillar_answer):
+        """Types the question, erases it, then types the real pillar name
+        it belongs to (in that pillar's own color) in the same spot --
+        a genuine question/answer beat instead of a question paired with
+        an explanatory sub-line."""
+        typed_center([("● ", dot_color), (question, cream3)], MONO_BOLD, 42, 510)
+        typed_center([(pillar_answer, dot_color)], MONO_BOLD, 46, 510)
 
     # ---- Act 1: philosophy, verbatim from index.html's "What we are" ----
     typed_center([("Not a company.", cream3)], MONO_BOLD, 42, 510)
     typed_center([("Not a bot.", cream3)], MONO_BOLD, 42, 510)
     typed_center([("Just one person — explaining this properly.", cream3)], MONO_BOLD, 42, 510)
 
-    # ---- Act 2: a tour of what's actually here -- headline only, no
-    # descriptor sub-line (kept to the question/label itself, matching
-    # the real router-card headline from index.html verbatim). Bullet
-    # color matches each section's real accent color.
-    tour_beat(pink, "Am I safe right now?")
-    tour_beat(blue, "Teach me a term.")
-    tour_beat(green, "Show me the files.")
-    tour_beat(gold, "What should I install?")
-    tour_beat(blue, "Real stories, sourced.")
-    tour_beat(violet, "on(my).mind")
+    # ---- Act 2: a tour of the site as six question/answer beats -- each
+    # question resolves into the real pillar it belongs to (see the
+    # 9-pillar table in CLAUDE.md), colored to match that pillar's own
+    # real accent color, not a generic descriptor sentence.
+    tour_beat(orange3, "Am I safe right now?", "Stay Safe.")
+    tour_beat(green, "Teach me a term.", "Cyber Basics.")
+    tour_beat(pink, "Show me the files.", "Case File.")
+    tour_beat(gold, "Is that actually true?", "Myth Busting.")
+    tour_beat(blue, "What happened today?", "Cyber News.")
+    tour_beat(violet, "What's AI doing with my data?", "AI Watch.")
+
+    # ---- handoff: fade the terminal chrome out before the brand lockup,
+    # which uses the plain grid-card look, not the terminal-window frame.
+    _fade_to_clean_base(rec, num_frames=10)
 
     # ---- Act 3 (21-30s / 180 frames): brand lockup ----
     ISCALE = 4.0
@@ -978,15 +1092,35 @@ def animate_brand_story(out_dir, video_path, fps=20):
     def xf(pt):
         return (OFFX + pt[0] * ISCALE, OFFY + pt[1] * ISCALE)
 
+    def log_scratch(start_idx, end_idx, step=2):
+        """Marks every other frame in [start_idx, end_idx) as a spot for
+        a pencil/pen "drawing" sound (see _synth_scratch_samples) -- the
+        icon draw-in gets its own sound layer, distinct from the
+        keystroke ticks used for typed text."""
+        for i in range(start_idx, end_idx, step):
+            rec.scratch_frames.append(i)
+
+    s = rec.index
     left_bracket = quad_bezier(xf((38, 16)), xf((20, 50)), xf((38, 84)), steps=60)
     wobbly_animated(rec, left_bracket, cream3, 10, 1.2, seed=301, num_frames=14)
+    log_scratch(s, rec.index)
+
+    s = rec.index
     right_bracket = quad_bezier(xf((112, 16)), xf((130, 50)), xf((112, 84)), steps=60)
     wobbly_animated(rec, right_bracket, cream3, 10, 1.2, seed=302, num_frames=14)
+    log_scratch(s, rec.index)
+
+    s = rec.index
     head_cx, head_cy = xf((75, 38))
     grow_circle(rec, head_cx, head_cy, max_r=13 * ISCALE, color=orange3, num_frames=10)
+    log_scratch(s, rec.index)
+
+    s = rec.index
     body_arc = [xf((75 + 17 * math.cos(math.radians(a)), 78 + 17 * math.sin(math.radians(a))))
                 for a in range(180, 361, 4)]
     wobbly_animated(rec, body_arc, orange3, 7, 1.0, seed=303, num_frames=12)
+    log_scratch(s, rec.index)
+
     rec.hold_last_frame(10)  # 50 + 10 = 60 frames, 3.0s
 
     wordmark_font = font(BOLD, 88)
@@ -1027,7 +1161,7 @@ def animate_brand_story(out_dir, video_path, fps=20):
     assemble_video(out_dir, silent_path, fps=fps)
 
     audio_path = os.path.join(out_dir, "_typing_clicks.wav")
-    synthesize_typing_track(rec.click_frames, fps, total_frames, audio_path)
+    synthesize_sound_track(rec.click_frames, rec.scratch_frames, fps, total_frames, audio_path)
     mux_audio(silent_path, audio_path, video_path)
     os.remove(silent_path)
     os.remove(audio_path)
