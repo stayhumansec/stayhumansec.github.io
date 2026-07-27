@@ -124,13 +124,18 @@ there's no per-platform subdirectory.
    docstring for the exact usage pattern and the shared helpers it provides:
    `base_card`, `linux_chrome`, `tag_pill`, `wrap_text`, `draw_swipe_hook`,
    `clean_smiley`, `footer`, `verify_slide`, `save_pdf_carousel`,
-   `verify_pdf_carousel`, `compute_fill_ratio`, `auto_fit_body`). For any
-   slide with body copy of variable length (i.e. slides 2 and 3 — the hook
-   and close slides are short by design and don't need this), render it
-   through `auto_fit_body()` instead of a single fixed font size/line
-   spacing — it grows the text to close empty vertical space (font size
-   first, then line spacing) rather than shipping a slide with a large dead
-   zone below the copy. Save the output to
+   `verify_pdf_carousel`, `compute_fill_ratio`, `auto_fit_body`, `DOODLES`).
+   For any slide with body copy of variable length (i.e. slides 2 and 3 —
+   the hook and close slides are short by design and don't need this),
+   render it through `auto_fit_body()` instead of a single fixed font
+   size/line spacing. It closes empty vertical space in two stages: first
+   by growing the text itself (font size, then line spacing, within bounded
+   limits — capped at 48px so slides don't read as oversized), and if that
+   still leaves real empty space, by passing a `doodle_topic` matching what
+   the slide is actually about (`lock`/`shield`/`eye`/`phone`/`chat`/
+   `warning` — see `DOODLES` in `generate_post.py`) so a small hand-drawn
+   illustration finishes the gap instead of a large dead zone below the
+   copy. Save the output to
    `instagram/posts/day_NN_<topic-slug>/slide1.png` through `slide4.png`
    (paths relative to the repo root). In that same folder, write
    `caption.txt` (Instagram), `facebook_caption.txt`, build `linkedin.pdf`
