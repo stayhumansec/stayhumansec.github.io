@@ -26,10 +26,28 @@ IMPORTANT: after generating each slide, verify it with:
 This project has a history of grid-alignment bugs when patching existing
 images in place — prefer rebuilding a slide fully with this library rather
 than editing pixels of a previous version.
+
+COPY SUBSTANTIALITY: write body copy for how much a slide can actually
+hold, not the bare minimum needed to state the fact. FILE_001's slide 1
+(instagram/posts/day_01_launch/slide1.png) is the reference bar — three
+short headline+subhead pairs plus a two-line closing statement, not a
+single sentence dropped into a mostly-empty card. Thin copy is a content
+problem `auto_fit_body()` below cannot and should not paper over by itself;
+it grows font size/line spacing within a bounded range, it does not invent
+sentences.
+
+AUTO-FIT LAYOUT CHECK: after laying out a slide's body copy, measure actual
+vertical fill against the available body region with `compute_fill_ratio()`,
+or better, use `auto_fit_body()` to drive the whole retry loop (grows font
+size first, then line spacing, within bounded limits, and reports `ok: False`
+instead of silently shipping a slide it couldn't fill to at least ~80%). See
+that function's docstring for the exact `render_fn` contract. Always check
+`report["ok"]` and flag any `False` in the generation report/PR description
+— don't let a sparse slide through quietly.
 """
 
 import os
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageChops
 import math
 import random
 
@@ -254,6 +272,88 @@ def wrap_text(draw, text, font_obj, max_w):
     if cur:
         lines.append(cur)
     return lines
+
+
+def compute_fill_ratio(before_img, after_img, body_top, body_bottom, x0=30, x1=1050):
+    """Measures how much of the vertical band [body_top, body_bottom) got
+    filled by whatever was drawn between `before_img` (the slide rendered up
+    through chrome/tag pill, before body copy) and `after_img` (the same
+    slide with body copy drawn on top). Diffs the two crops directly instead
+    of guessing at a background color, so it's unaffected by the grid lines,
+    dashed rules, or anything else already on the card.
+
+    Returns (ratio, bbox): ratio is filled_height / band_height (0.0-1.0+),
+    bbox is the (l, t, r, b) extent of the added content within the band, or
+    (0.0, None) if nothing changed at all."""
+    before_region = before_img.crop((x0, body_top, x1, body_bottom)).convert("RGB")
+    after_region = after_img.crop((x0, body_top, x1, body_bottom)).convert("RGB")
+    diff = ImageChops.difference(after_region, before_region)
+    bbox = diff.getbbox()
+    if bbox is None:
+        return 0.0, None
+    filled_height = bbox[3] - bbox[1]
+    return filled_height / after_region.size[1], bbox
+
+
+def auto_fit_body(render_fn, body_top, body_bottom, x0=30, x1=1050,
+                   base_font_size=40, base_line_spacing=1.35,
+                   font_step=4, spacing_step=0.08,
+                   max_font_size=64, max_line_spacing=1.9,
+                   min_fill=0.80, max_attempts=14):
+    """Auto-adjusting layout check for slide body copy. Sparse slides — a
+    short fact rendered at a fixed font size, leaving a large dead zone
+    between the copy and the swipe-hook/footer — are a known failure mode
+    for this pipeline. This closes that gap by growing the text itself,
+    never by adding decorative filler:
+
+      1. Render at `base_font_size`/`base_line_spacing`, measure fill via
+         `compute_fill_ratio()`.
+      2. If under `min_fill` (default 80% — i.e. more than ~20% of the body
+         band is empty), increase font_size first, in `font_step` increments,
+         up to `max_font_size`.
+      3. Once font_size is maxed and it's still under-filled, increase
+         line_spacing instead, in `spacing_step` increments, up to
+         `max_line_spacing`.
+      4. If neither closes the gap within `max_attempts`, stop and report
+         `ok: False` — the caller MUST check this and flag the slide (e.g.
+         in the generation report/PR description) rather than silently
+         shipping a sparse slide. This function never invents extra copy or
+         decoration to force a fill.
+
+    `render_fn` must be `callable(font_size, line_spacing) -> (before_img,
+    after_img)` — before_img is the slide through chrome/tags only, after_img
+    is the same slide with body copy drawn using the given font_size/
+    line_spacing. The caller owns the actual text drawing (wrap_text, font
+    choice, etc.); this function only drives the retry loop and measures.
+
+    Returns (final_img, report) where report is:
+      {"fill_ratio": float, "font_size": int, "line_spacing": float,
+       "attempts": int, "ok": bool}
+    """
+    font_size = base_font_size
+    line_spacing = base_line_spacing
+    attempts = 0
+    after_img = None
+    ratio = 0.0
+
+    while attempts < max_attempts:
+        attempts += 1
+        before_img, after_img = render_fn(font_size, line_spacing)
+        ratio, _ = compute_fill_ratio(before_img, after_img, body_top, body_bottom, x0, x1)
+        if ratio >= min_fill:
+            return after_img, {"fill_ratio": ratio, "font_size": font_size,
+                                "line_spacing": round(line_spacing, 2),
+                                "attempts": attempts, "ok": True}
+        if font_size < max_font_size:
+            font_size += font_step
+        elif line_spacing < max_line_spacing:
+            line_spacing = round(line_spacing + spacing_step, 2)
+        else:
+            break  # both maxed out — no more room to grow without faking it
+
+    return after_img, {"fill_ratio": ratio, "font_size": font_size,
+                        "line_spacing": round(line_spacing, 2),
+                        "attempts": attempts, "ok": False}
 
 
 def clean_smiley(d, cx, cy, s=1.0):
