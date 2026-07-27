@@ -485,31 +485,25 @@ def assemble_video(frame_dir, output_path, fps=20, pattern="frame_%04d.png"):
     return output_path
 
 
-def _synth_click_samples(sample_rate, body_freq=170):
-    """Generates one synthesized mechanical-keyboard keystroke as a list
-    of floats in [-1, 1] -- two layered parts, like a real key press:
-      1. A very short (~3ms) broadband noise transient under a razor-fast
-         decay -- the sharp "click" of the switch/keycap contact.
-      2. A slightly longer (~18ms) low-frequency resonant tone under a
-         fast decay -- the hollow "thock" body resonance underneath it.
-    A single sine+noise blip (the previous version) reads as a soft
-    electronic blip, not a keyboard; this two-layer shape is what
-    actually gives it a mechanical, mechanical-switch character.
-    body_freq is randomized per call by the caller for slight per-key
-    pitch variation, same as a real board's keys never sounding
-    perfectly identical. Pure stdlib (random/math) -- no audio libraries
-    or external sound assets, consistent with this pipeline being free
-    and fully local."""
-    total_duration = 0.02
+def _synth_click_samples(sample_rate, tone_freq=2800):
+    """Generates one synthesized terminal keystroke tick as a list of
+    floats in [-1, 1] -- a very short (~6ms), high-pitched sine "tick"
+    under a razor-fast exponential decay, the classic clean digital
+    console beep rather than a physical mechanical-keyboard thock (that
+    two-layer noise+low-resonance version was tried and didn't fit the
+    terminal theme -- it read as a real keyboard, not a CRT/console).
+    tone_freq is randomized per call by the caller for slight per-key
+    pitch variation. Pure stdlib (random/math) -- no audio libraries or
+    external sound assets, consistent with this pipeline being free and
+    fully local."""
+    total_duration = 0.008
     n = max(1, int(sample_rate * total_duration))
     samples = []
     for i in range(n):
         t = i / sample_rate
-        click_env = math.exp(-t / 0.0012)
-        click = random.uniform(-1, 1) * click_env
-        body_env = math.exp(-t / 0.006)
-        body = math.sin(2 * math.pi * body_freq * t) * body_env
-        samples.append(click * 0.55 + body * 0.55)
+        env = math.exp(-t / 0.0016)
+        tone = math.sin(2 * math.pi * tone_freq * t) * env
+        samples.append(tone)
     return samples
 
 
@@ -528,8 +522,8 @@ def synthesize_typing_track(click_frames, fps, total_frames, out_wav, sample_rat
 
     for cf in click_frames:
         start = int((cf / fps) * sample_rate)
-        body_freq = random.uniform(140, 210)  # slight per-key pitch variation
-        click = _synth_click_samples(sample_rate, body_freq=body_freq)
+        tone_freq = random.uniform(2400, 3200)  # slight per-key pitch variation
+        click = _synth_click_samples(sample_rate, tone_freq=tone_freq)
         for i, v in enumerate(click):
             idx = start + i
             if idx < n_samples:
@@ -918,8 +912,8 @@ def animate_brand_story(out_dir, video_path, fps=20):
     img, d = base_card()
     rec = FrameRecorder(img, d, out_dir)
 
-    TYPE_CPS = 7    # deliberate, readable typing speed -- characters/sec
-    ERASE_CPS = 14  # backspacing reads as naturally quicker than typing
+    TYPE_CPS = 11   # brisk but still readable typing speed -- characters/sec
+    ERASE_CPS = 20  # backspacing reads as naturally quicker than typing
 
     def typed_center(segments, font_path, size, y, type_frames=None, hold_frames=None,
                       erase_frames=None, max_w=980):
