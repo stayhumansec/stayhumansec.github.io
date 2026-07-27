@@ -90,7 +90,9 @@ The calendar was rebalanced in response — see `CALENDAR.md`, which now runs ro
 
 ## Brand system
 
-**Identity**: "stay(human).sec" — wordmark always styled as `stay` + `(human)` in accent orange + `.sec`, reused verbatim (with parens colored) in the nav, hero, and footer. Tagline: "For human. For privacy." Framed persona: "Not a company. Not a bot. Just one person explaining this properly."
+**Identity**: "stay(human).sec" — wordmark always styled as `stay` + `(human)` in accent orange + `.sec`, reused verbatim (with parens colored) in the nav, hero, and footer. Framed persona: "Not a company. Not a bot. Just one person explaining this properly."
+
+**Motto vs. tagline**: "For human. For privacy." is the short-form motto — shown as a pill badge above the wordmark in the hero (`.hero-motto` in `index.html`), `HUMAN`/`PRIVACY` bold orange, rest cream-dim, `JetBrains Mono`. "Use AI. Remain human. Privacy matters." is the full canonical tagline — originally written for day_01's social captions/thread (`instagram/posts/day_01_launch/`) but not ported to the website until this line was added; now lives directly under the wordmark in the hero (`.hero-tagline`), all-caps, bold: `AI`/`HUMAN`/`PRIVACY` orange, rest cream (not cream-dim — unlike the motto pill, the tagline uses full-brightness cream), `JetBrains Mono`. Both are canonical and both stay — the motto is the compact badge version, the tagline is the fuller line underneath it, not a replacement for one another.
 
 **Visual language**: dark terminal/hacker aesthetic softened with warm color and rounded corners — the site imitates a file system / CLI (`ls ./posts`, `cat FILE_001.md`, boot sequences, `$` prompts) without being cold or intimidating. Cards are labeled like files (`FILE_001.md`), sections are numbered like a manual (`01`, `02`), and copy leans "explain it like a helpful friend," not corporate or fear-based.
 

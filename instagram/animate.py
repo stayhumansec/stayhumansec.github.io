@@ -29,6 +29,7 @@ Usage pattern:
 See animate_clean_smiley() at the bottom for a full worked example.
 """
 
+import math
 import os
 import random
 import shutil
@@ -161,6 +162,94 @@ def fade_in_text(recorder, lines, font_obj, color, x, y, line_height, num_frames
     recorder.draw = ImageDraw.Draw(recorder.img)
 
 
+def fade_in_segments(recorder, segments, font_obj, x, y, num_frames=12):
+    """Like fade_in_text, but for a single line made of multiple colored
+    runs in reading order (e.g. cream 'stay', orange '(human)', cream
+    '.sec') instead of one uniform color -- same alpha-composite mechanism
+    (0 -> 255 over num_frames, re-composited on the frozen base each
+    frame), just with per-segment fill colors. `segments` is a list of
+    (text, color) tuples. x is a fixed left-edge pixel, or 'center' to
+    horizontally center the whole composed line. Updates recorder.img/
+    recorder.draw to the fully-opaque composite afterward, same as
+    fade_in_text, so anything drawn/held afterward builds on top of it."""
+    base = recorder.img.convert('RGBA')
+    overlay = Image.new('RGBA', base.size, (0, 0, 0, 0))
+    odraw = ImageDraw.Draw(overlay)
+    full_text = ''.join(s for s, _ in segments)
+    total_w = odraw.textlength(full_text, font=font_obj)
+    line_x = (base.size[0] - total_w) / 2 if x == 'center' else x
+    cx = line_x
+    for text, color in segments:
+        odraw.text((cx, y), text, font=font_obj, fill=color + (255,))
+        cx += odraw.textlength(text, font=font_obj)
+
+    composite = base
+    for step in range(1, num_frames + 1):
+        alpha_mult = step / num_frames
+        faded = overlay.copy()
+        alpha_channel = faded.split()[3].point(lambda a, m=alpha_mult: int(a * m))
+        faded.putalpha(alpha_channel)
+        composite = Image.alpha_composite(base, faded)
+        composite.convert('RGB').save(os.path.join(recorder.out_dir, f"frame_{recorder.index:04d}.png"))
+        recorder.index += 1
+
+    recorder.img = composite.convert('RGB')
+    recorder.draw = ImageDraw.Draw(recorder.img)
+
+
+def type_text_animated(recorder, segments, font_obj, x, y, num_frames=20, cursor=True, cursor_color=None):
+    """Terminal-style character-by-character reveal for a single line made
+    of multiple colored runs -- the Python/PIL counterpart to the homepage
+    news ticker's typing effect (initNewsTicker in site.js). The two can't
+    literally share code (one runs in the browser via setInterval, this
+    one bakes discrete PNG frames), but the visual mechanic matches: the
+    concatenated text is revealed left-to-right over num_frames steps,
+    each frame drawing whichever prefix is visible so far in each
+    segment's own color, with a thin trailing cursor bar while typing is
+    in progress. `segments` is a list of (text, color) tuples in reading
+    order. x is a fixed left-edge pixel (no centering support, since a
+    growing/shrinking line can't stay centered while typing without
+    jittering horizontally). Updates recorder.img/recorder.draw to the
+    fully-typed, cursor-free frame afterward, same pattern as
+    fade_in_text/fade_in_segments."""
+    full_text = ''.join(s for s, _ in segments)
+    total_chars = len(full_text)
+    if total_chars == 0:
+        return
+    cursor_color = cursor_color or orange3
+    base = recorder.img.copy()
+
+    def draw_prefix(frame_img, chars_shown, with_cursor):
+        fdraw = ImageDraw.Draw(frame_img)
+        cx = x
+        remaining = chars_shown
+        for text, color in segments:
+            if remaining <= 0:
+                break
+            take = min(len(text), remaining)
+            visible = text[:take]
+            if visible:
+                fdraw.text((cx, y), visible, font=font_obj, fill=color)
+                cx += fdraw.textlength(visible, font=font_obj)
+            remaining -= take
+        if with_cursor:
+            bar_w = max(int(font_obj.size * 0.12), 2)
+            fdraw.rectangle([cx + 3, y, cx + 3 + bar_w, y + font_obj.size], fill=cursor_color)
+        return cx
+
+    for step in range(1, num_frames + 1):
+        chars_shown = max(1, round(total_chars * step / num_frames))
+        frame = base.copy()
+        draw_prefix(frame, chars_shown, cursor and chars_shown < total_chars)
+        frame.save(os.path.join(recorder.out_dir, f"frame_{recorder.index:04d}.png"))
+        recorder.index += 1
+
+    final = base.copy()
+    draw_prefix(final, total_chars, False)
+    recorder.img = final
+    recorder.draw = ImageDraw.Draw(recorder.img)
+
+
 def assemble_video(frame_dir, output_path, fps=20, pattern="frame_%04d.png"):
     """Stitches numbered frame PNGs in frame_dir into an MP4 via ffmpeg.
 
@@ -277,6 +366,93 @@ def animate_phone_eye_explainer(out_dir, video_path, fps=20):
 
     # ---- final hold on illustration + text (~1s) ----
     rec.hold_last_frame(20)
+
+    total_frames = rec.index - 1
+    assemble_video(out_dir, video_path, fps=fps)
+    return total_frames
+
+
+def animate_brand_intro(out_dir, video_path, fps=20):
+    """15-second standalone brand intro: the bracket-person mark draws in
+    stroke by stroke (brackets, then the head circle, then the body arc --
+    same construction order as draw_icon()), the wordmark fades in below
+    it, the short-form motto types out terminal-style, the full tagline
+    fades in under that, then everything holds together as one lockup for
+    the final 2 seconds. Not tied to any specific post -- this introduces
+    the brand itself, for someone landing on the profile cold.
+
+    Frame budget at 20fps/15s = 300 frames total, split:
+      0.0-3.0s (60f): icon draws in
+      3.0-5.0s (40f): wordmark fades in
+      5.0-8.0s (60f): motto types out
+      8.0-13.0s (100f): tagline fades in, then holds
+      13.0-15.0s (40f): full lockup holds
+
+    Colors/text match the site exactly: wordmark split from the
+    `.wordmark` styling in style.css, motto from `.hero-motto`
+    ("FOR HUMAN. FOR PRIVACY." -- HUMAN/PRIVACY bold orange, rest
+    cream-dim), tagline from `.hero-tagline`
+    ("USE AI. REMAIN HUMAN. PRIVACY MATTERS." -- AI/HUMAN/PRIVACY bold
+    orange, rest cream) -- see CLAUDE.md's "Motto vs. tagline" note.
+    """
+    from generate_post import base_card, quad_bezier, gray_light, font, BOLD, MONO_BOLD
+
+    img, d = base_card()
+    rec = FrameRecorder(img, d, out_dir)
+
+    # ---- stage 1 (0-3s / 60 frames): brand icon draws in ----
+    # Local coordinate space matches draw_icon() in generate_post.py
+    # exactly (brackets (38,16)-(130,84), head circle at (75,38) r=13,
+    # body arc centered (75,78) r=17), scaled up ISCALE=4x and centered
+    # in the upper half of the 1080x1080 canvas for a video-sized mark.
+    ISCALE = 4.0
+    OFFX, OFFY = 540 - 75 * ISCALE, 300 - 55.5 * ISCALE
+
+    def xf(pt):
+        return (OFFX + pt[0] * ISCALE, OFFY + pt[1] * ISCALE)
+
+    left_bracket = quad_bezier(xf((38, 16)), xf((20, 50)), xf((38, 84)), steps=60)
+    wobbly_animated(rec, left_bracket, cream3, 10, 1.2, seed=301, num_frames=14)
+
+    right_bracket = quad_bezier(xf((112, 16)), xf((130, 50)), xf((112, 84)), steps=60)
+    wobbly_animated(rec, right_bracket, cream3, 10, 1.2, seed=302, num_frames=14)
+
+    head_cx, head_cy = xf((75, 38))
+    head_r = 13 * ISCALE
+    grow_circle(rec, head_cx, head_cy, max_r=head_r, color=orange3, num_frames=10)
+
+    body_arc = [xf((75 + 17 * math.cos(math.radians(a)), 78 + 17 * math.sin(math.radians(a))))
+                for a in range(180, 361, 4)]
+    wobbly_animated(rec, body_arc, orange3, 7, 1.0, seed=303, num_frames=12)
+
+    rec.hold_last_frame(10)  # 50 + 10 = 60 frames, exactly 3.0s
+
+    # ---- stage 2 (3-5s / 40 frames): wordmark fades in ----
+    wordmark_font = font(BOLD, 88)
+    wordmark_segments = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
+    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=500, num_frames=30)
+    rec.hold_last_frame(10)  # 30 + 10 = 40 frames, exactly 2.0s
+
+    # ---- stage 3 (5-8s / 60 frames): motto types out ----
+    motto_font = font(MONO_BOLD, 32)
+    motto_text = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
+    motto_full = ''.join(s for s, _ in motto_text)
+    motto_w = ImageDraw.Draw(rec.img).textlength(motto_full, font=motto_font)
+    motto_x = (1080 - motto_w) / 2
+    type_text_animated(rec, motto_text, motto_font, x=motto_x, y=630, num_frames=45)
+    rec.hold_last_frame(15)  # 45 + 15 = 60 frames, exactly 3.0s
+
+    # ---- stage 4 (8-13s / 100 frames): full tagline fades in, then holds ----
+    tagline_font = font(MONO_BOLD, 30)
+    tagline_segments = [
+        ("USE ", cream3), ("AI", orange3), (". REMAIN ", cream3), ("HUMAN", orange3),
+        (". ", cream3), ("PRIVACY", orange3), (" MATTERS.", cream3),
+    ]
+    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=700, num_frames=40)
+    rec.hold_last_frame(60)  # 40 + 60 = 100 frames, exactly 5.0s
+
+    # ---- stage 5 (13-15s / 40 frames): full lockup holds ----
+    rec.hold_last_frame(40)  # exactly 2.0s
 
     total_frames = rec.index - 1
     assemble_video(out_dir, video_path, fps=fps)
