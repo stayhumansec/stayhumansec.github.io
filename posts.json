@@ -766,15 +766,116 @@
         "Cross-checks viral clips against official sources before trusting them"
       ],
       "next": {
-        "slug": null,
-        "eyebrow": "MORE FILES COMING SOON",
-        "title": "A new one drops every day",
-        "desc": "Follow along so you don't miss the next one."
+        "slug": "file_009",
+        "eyebrow": "FILE_009.md — coming next",
+        "title": "Chick-fil-A's loyalty accounts just got hit by credential stuffing",
+        "desc": "Chick-fil-A didn't get hacked directly — attackers just tried stolen passwords from other breaches until some of them worked."
       },
       "pillar": "ai-watch",
       "pillarLabel": "AI Watch",
       "pillarColor": "var(--violet)",
       "readMinutes": 4
+    },
+    {
+      "slug": "file_009",
+      "filename": "FILE_009.md",
+      "badge": "live",
+      "freq": "daily",
+      "stripeColor": "var(--blue)",
+      "tagColor": "var(--orange)",
+      "tag": "CYBER NEWS",
+      "title": "Chick-fil-A's loyalty accounts just got hit by credential stuffing",
+      "titleAccent": "credential stuffing",
+      "listDesc": "Chick-fil-A didn't get hacked directly — attackers just tried stolen passwords from other breaches until some of them worked.",
+      "intro": "Chick-fil-A just told customers their loyalty accounts got broken into. Here's the part that actually matters: Chick-fil-A itself wasn't hacked. Someone took a giant list of usernames and passwords stolen from completely different, unrelated breaches, and tried them against Chick-fil-A's login page until some of them worked. If that sounds exactly like the mistake FILE_002 warned about — it is. This is what it looks like in real life, not theory.",
+      "tldr": "If you have a Chick-fil-A One account and reuse that password anywhere else, go change it now. Check the account for anything unfamiliar — mobile pay numbers, missing reward balance — and turn on 2FA if it's offered. Nothing about Chick-fil-A's own systems failed here; a reused password did.",
+      "statLine": "$ context — attackers ran an automated credential stuffing attack against Chick-fil-A's website and app between June 17-19, 2026, using logins stolen from other sites. At least 2,182 Texas customers and 39 in Massachusetts have been confirmed affected so far.",
+      "sections": [
+        {
+          "num": "01",
+          "title": "What actually happened",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "Attackers didn't break into Chick-fil-A's servers. They took a massive list of email/password combinations leaked from other, completely unrelated breaches — sites that have nothing to do with Chick-fil-A — and ran them against the Chick-fil-A One login page automatically, one after another, for three days straight.",
+                "Most of those combinations failed. But whenever someone had reused a password that showed up in that stolen list, the login worked, and the attacker was in — no hacking skill required, just patience and a list. This is <b>credential stuffing</b>, and it's the exact mechanism FILE_002 covers."
+              ]
+            }
+          ]
+        },
+        {
+          "num": "02",
+          "title": "What actually got exposed",
+          "blocks": [
+            {
+              "type": "pattern-list",
+              "items": [
+                {
+                  "tag": "ACCOUNT INFO",
+                  "text": "Names, email addresses, Chick-fil-A One membership numbers."
+                },
+                {
+                  "tag": "PAYMENT-ADJACENT",
+                  "text": "Mobile pay numbers, QR codes, remaining reward credit, and the last 4 digits of stored card numbers — not full card numbers."
+                },
+                {
+                  "tag": "SOMETIMES MORE",
+                  "text": "Birth date, phone number, or address, but only if you'd saved those in your account already."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "num": "03",
+          "title": "Check your own account first",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "Open the Chick-fil-A app or site and actually look: does your reward balance match what you expect? Is there a payment method on file you don't recognize? Any order history that isn't yours? Chick-fil-A says it already logged out every affected account, stripped saved payment methods, and restored balances — but it's worth checking yourself rather than assuming you were fine."
+              ]
+            }
+          ]
+        },
+        {
+          "num": "04",
+          "title": "The actual fix isn't about Chick-fil-A",
+          "blocks": [
+            {
+              "type": "step",
+              "paragraphs": [
+                "Here's the uncomfortable part: this could've been any account where you reused a password, not just this one. The fix is the same one FILE_002 already walks through — a password manager generates a unique password for every account, so a breach on some site you forgot you signed up for years ago can't unlock this one.",
+                "Turn on two-factor authentication here too, if Chick-fil-A offers it. It's the same 5-minute habit from FILE_006, and it means a stolen password alone still isn't enough to get in."
+              ]
+            }
+          ]
+        }
+      ],
+      "warn": {
+        "label": "⚠ IF YOUR ACCOUNT WAS AFFECTED",
+        "text": "Chick-fil-A has already logged out impacted accounts, removed saved payment methods, and restored/added back reward balances. Your part: change that password anywhere else you've ever reused it, and keep an eye on any card statement tied to the last-4 digits that were exposed, just in case."
+      },
+      "checklist": [
+        "Checked a Chick-fil-A One account (if you have one) for anything unfamiliar",
+        "Changed that password anywhere else it's been reused",
+        "Turned on 2FA on the account if it's offered",
+        "Knows this wasn't a hack of Chick-fil-A itself — it was stolen passwords from somewhere else, tried here"
+      ],
+      "next": {
+        "slug": null,
+        "eyebrow": "MORE FILES COMING SOON",
+        "title": "A new one drops every day",
+        "desc": "Follow along so you don't miss the next one."
+      },
+      "pillar": "cyber-news",
+      "pillarLabel": "Cyber News",
+      "pillarColor": "var(--blue)",
+      "readMinutes": 4,
+      "sourceUrl": "https://www.bleepingcomputer.com/news/security/chick-fil-a-discloses-data-breach-after-credential-stuffing-attacks/",
+      "sourceName": "BleepingComputer",
+      "date": "2026-07-27"
     }
   ]
 }

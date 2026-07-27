@@ -1,0 +1,13 @@
+1/ Chick-fil-A's rewards app just got hit.
+
+Not by a hack. By a stolen password. 🔑 🧵
+
+2/ Chick-fil-A's own servers weren't broken into. Attackers took usernames/passwords stolen from totally different, unrelated sites and tried them against the Chick-fil-A One login — automatically, for three days straight (June 17-19).
+
+3/ Whenever someone had reused a password, the login worked. No hacking skill required. Just patience and a stolen list. This is called credential stuffing.
+
+4/ What got exposed: names, emails, membership numbers, mobile pay numbers, QR codes, remaining reward credit, last 4 digits of stored cards (not full numbers). Chick-fil-A already logged out affected accounts and restored balances.
+
+5/ Have a Chick-fil-A One account? Check it. If that password's been reused anywhere else, change it now. Turn on 2FA if it's offered.
+
+6/ This isn't really a Chick-fil-A story. It's a reused-password story. Full write-up (sourced from BleepingComputer): https://stayhumansec.github.io/post.html?slug=file_009

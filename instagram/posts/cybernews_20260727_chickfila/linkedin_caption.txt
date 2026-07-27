@@ -1,0 +1,11 @@
+Chick-fil-A disclosed a data breach this month, and the mechanism behind it is worth understanding regardless of whether you have a rewards account there.
+
+Chick-fil-A's own systems weren't compromised. Attackers ran an automated credential stuffing attack against the Chick-fil-A One login over a three-day window in June, using username/password combinations leaked from entirely unrelated breaches. Wherever a customer had reused a password, the login succeeded — no exploit, no vulnerability, just patience and a stolen list.
+
+Why this matters for your work life: the same technique is run against corporate login pages constantly, and it succeeds for the identical reason — employees reusing a personal password on a work account, or vice versa. Credential stuffing doesn't require breaking anything; it just requires one person, somewhere, having reused a password that later leaked.
+
+What Chick-fil-A did in response is a reasonable playbook: logged out every affected account, stripped saved payment methods, and restored account balances. What individuals should do, whether or not this specific breach touched them: use a password manager so no password is ever reused across accounts, and enable two-factor authentication anywhere it's offered, so a leaked password alone isn't enough to get in.
+
+Full sourcing: BleepingComputer.
+
+Has your organization measured how many employees reuse a personal password on a corporate account? I'd guess the number is higher than most people assume.

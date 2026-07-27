@@ -1,0 +1,11 @@
+Chick-fil-A's rewards app just got hit. Not by a hack — by a stolen password. 🔑
+
+Here's the part that actually matters: Chick-fil-A's own systems weren't broken into. Attackers took a list of usernames and passwords stolen from completely different, unrelated websites, and tried them against the Chick-fil-A One login automatically, over and over, for three days. Whenever someone had reused a password somewhere else, it worked here too.
+
+If you or someone in your family has a Chick-fil-A One account: open it and check that your balance and payment info look right. If that password has ever been used anywhere else, go change it. And if the app offers two-factor authentication, turn it on — it's a genuine five-minute fix.
+
+This isn't really a story about Chick-fil-A. It's a story about reusing passwords, and it could just as easily be any account any of us has. Worth sharing with anyone in the family who has "the one password" for everything.
+
+Full write-up (sourced straight from BleepingComputer): link in bio.
+
+Check your account today, and pass this along. 💬
