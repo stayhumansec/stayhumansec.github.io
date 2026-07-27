@@ -1,0 +1,38 @@
+{
+  "notes": [
+    {
+      "slug": "why-this-exists",
+      "title": "Why I'm actually doing this",
+      "date": "2026-07-20",
+      "tag": "philosophy",
+      "body": [
+        "I keep getting asked why a security account needs a personality. Fair question. The honest answer is that almost everything I read about this stuff before I started writing it myself was either written for people who already know what a hash function is, or written to scare you into buying something.",
+        "Neither of those is actually *for* the person it's supposedly written for. Fear doesn't teach anyone to check their password manager. Jargon doesn't either. What actually works, in my experience, is someone sitting next to you saying \"here's the one thing that matters, here's exactly how to do it, and no, you're not stupid for not knowing this already.\"",
+        "So that's the bet. Not a company voice. Not a listicle. One person, explaining it the way I'd explain it to my own family, because that's who I'm actually picturing when I write these."
+      ]
+    },
+    {
+      "slug": "autofit-body-copy",
+      "title": "The sparse-slide problem took three tries to actually fix",
+      "date": "2026-07-27",
+      "tag": "technical",
+      "body": [
+        "Small technical note because I think it's a good example of how these things actually go, versus how they look after the fact.",
+        "The carousel slides kept shipping with huge dead space under short body copy — write one punchy sentence, and the bottom two-thirds of a 1080×1080 card is just... grid. First instinct was to grow the font until it filled the space. That mostly worked but a few genuinely short facts (think: a single sentence) hit a wall — there's only so big text can get before it looks like a shouting match, and a one-liner still won't fill a full card no matter the size.",
+        "Second instinct was doodles — small hand-drawn icons (a lock, a phone, a shield) dropped into the leftover space. Built the whole thing, generated samples, and they looked... fine. But wrong for this site specifically. This is a terminal-styled brand. Illustration doesn't match the voice.",
+        "Landed on a small bordered box styled like actual terminal output — a `$ risk_level: HIGH` line plus a real stat, reusing the exact chrome style already at the top of every slide. Obvious in retrospect. Took two wrong turns to get there, which is normal, and I'd rather write that down than pretend the first idea was the right one."
+      ]
+    },
+    {
+      "slug": "the-ai-tools-honesty",
+      "title": "I'm not fully comfortable with how easy the AI tools made this",
+      "date": "2026-07-25",
+      "tag": "concerns",
+      "body": [
+        "Something I don't say in the polished posts: a meaningful chunk of this site — the drafting, some of the image generation, the workflow that keeps it running daily — leans on AI tooling. I stand behind the actual content; everything gets checked against real sources, real math, real facts. That part isn't the concern.",
+        "The concern is smaller and more personal: it's *fast*. Suspiciously fast, some days. And a site whose whole pitch is \"slow down, think about what you're trusting and why\" being built partly by the same category of tool it sometimes warns people to be careful with — that's a tension I notice, even if I think the output holds up.",
+        "I don't have a tidy resolution for this. I'm not going to stop using the tools; they're genuinely useful and the alternative is posting less, worse, or not at all. But I'd rather say the quiet part out loud here than pretend it isn't a little strange."
+      ]
+    }
+  ]
+}

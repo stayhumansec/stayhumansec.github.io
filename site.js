@@ -342,6 +342,7 @@ function initCommandPalette() {
   var staticPages = [
     { title: 'Home', sub: 'index.html', href: 'index.html', color: 'var(--orange)' },
     { title: 'News', sub: 'news.html — Cyber News + AI News, straight from the source', href: 'news.html', color: 'var(--blue)' },
+    { title: 'Notes', sub: 'notes.html — freeform, personal writing', href: 'notes.html', color: 'var(--violet)' },
     { title: 'You, Check.', sub: 'index.html#youcheck — the quick gut-check quiz', href: 'index.html#youcheck', color: 'var(--pink)' },
     { title: 'Toolkit', sub: 'toolkit.html — recommended tools', href: 'toolkit.html', color: 'var(--gold)' },
     { title: 'Utilities', sub: 'tools.html — every small tool in one place', href: 'tools.html', color: 'var(--violet)' },
@@ -675,6 +676,21 @@ function escapeHTML(str) {
   var div = document.createElement('div');
   div.textContent = str == null ? '' : String(str);
   return div.innerHTML;
+}
+
+/**
+ * Minimal emphasis formatter for Notes body paragraphs — escapes the text
+ * first (Notes content is authored, not user input, but this keeps the
+ * same safety discipline as everything else on the site), then converts
+ * just **bold** and *italic*. Deliberately not a markdown library: Notes'
+ * schema is intentionally thinner than posts.json, and this covers the two
+ * emphasis forms it actually needs, nothing more.
+ */
+function formatNoteText(str) {
+  var escaped = escapeHTML(str);
+  escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  escaped = escaped.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  return escaped;
 }
 
 /* ============================================================

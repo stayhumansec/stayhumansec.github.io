@@ -562,9 +562,21 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
   ::view-transition-old(root), ::view-transition-new(root){ animation:none; }
 }
 
+/* ============ NOTES (freeform journal entries — separate from posts) ============ */
+.notes-list{display:flex; flex-direction:column; gap:20px; margin-top:24px;}
+.note-card{padding:26px 30px; border-radius:16px; background:var(--card); border:1px solid var(--line); transition:border-color .25s ease;}
+.note-card:hover{border-color:var(--orange);}
+.note-card-top{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+.note-title{font-weight:700; font-size:22px; color:var(--cream); line-height:1.35; margin-bottom:14px;}
+.note-body p{font-size:15.5px; color:var(--cream-dim); line-height:1.75; margin-bottom:14px;}
+.note-body p:last-child{margin-bottom:0;}
+.note-body strong{color:var(--cream); font-weight:700;}
+.note-body em{font-style:italic;}
+
 /* ============ RESPONSIVE (mobile stays mobile — this is what desktop no longer inherits) ============ */
 @media (max-width:600px){
   .section{padding:60px 20px;}
   .listing-label{margin:24px 0 16px;}
+  .note-card{padding:22px 22px;}
 }
 
