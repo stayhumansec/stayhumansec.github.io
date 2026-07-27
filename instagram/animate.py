@@ -459,6 +459,130 @@ def animate_brand_intro(out_dir, video_path, fps=20):
     return total_frames
 
 
+def animate_brand_intro_hook(out_dir, video_path, fps=20):
+    """Alternate cut of animate_brand_intro() with a scroll-stopping cold
+    open instead of leading with the logo. Same final lockup (icon,
+    wordmark, motto, tagline), same 15s/20fps/300-frame target -- the
+    difference is the first 3 seconds, which mimic the site's own real
+    boot-sequence trust check (initBootSequence in site.js: "0 trackers,
+    0 ad scripts, 0 cookies found" on every page load) instead of just
+    drawing the icon. This is a genuine hook rather than a borrowed
+    trope -- it's literally what the site already does, just brought to
+    the front of the video instead of buried in a page-load animation.
+
+    Frame budget at 20fps/15s = 300 frames total, split:
+      0.0-0.5s (10f): blinking cursor, no branding yet
+      0.5-2.5s (40f): scan lines type out ("scanning this account...",
+                       trackers/ads/data-sold found: 0, 0, 0 in green)
+      2.5-3.0s (10f): flash cut, canvas resets clean
+      3.0-5.5s (50f): icon draws in
+      5.5-7.5s (40f): wordmark fades in
+      7.5-10.5s (60f): motto types out
+      10.5-13.5s (60f): tagline fades in, then holds
+      13.5-15.0s (30f): full lockup holds
+    """
+    from generate_post import base_card, quad_bezier, gray_light, green, font, BOLD, MONO_BOLD, MONO_REG
+
+    img, d = base_card()
+    rec = FrameRecorder(img, d, out_dir)
+
+    # ---- stage 1 (0-0.5s / 10 frames): blinking cursor, cold open ----
+    cursor_x, cursor_y, bar_w, bar_h = 140, 400, 16, 40
+    blink_pattern = [True, True, True, False, False, False, True, True, True, True]
+    base = rec.img.copy()
+    for visible in blink_pattern:
+        frame = base.copy()
+        if visible:
+            ImageDraw.Draw(frame).rectangle(
+                [cursor_x, cursor_y, cursor_x + bar_w, cursor_y + bar_h], fill=orange3)
+        frame.save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+        rec.index += 1
+    rec.img, rec.draw = base, ImageDraw.Draw(base)  # cursor never persists -- purely a blink
+
+    # ---- stage 2 (0.5-2.5s / 40 frames): fake live scan types out ----
+    scan_font = font(MONO_REG, 34)
+    line1 = [("$ scanning this account...", gray_light)]
+    type_text_animated(rec, line1, scan_font, x=cursor_x, y=380, num_frames=14)
+
+    line2 = [("trackers found: ", cream3), ("0", green)]
+    type_text_animated(rec, line2, scan_font, x=cursor_x, y=460, num_frames=8)
+
+    line3 = [("ads found: ", cream3), ("0", green)]
+    type_text_animated(rec, line3, scan_font, x=cursor_x, y=540, num_frames=8)
+
+    line4 = [("your data sold: ", cream3), ("0", green)]
+    type_text_animated(rec, line4, scan_font, x=cursor_x, y=620, num_frames=8)
+
+    rec.hold_last_frame(2)  # 14+8+8+8 + 2 = 40 frames, exactly 2.0s
+
+    # ---- stage 3 (2.5-3.0s / 10 frames): flash cut, canvas resets clean ----
+    rec.hold_last_frame(2)
+    flash = Image.new("RGB", rec.img.size, orange3)
+    rec.img = flash
+    for _ in range(3):
+        rec.snapshot()
+    fresh_img, fresh_d = base_card()
+    rec.img, rec.draw = fresh_img, fresh_d
+    for _ in range(5):
+        rec.snapshot()
+    # 2 (hold) + 3 (flash) + 5 (fresh) = 10 frames, exactly 0.5s
+
+    # ---- stage 4 (3.0-5.5s / 50 frames): brand icon draws in ----
+    # Same local-coordinate construction as draw_icon()/animate_brand_intro().
+    ISCALE = 4.0
+    OFFX, OFFY = 540 - 75 * ISCALE, 300 - 55.5 * ISCALE
+
+    def xf(pt):
+        return (OFFX + pt[0] * ISCALE, OFFY + pt[1] * ISCALE)
+
+    left_bracket = quad_bezier(xf((38, 16)), xf((20, 50)), xf((38, 84)), steps=60)
+    wobbly_animated(rec, left_bracket, cream3, 10, 1.2, seed=301, num_frames=12)
+
+    right_bracket = quad_bezier(xf((112, 16)), xf((130, 50)), xf((112, 84)), steps=60)
+    wobbly_animated(rec, right_bracket, cream3, 10, 1.2, seed=302, num_frames=12)
+
+    head_cx, head_cy = xf((75, 38))
+    head_r = 13 * ISCALE
+    grow_circle(rec, head_cx, head_cy, max_r=head_r, color=orange3, num_frames=8)
+
+    body_arc = [xf((75 + 17 * math.cos(math.radians(a)), 78 + 17 * math.sin(math.radians(a))))
+                for a in range(180, 361, 4)]
+    wobbly_animated(rec, body_arc, orange3, 7, 1.0, seed=303, num_frames=10)
+
+    rec.hold_last_frame(8)  # 12+12+8+10 + 8 = 50 frames, exactly 2.5s
+
+    # ---- stage 5 (5.5-7.5s / 40 frames): wordmark fades in ----
+    wordmark_font = font(BOLD, 88)
+    wordmark_segments = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
+    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=500, num_frames=30)
+    rec.hold_last_frame(10)  # 30 + 10 = 40 frames, exactly 2.0s
+
+    # ---- stage 6 (7.5-10.5s / 60 frames): motto types out ----
+    motto_font = font(MONO_BOLD, 32)
+    motto_text = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
+    motto_full = ''.join(s for s, _ in motto_text)
+    motto_w = ImageDraw.Draw(rec.img).textlength(motto_full, font=motto_font)
+    motto_x = (1080 - motto_w) / 2
+    type_text_animated(rec, motto_text, motto_font, x=motto_x, y=630, num_frames=45)
+    rec.hold_last_frame(15)  # 45 + 15 = 60 frames, exactly 3.0s
+
+    # ---- stage 7 (10.5-13.5s / 60 frames): full tagline fades in, then holds ----
+    tagline_font = font(MONO_BOLD, 30)
+    tagline_segments = [
+        ("USE ", cream3), ("AI", orange3), (". REMAIN ", cream3), ("HUMAN", orange3),
+        (". ", cream3), ("PRIVACY", orange3), (" MATTERS.", cream3),
+    ]
+    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=700, num_frames=40)
+    rec.hold_last_frame(20)  # 40 + 20 = 60 frames, exactly 3.0s
+
+    # ---- stage 8 (13.5-15s / 30 frames): full lockup holds ----
+    rec.hold_last_frame(30)  # exactly 1.5s
+
+    total_frames = rec.index - 1
+    assemble_video(out_dir, video_path, fps=fps)
+    return total_frames
+
+
 if __name__ == "__main__":
     print("This is a library, not a script to run directly.")
     print("Import it: from animate import FrameRecorder, wobbly_animated, assemble_video")
