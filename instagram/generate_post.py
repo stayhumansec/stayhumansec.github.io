@@ -40,13 +40,14 @@ AUTO-FIT LAYOUT CHECK: after laying out a slide's body copy, measure actual
 vertical fill against the available body region with `compute_fill_ratio()`,
 or better, use `auto_fit_body()` to drive the whole retry loop: grows font
 size first, then line spacing, within bounded limits; if that still leaves
-real empty space, pass a `doodle_topic` (see DOODLES — lock/shield/eye/
-phone/chat/warning) matching what the slide is actually about and it draws
-that into the leftover space instead of stretching text further. Reports
-`ok: False` instead of silently shipping a sparse slide if neither stage
-closes the gap. See that function's docstring for the exact `render_fn`
-contract. Always check `report["ok"]` and flag any `False` in the
-generation report/PR description — don't let a sparse slide through
+real empty space, pass `callout_lines` — a real stat or status line
+relevant to the slide's topic — and it draws a `terminal_callout()` box
+into the leftover space, styled as `$ `-prompted terminal output matching
+`linux_chrome()`'s existing look, instead of stretching text further.
+Reports `ok: False` instead of silently shipping a sparse slide if neither
+stage closes the gap. See that function's docstring for the exact
+`render_fn` contract. Always check `report["ok"]` and flag any `False` in
+the generation report/PR description — don't let a sparse slide through
 quietly.
 """
 
@@ -300,113 +301,47 @@ def compute_fill_ratio(before_img, after_img, body_top, body_bottom, x0=30, x1=1
 
 
 # ============================================================
-# TOPIC DOODLES — small hand-drawn margin illustrations (same wobbly-line
-# style as clean_smiley()) that auto_fit_body() can drop into leftover
-# empty space once text growth alone can't close the gap. Deliberately
-# plain/thin-lined and off to the side of the main copy, matching the
-# brand's existing doodle texture rather than reading as a stock icon.
-# Pick the topic that matches what the slide is actually about — these are
-# NOT decoration for decoration's sake, they're meant to visually echo the
-# post's subject (a password post gets `lock`, a scam-call post gets
-# `phone`, etc).
+# TERMINAL CALLOUT — a small bordered box styled as terminal output that
+# auto_fit_body() can drop into leftover empty space once text growth alone
+# can't close the gap. Reuses the same mono-font, "$ " prompt-line language
+# already established by linux_chrome() at the top of every slide, instead
+# of introducing a new illustration style — it also carries real
+# information (a stat, a status line), not pure decoration.
 # ============================================================
-def doodle_lock(d, cx, cy, s=1.0, color=None, seed=201):
-    """Padlock doodle — password/account-security topics."""
-    color = color or gray_light
-    body_w, body_h = 70 * s, 56 * s
-    bx0, by0 = cx - body_w / 2, cy - body_h / 2 + 20 * s
-    bx1, by1 = cx + body_w / 2, cy + body_h / 2 + 20 * s
-    wobbly(d, rounded_rect_points(bx0, by0, bx1, by1, 10 * s), color, max(3 * s, 2), 1.0, seed)
-    shackle = quad_bezier((cx - 22 * s, by0), (cx, by0 - 46 * s), (cx + 22 * s, by0))
-    wobbly(d, shackle, color, max(3 * s, 2), 0.9, seed + 1)
-    kh_r = max(6 * s, 2)
-    d.ellipse([cx - kh_r, cy + 12 * s - kh_r, cx + kh_r, cy + 12 * s + kh_r], outline=color, width=max(int(2 * s), 1))
-
-
-def doodle_shield(d, cx, cy, s=1.0, color=None, seed=210):
-    """Shield-with-checkmark doodle — protection/safety topics."""
-    color = color or gray_light
-    top, right, bottom = (cx, cy - 50 * s), (cx + 40 * s, cy - 25 * s), (cx, cy + 55 * s)
-    left = (cx - 40 * s, cy - 25 * s)
-    outline = (quad_bezier(top, left, (cx - 30 * s, cy + 10 * s), 24)
-               + quad_bezier((cx - 30 * s, cy + 10 * s), (cx - 15 * s, cy + 40 * s), bottom, 24)
-               + quad_bezier(bottom, (cx + 15 * s, cy + 40 * s), (cx + 30 * s, cy + 10 * s), 24)
-               + quad_bezier((cx + 30 * s, cy + 10 * s), right, top, 24))
-    wobbly(d, outline, color, max(3 * s, 2), 1.0, seed)
-    check = quad_bezier((cx - 16 * s, cy), (cx - 4 * s, cy + 14 * s), (cx + 20 * s, cy - 14 * s))
-    wobbly(d, check, color, max(3 * s, 2), 0.8, seed + 1)
-
-
-def doodle_eye(d, cx, cy, s=1.0, color=None, seed=220):
-    """Watching-eye doodle — privacy/surveillance/tracking topics."""
-    color = color or gray_light
-    outline = (quad_bezier((cx - 50 * s, cy), (cx, cy - 30 * s), (cx + 50 * s, cy))
-               + quad_bezier((cx + 50 * s, cy), (cx, cy + 30 * s), (cx - 50 * s, cy)))
-    wobbly(d, outline, color, max(3 * s, 2), 1.0, seed)
-    r = max(14 * s, 3)
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=color, width=max(int(3 * s), 1))
-    pr = max(5 * s, 2)
-    d.ellipse([cx - pr, cy - pr, cx + pr, cy + pr], fill=color)
-
-
-def doodle_phone(d, cx, cy, s=1.0, color=None, seed=230):
-    """Phone-with-notification doodle — scam call/smishing topics."""
-    color = color or gray_light
-    w, h = 46 * s, 82 * s
-    wobbly(d, rounded_rect_points(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2, 10 * s), color, max(3 * s, 2), 1.0, seed)
-    bx, by, br = cx + w / 2 - 6 * s, cy - h / 2 + 6 * s, max(9 * s, 3)
-    d.ellipse([bx - br, by - br, bx + br, by + br], fill=color)
-
-
-def doodle_chat(d, cx, cy, s=1.0, color=None, seed=240):
-    """Chat-bubble-with-dots doodle — messaging/phishing topics."""
-    color = color or gray_light
-    w, h = 90 * s, 56 * s
-    wobbly(d, rounded_rect_points(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2, 16 * s), color, max(3 * s, 2), 1.0, seed)
-    tail = quad_bezier((cx - 10 * s, cy + h / 2), (cx - 18 * s, cy + h / 2 + 16 * s), (cx - 2 * s, cy + h / 2 + 2 * s))
-    wobbly(d, tail, color, max(3 * s, 2), 0.8, seed + 1)
-    for dx in (-20, 0, 20):
-        r = max(4 * s, 2)
-        d.ellipse([cx + dx * s - r, cy - r, cx + dx * s + r, cy + r], fill=color)
-
-
-def doodle_warning(d, cx, cy, s=1.0, color=None, seed=250):
-    """Warning-triangle doodle — scam/alert topics."""
-    color = color or gray_light
-    top, right, left = (cx, cy - 46 * s), (cx + 46 * s, cy + 34 * s), (cx - 46 * s, cy + 34 * s)
-    tri = (quad_bezier(top, ((top[0] + right[0]) / 2, (top[1] + right[1]) / 2), right)
-           + quad_bezier(right, ((right[0] + left[0]) / 2, (right[1] + left[1]) / 2), left)
-           + quad_bezier(left, ((left[0] + top[0]) / 2, (left[1] + top[1]) / 2), top))
-    wobbly(d, tri, color, max(3 * s, 2), 1.0, seed)
-    d.line([(cx, cy - 14 * s), (cx, cy + 8 * s)], fill=color, width=max(int(4 * s), 2))
-    r = max(4 * s, 2)
-    d.ellipse([cx - r, cy + 18 * s - r, cx + r, cy + 18 * s + r], fill=color)
-
-
-DOODLES = {
-    "lock": doodle_lock,
-    "shield": doodle_shield,
-    "eye": doodle_eye,
-    "phone": doodle_phone,
-    "chat": doodle_chat,
-    "warning": doodle_warning,
-}
-
-
-def fill_empty_space_with_doodle(d, empty_bbox, topic, seed=201, color=None):
-    """Draws the doodle for `topic` (a key in DOODLES) centered and scaled
-    to fit inside empty_bbox = (l, t, r, b). Scale is derived from whichever
-    of the box's width/height is smaller, so the doodle never overflows the
-    space it was given. Raises ValueError on an unknown topic rather than
-    silently drawing nothing or guessing."""
-    if topic not in DOODLES:
-        raise ValueError(f"Unknown doodle topic {topic!r} — choose from {list(DOODLES)}")
-    l, t, r, b = empty_bbox
-    if r <= l or b <= t:
-        return  # no usable space — nothing to draw
-    cx, cy = (l + r) / 2, (t + b) / 2
-    s = max(min(r - l, b - t) / 200, 0.35)
-    DOODLES[topic](d, cx, cy, s=s, color=color, seed=seed)
+def terminal_callout(d, bbox, lines, prompt_color=None, text_color=None,
+                      border_color=None, font_size=24):
+    """Draws a rounded-border box styled as terminal output, centered
+    within bbox = (l, t, r, b). `lines` is a list of 1-3 short strings:
+    the first renders as a `$ ` prompt line (mono bold, `prompt_color`),
+    any remaining lines render as plain mono output below it
+    (`text_color`) — e.g. lines=["risk_level: HIGH", "3 in 4 reused
+    passwords get tried elsewhere within 24h"]. Content is the caller's
+    responsibility: pick a real stat or status relevant to the slide's
+    topic, this function only lays it out. Does nothing if bbox has no
+    usable area or `lines` is empty."""
+    prompt_color = prompt_color or orange3
+    text_color = text_color or gray_light
+    border_color = border_color or (90, 82, 70)
+    l, t, r, b = bbox
+    if r <= l or b <= t or not lines:
+        return
+    pad = 28
+    line_h = int(font_size * 1.7)
+    box_w = min(r - l, 820)
+    box_h = min(pad * 2 + line_h * len(lines), b - t)
+    box_x0 = l + (r - l - box_w) / 2
+    box_y0 = t + (b - t - box_h) / 2
+    box_x1, box_y1 = box_x0 + box_w, box_y0 + box_h
+    d.rounded_rectangle([box_x0, box_y0, box_x1, box_y1], radius=14, outline=border_color, width=2)
+    prompt_font = font(MONO_BOLD, font_size)
+    output_font = font(MONO_REG, font_size)
+    y = box_y0 + pad
+    for i, ln in enumerate(lines):
+        if i == 0:
+            d.text((box_x0 + pad, y), "$ " + ln, font=prompt_font, fill=prompt_color)
+        else:
+            d.text((box_x0 + pad, y), ln, font=output_font, fill=text_color)
+        y += line_h
 
 
 def auto_fit_body(render_fn, body_top, body_bottom, x0=30, x1=1050,
@@ -414,7 +349,8 @@ def auto_fit_body(render_fn, body_top, body_bottom, x0=30, x1=1050,
                    font_step=3, spacing_step=0.08,
                    max_font_size=48, max_line_spacing=1.9,
                    min_fill=0.80, max_attempts=14,
-                   doodle_topic=None, doodle_seed=201, doodle_color=None):
+                   callout_lines=None, callout_font_size=24,
+                   callout_prompt_color=None, callout_text_color=None):
     """Auto-adjusting layout check for slide body copy. Sparse slides — a
     short fact rendered at a fixed font size, leaving a large dead zone
     between the copy and the swipe-hook/footer — are a known failure mode
@@ -426,15 +362,15 @@ def auto_fit_body(render_fn, body_top, body_bottom, x0=30, x1=1050,
          increments up to `max_font_size`, then increase line_spacing in
          `spacing_step` increments up to `max_line_spacing`.
       2. If text growth alone still leaves the band under `min_fill` and
-         `doodle_topic` is given (a key in DOODLES — pick whichever matches
-         what the slide is actually about, e.g. "lock" for a password post),
-         draw that doodle into whatever space is left below the copy via
-         `fill_empty_space_with_doodle()`. This does not invent additional
-         *copy* — it's a small illustration, not text pretending to be
-         content — but it is deliberately used to finish closing a gap that
-         font/spacing growth alone couldn't.
+         `callout_lines` is given (a list of 1-3 short strings — a real
+         stat or status relevant to the slide's topic, e.g.
+         `["risk_level: HIGH", "3 in 4 reused passwords get tried elsewhere"]`),
+         draw a `terminal_callout()` box into whatever space is left below
+         the copy. This adds real information styled as terminal output —
+         the same `$ ` prompt language already on every slide's chrome bar
+         — rather than an illustration or invented filler copy.
 
-    If neither stage reaches `min_fill` (e.g. no `doodle_topic` was given,
+    If neither stage reaches `min_fill` (e.g. no `callout_lines` was given,
     or the leftover space is too small to hold one legibly), stop and report
     `ok: False` — the caller MUST check this and flag the slide (e.g. in the
     generation report/PR description) rather than silently shipping a sparse
@@ -445,11 +381,11 @@ def auto_fit_body(render_fn, body_top, body_bottom, x0=30, x1=1050,
     is the same slide with body copy drawn using the given font_size/
     line_spacing. The caller owns the actual text drawing (wrap_text, font
     choice, etc.); this function only drives the retry loop, measures, and
-    optionally adds the doodle pass.
+    optionally adds the callout pass.
 
     Returns (final_img, report) where report is:
       {"fill_ratio": float, "font_size": int, "line_spacing": float,
-       "attempts": int, "doodle_drawn": bool, "ok": bool}
+       "attempts": int, "callout_drawn": bool, "ok": bool}
     """
     font_size = base_font_size
     line_spacing = base_line_spacing
@@ -465,7 +401,7 @@ def auto_fit_body(render_fn, body_top, body_bottom, x0=30, x1=1050,
         if ratio >= min_fill:
             return after_img, {"fill_ratio": ratio, "font_size": font_size,
                                 "line_spacing": round(line_spacing, 2),
-                                "attempts": attempts, "doodle_drawn": False, "ok": True}
+                                "attempts": attempts, "callout_drawn": False, "ok": True}
         if font_size < max_font_size:
             font_size += font_step
         elif line_spacing < max_line_spacing:
@@ -473,20 +409,21 @@ def auto_fit_body(render_fn, body_top, body_bottom, x0=30, x1=1050,
         else:
             break  # both maxed out — no more room to grow text alone
 
-    doodle_drawn = False
-    if doodle_topic and bbox is not None:
+    callout_drawn = False
+    if callout_lines and bbox is not None:
         content_bottom = body_top + bbox[3]
         empty_top = content_bottom + 28
         if empty_top < body_bottom - 60:  # only draw if a real gap remains
             d = ImageDraw.Draw(after_img)
-            fill_empty_space_with_doodle(d, (x0, empty_top, x1, body_bottom), doodle_topic,
-                                          seed=doodle_seed, color=doodle_color)
-            doodle_drawn = True
+            terminal_callout(d, (x0, empty_top, x1, body_bottom), callout_lines,
+                              prompt_color=callout_prompt_color, text_color=callout_text_color,
+                              font_size=callout_font_size)
+            callout_drawn = True
             ratio, _ = compute_fill_ratio(before_img, after_img, body_top, body_bottom, x0, x1)
 
     return after_img, {"fill_ratio": ratio, "font_size": font_size,
                         "line_spacing": round(line_spacing, 2),
-                        "attempts": attempts, "doodle_drawn": doodle_drawn,
+                        "attempts": attempts, "callout_drawn": callout_drawn,
                         "ok": ratio >= min_fill}
 
 
