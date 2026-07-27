@@ -33,7 +33,9 @@ import math
 import os
 import random
 import shutil
+import struct
 import subprocess
+import wave
 
 from PIL import Image, ImageDraw
 
@@ -53,6 +55,7 @@ class FrameRecorder:
             shutil.rmtree(out_dir)
         os.makedirs(out_dir, exist_ok=True)
         self.index = 1
+        self.click_frames = []  # frame indices where a keystroke sound should land
 
     def snapshot(self):
         path = os.path.join(self.out_dir, f"frame_{self.index:04d}.png")
@@ -237,8 +240,12 @@ def type_text_animated(recorder, segments, font_obj, x, y, num_frames=20, cursor
             fdraw.rectangle([cx + 3, y, cx + 3 + bar_w, y + font_obj.size], fill=cursor_color)
         return cx
 
+    prev_chars = 0
     for step in range(1, num_frames + 1):
         chars_shown = max(1, round(total_chars * step / num_frames))
+        if chars_shown > prev_chars:
+            recorder.click_frames.append(recorder.index)  # for synthesize_typing_track()
+        prev_chars = chars_shown
         frame = base.copy()
         draw_prefix(frame, chars_shown, cursor and chars_shown < total_chars)
         frame.save(os.path.join(recorder.out_dir, f"frame_{recorder.index:04d}.png"))
@@ -248,6 +255,75 @@ def type_text_animated(recorder, segments, font_obj, x, y, num_frames=20, cursor
     draw_prefix(final, total_chars, False)
     recorder.img = final
     recorder.draw = ImageDraw.Draw(recorder.img)
+
+
+def type_and_erase_line(recorder, segments, font_obj, x, y, type_frames=18, hold_frames=25,
+                         erase_frames=10, cursor_color=None):
+    """Types `segments` in character-by-character at (x, y) (like
+    type_text_animated), holds at full opacity, then backspaces it back
+    out character by character -- leaving recorder.img/recorder.draw
+    exactly as they were before this call, as if the line was never
+    there. This is the terminal type+erase mechanic the homepage news
+    ticker actually uses (type, hold ~2.6s, erase, pause, next --
+    initNewsTicker in site.js), brought to the Python/PIL animation
+    pipeline: chain several calls (same or different x/y) to build a
+    type-hold-erase sequence for a run of beats, each one fully clearing
+    before the next types in, rather than crossfade_text_beats' dissolve.
+
+    Records a click in recorder.click_frames every time a character is
+    added or removed, for synthesize_typing_track() to turn into
+    keystroke sound effects afterward.
+    """
+    full_text = ''.join(s for s, _ in segments)
+    total_chars = len(full_text)
+    if total_chars == 0:
+        return
+    cursor_color = cursor_color or orange3
+    base = recorder.img.copy()
+
+    def draw_prefix(frame_img, chars_shown, with_cursor):
+        fdraw = ImageDraw.Draw(frame_img)
+        cx = x
+        remaining = chars_shown
+        for text, color in segments:
+            if remaining <= 0:
+                break
+            take = min(len(text), remaining)
+            visible = text[:take]
+            if visible:
+                fdraw.text((cx, y), visible, font=font_obj, fill=color)
+                cx += fdraw.textlength(visible, font=font_obj)
+            remaining -= take
+        if with_cursor:
+            bar_w = max(int(font_obj.size * 0.12), 2)
+            fdraw.rectangle([cx + 3, y, cx + 3 + bar_w, y + font_obj.size], fill=cursor_color)
+
+    def save_frame(chars_shown, with_cursor):
+        frame = base.copy()
+        draw_prefix(frame, chars_shown, with_cursor)
+        frame.save(os.path.join(recorder.out_dir, f"frame_{recorder.index:04d}.png"))
+        recorder.index += 1
+
+    prev_chars = 0
+    for step in range(1, type_frames + 1):
+        chars_shown = max(1, round(total_chars * step / type_frames))
+        if chars_shown > prev_chars:
+            recorder.click_frames.append(recorder.index)
+        prev_chars = chars_shown
+        save_frame(chars_shown, chars_shown < total_chars)
+
+    for _ in range(hold_frames):
+        save_frame(total_chars, False)
+
+    prev_chars = total_chars
+    for step in range(1, erase_frames + 1):
+        chars_shown = max(0, total_chars - round(total_chars * step / erase_frames))
+        if chars_shown < prev_chars:
+            recorder.click_frames.append(recorder.index)
+        prev_chars = chars_shown
+        save_frame(chars_shown, chars_shown > 0)
+
+    # fully erased -- recorder.img/draw are left untouched (still == base)
 
 
 def _smoothstep(t):
@@ -406,6 +482,80 @@ def assemble_video(frame_dir, output_path, fps=20, pattern="frame_%04d.png"):
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(f"ffmpeg failed:\n{result.stderr}")
+    return output_path
+
+
+def _synth_click_samples(sample_rate, duration, freq):
+    """Generates one short percussive keystroke click as a list of floats
+    in [-1, 1]: a brief tone burst (freq) blended with noise, under a fast
+    exponential-decay envelope so it reads as a "tick" rather than a
+    ringing note. Pure stdlib (random/math) -- no audio libraries or
+    external sound assets, consistent with this pipeline being free and
+    fully local."""
+    n = max(1, int(sample_rate * duration))
+    samples = []
+    for i in range(n):
+        t = i / sample_rate
+        env = math.exp(-t / (duration / 4))
+        tone = math.sin(2 * math.pi * freq * t)
+        noise = random.uniform(-1, 1)
+        samples.append((tone * 0.65 + noise * 0.35) * env)
+    return samples
+
+
+def synthesize_typing_track(click_frames, fps, total_frames, out_wav, sample_rate=44100):
+    """Renders a WAV of synthesized keyboard-click sounds, one per entry
+    in `click_frames` (frame indices recorded by type_text_animated()/
+    type_and_erase_line() every time a character was added or removed),
+    placed at that frame's exact timestamp (click_frame / fps seconds).
+    Each click gets a slightly randomized pitch so a run of keystrokes
+    doesn't sound like a single sample looping. Pure stdlib (wave/struct/
+    math/random) -- no external sound library or downloaded asset.
+    """
+    duration_sec = total_frames / fps
+    n_samples = int(duration_sec * sample_rate) + sample_rate  # 1s pad so late clicks don't clip off
+    buf = [0.0] * n_samples
+
+    for cf in click_frames:
+        start = int((cf / fps) * sample_rate)
+        freq = random.uniform(2600, 4200)
+        click = _synth_click_samples(sample_rate, duration=0.02, freq=freq)
+        for i, v in enumerate(click):
+            idx = start + i
+            if idx < n_samples:
+                buf[idx] += v
+
+    peak = max((abs(x) for x in buf), default=1.0) or 1.0
+    scale = 0.85 / peak
+    int_samples = [max(-32768, min(32767, int(x * scale * 32767))) for x in buf]
+
+    with wave.open(out_wav, 'w') as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sample_rate)
+        w.writeframes(struct.pack(f'<{len(int_samples)}h', *int_samples))
+    return out_wav
+
+
+def mux_audio(video_path, audio_path, output_path):
+    """Combines a (silent) video and a WAV audio track into one MP4 --
+    video re-encoded to nothing new (stream-copied), audio encoded to AAC.
+    `-shortest` trims to the video's length if the audio track (padded by
+    synthesize_typing_track) runs slightly longer."""
+    if shutil.which("ffmpeg") is None:
+        raise RuntimeError("ffmpeg not found on PATH.")
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", video_path,
+        "-i", audio_path,
+        "-c:v", "copy",
+        "-c:a", "aac",
+        "-shortest",
+        output_path,
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"ffmpeg audio mux failed:\n{result.stderr}")
     return output_path
 
 
@@ -715,77 +865,88 @@ def animate_brand_intro_hook(out_dir, video_path, fps=20):
 
 
 def animate_brand_story(out_dir, video_path, fps=20):
-    """30-second brand + site story, built for someone who has never heard
-    of stay(human).sec and isn't a security person -- no terminal-scan
+    """Brand + site story, built for someone who has never heard of
+    stay(human).sec and isn't a security person -- no terminal-scan
     gimmick, no jargon, just the site's own real philosophy and section
-    copy, crossfading smoothly beat to beat (crossfade_text_beats(),
-    eased via _smoothstep -- never a hard cut). Three acts:
+    copy. Acts 1-2 use a genuine terminal type-and-erase mechanic
+    (type_and_erase_line() -- type in, hold, backspace out, next line
+    types on the clean line beneath it) instead of a crossfade dissolve:
+    the same type+erase pattern the homepage news ticker actually uses
+    (initNewsTicker in site.js). Every keystroke is logged to
+    rec.click_frames and, after all frames are rendered, synthesized into
+    a click track (synthesize_typing_track()) and muxed onto the silent
+    video (mux_audio()) automatically before this function returns --
+    free/local/synthesized, no downloaded sound asset.
 
-      Act 1 (0-6s / 120f): the philosophy, verbatim from index.html's
-        "What we are" section -- "Not a company." / "Not a bot." / "Just
-        one person -- explaining this properly."
-      Act 2 (6-21s / 300f): a tour of what's actually on the site, six
-        beats pulled from the homepage's own router-card copy and each
+      Act 1: the philosophy, verbatim from index.html's "What we are"
+        section -- "Not a company." / "Not a bot." / "Just one person —
+        explaining this properly."
+      Act 2: a tour of what's actually on the site, six lines typed in
+        turn, pulled from the homepage's own router-card copy and each
         page's own real header line (You Check / Glossary / Posts /
-        Toolkit / News / on(my).mind), color-dotted to match each
-        section's real accent color.
-      Act 3 (21-30s / 180f): the same brand lockup as animate_brand_intro
+        Toolkit / News / on(my).mind), each with a colored bullet
+        matching that section's real accent color.
+      Act 3 (180f / 9.0s): the same brand lockup as animate_brand_intro
         -- icon draws in, wordmark fades in, motto types out, tagline
         fades in -- so it still ends on one screenshot-recognizable frame.
-      Act 4 (30-33s / 60f): a like/share/follow line fades in beneath the
-        still-visible lockup (the lockup itself is never disturbed, so
-        the screenshot-recognizable frame from Act 3 still holds) --
+      Act 4 (60f / 3.0s): a like/share/follow line fades in beneath the
+        still-visible lockup (the lockup itself is never disturbed) --
         "LIKE. SHARE. FOLLOW FOR ONE NEW FILE, EVERY DAY.", matching the
         real closer pattern already used across the Instagram captions
         (AUTOMATED-WORKFLOW.md's slide-4 Like/Comment/Follow prompt, and
         the site footer's "new file added every day").
 
-    Frame budget at 20fps/33s = 660 frames total, split 120/300/180/60.
+    Acts 1-2's runtime depends on each line's length (typing speed is
+    frames-per-line, not frames-per-second, so longer lines take
+    proportionally longer to type/erase) -- exact total frame count is
+    returned by the function and should be read from there / verified via
+    ffprobe, not assumed.
     """
     from generate_post import (base_card, quad_bezier, gray_light, blue, green, gold, pink, violet,
-                                font, BOLD, REG, MONO_BOLD)
+                                font, BOLD, REG, MONO_BOLD, MONO_REG)
 
     img, d = base_card()
     rec = FrameRecorder(img, d, out_dir)
 
-    headline_font = font(BOLD, 56)
-    sub_font = font(REG, 26)
+    def typed_center(segments, font_path, size, y, type_frames=16, hold_frames=22, erase_frames=9, max_w=980):
+        """Measures the full line's width up front so it can type in
+        left-to-right from a fixed x that leaves the finished line
+        centered (matching type_text_animated's motto-centering trick --
+        true centering isn't possible while width is still growing).
+        Takes a font path + starting size rather than a pre-built font
+        object so it can shrink the size (down to a 20px floor) if the
+        line is wider than max_w -- otherwise a long line silently runs
+        off the left edge of the 1080px canvas, since the pre-computed
+        centering offset assumes it fits."""
+        full_text = ''.join(s for s, _ in segments)
+        draw = ImageDraw.Draw(rec.img)
+        f = font(font_path, size)
+        while draw.textlength(full_text, font=f) > max_w and size > 20:
+            size -= 2
+            f = font(font_path, size)
+        w = draw.textlength(full_text, font=f)
+        x = (1080 - w) / 2
+        type_and_erase_line(rec, segments, f, x, y, type_frames, hold_frames, erase_frames)
 
-    # ---- Act 1+2 (0-21s / 420 frames): philosophy, then a tour of what's
-    # actually here -- ONE crossfade_text_beats() call spanning both, so
-    # the crossfade-from-previous-beat state carries across the act
-    # boundary too (see crossfade_text_beats' docstring: splitting a
-    # sequence across multiple calls degrades the first beat of the next
-    # call into a fade-in over whatever's already baked into the frozen
-    # base -- i.e. the previous act's last beat would linger, unfaded,
-    # underneath the new one instead of actually crossfading out).
-    def beat(dot_color, headline, sub_line=None):
-        lines = [([(headline, cream3)], headline_font, 490 if sub_line else 510)]
-        if sub_line:
-            lines.append(([(sub_line, gray_light)], sub_font, 570))
-        return {"dot": dot_color, "lines": lines}
+    def tour_beat(dot_color, headline, sub_line):
+        typed_center([("● ", dot_color), (headline, cream3)], MONO_BOLD, 42, 500)
+        typed_center([(sub_line, gray_light)], MONO_REG, 24, 570, type_frames=20, hold_frames=18, erase_frames=10)
 
-    # Real copy throughout: index.html's "What we are" section for the
-    # philosophy beats, router-card lines plus news.html's/notes.html's
-    # own header lines for the tour beats -- nothing invented.
-    story_beats = [
-        {"dot": None, "lines": [([("Not a company.", cream3)], headline_font, 510)]},
-        {"dot": None, "lines": [([("Not a bot.", cream3)], headline_font, 510)]},
-        {"dot": None, "lines": [
-            ([("Just one person —", cream3)], headline_font, 470),
-            ([("explaining this properly.", cream3)], headline_font, 540),
-        ]},
-        beat(pink, "Am I safe right now?", "Answer a few honest questions, get the exact posts that close your gaps."),
-        beat(blue, "Teach me a term.", "Every piece of jargon on this site, explained like a friend would."),
-        beat(green, "Show me the files.", "Browse every post, filterable by how often it drops."),
-        beat(gold, "What should I install?", "The password managers, VPNs, and apps actually worth using."),
-        beat(blue, "Real stories, sourced.", "Cyber News and AI News, straight from the source — never invented."),
-        beat(violet, "on(my).mind", "Unpolished, on purpose — the thinking behind why this exists."),
-        None,  # fades the last beat out to a clean base before Act 3's icon starts drawing
-    ]
-    crossfade_text_beats(rec, story_beats, transition_frames=15,
-                          hold_frames=[15, 15, 45, 35, 35, 35, 35, 35, 20, 0])
-    # 10 beats x 15f transition + sum(holds) = 150 + 270 = 420 frames, exactly 21.0s
+    # ---- Act 1: philosophy, verbatim from index.html's "What we are" ----
+    typed_center([("Not a company.", cream3)], MONO_BOLD, 42, 510, hold_frames=18)
+    typed_center([("Not a bot.", cream3)], MONO_BOLD, 42, 510, hold_frames=18)
+    typed_center([("Just one person — explaining this properly.", cream3)], MONO_BOLD, 42, 510,
+                 type_frames=28, hold_frames=35, erase_frames=14)
+
+    # ---- Act 2: a tour of what's actually here, real copy throughout --
+    # router-card lines from index.html, plus news.html's/notes.html's
+    # own header lines. Bullet color matches each section's real accent.
+    tour_beat(pink, "Am I safe right now?", "Answer a few honest questions, get the exact posts that close your gaps.")
+    tour_beat(blue, "Teach me a term.", "Every piece of jargon on this site, explained like a friend would.")
+    tour_beat(green, "Show me the files.", "Browse every post, filterable by how often it drops.")
+    tour_beat(gold, "What should I install?", "The password managers, VPNs, and apps actually worth using.")
+    tour_beat(blue, "Real stories, sourced.", "Cyber News and AI News, straight from the source — never invented.")
+    tour_beat(violet, "on(my).mind", "Unpolished, on purpose — the thinking behind why this exists.")
 
     # ---- Act 3 (21-30s / 180 frames): brand lockup ----
     ISCALE = 4.0
@@ -838,7 +999,16 @@ def animate_brand_story(out_dir, video_path, fps=20):
     rec.hold_last_frame(35)  # 25 + 35 = 60 frames, exactly 3.0s
 
     total_frames = rec.index - 1
-    assemble_video(out_dir, video_path, fps=fps)
+
+    silent_path = video_path + ".silent.mp4"
+    assemble_video(out_dir, silent_path, fps=fps)
+
+    audio_path = os.path.join(out_dir, "_typing_clicks.wav")
+    synthesize_typing_track(rec.click_frames, fps, total_frames, audio_path)
+    mux_audio(silent_path, audio_path, video_path)
+    os.remove(silent_path)
+    os.remove(audio_path)
+
     return total_frames
 
 
