@@ -194,6 +194,10 @@ When this pillar comes up:
 
 2. **Preferred sources**, roughly in order of how consumer-relevant their
    coverage tends to be:
+   - **The Hacker News (thehackernews.com)** — primary outlet to check first;
+     broad, frequently-updated breach/vulnerability coverage, but skews
+     technical, so still filter through criteria #1 and #2 above rather than
+     using a story just because it's there
    - **BleepingComputer** — strong on breach news with practical detail
    - **Krebs on Security** — deep, credible, well-explained incident coverage
    - **The Verge / TechCrunch (security coverage)** — good at consumer framing
@@ -204,6 +208,11 @@ When this pillar comes up:
      don't use it just because it's popular there
    - Official statements from the affected company, if available, for
      verifying facts before writing about them
+   - **Cross-check across at least two of the above outlets when possible**
+     before writing the post — this project has previously corroborated a
+     story (e.g. the Chick-fil-A credential stuffing post) across multiple
+     sources rather than relying on a single outlet, and that's the standard
+     to keep, not a one-off.
 
 3. **Do not fabricate or guess at details.** If a search doesn't turn up a
    story that clearly meets the "affects normal people, explainable, recent"
@@ -270,6 +279,11 @@ even though both currently share the violet accent color.
    - **Hacker News (news.ycombinator.com)** — useful for surfacing what's
      trending, but only use a story from here if it clearly meets criteria
      #1 and #2 above, same caveat as Cyber News
+   - **The Hacker News (thehackernews.com)** — occasionally covers an AI
+     data-handling story (e.g. a chatbot provider's policy change), but it's
+     primarily a Cyber News outlet — only pull from it here if a story
+     genuinely meets criterion #1 (a person's own data), not general AI
+     security coverage
 
 3. **Do not fabricate or guess at details.** If a search doesn't turn up a
    story that clearly meets the "your own data, explainable, recent" bar,
