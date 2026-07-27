@@ -37,7 +37,7 @@ import struct
 import subprocess
 import wave
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageEnhance
 
 from generate_post import cream3, orange3
 
@@ -325,6 +325,117 @@ def type_and_erase_line(recorder, segments, font_obj, x, y, type_frames=18, hold
         save_frame(chars_shown, chars_shown > 0)
 
     # fully erased -- recorder.img/draw are left untouched (still == base)
+
+
+DECRYPT_CHARS = "!@#$%^&*<>[]{}/\\|?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+
+def type_decrypt(recorder, segments, font_obj, x, y, total_frames):
+    """Reveals text via a decrypt/scramble effect instead of left-to-
+    right typing: every character position animates in parallel, each
+    flickering through random glyphs before locking to its real value,
+    with positions locking in a left-to-right staggered wave (not all
+    at once, not strictly sequential either) -- completes in exactly
+    total_frames frames regardless of string length, like text being
+    decrypted rather than typed. Assumes font_obj is monospace (true
+    for MONO_REG/MONO_BOLD) so per-character x-advance is constant and
+    doesn't jitter while a position is still scrambling.
+
+    Every 3rd frame logs a click to recorder.click_frames -- sparser
+    than real typing's one-per-character, since a dense per-frame click
+    here would read as noise, not keystrokes; enough to give the
+    scramble a subtle "static" texture under it.
+
+    Updates recorder.img/draw to the fully-settled frame afterward, same
+    pattern as type_text_animated."""
+    full_text = ''.join(s for s, _ in segments)
+    n = len(full_text)
+    if n == 0:
+        return
+    colors = []
+    for text, color in segments:
+        colors.extend([color] * len(text))
+
+    char_w = ImageDraw.Draw(recorder.img).textlength('M', font=font_obj)
+    total_frames = max(n, total_frames)  # never fewer frames than characters -- each needs a chance to flicker
+
+    lock_frame = []
+    for i in range(n):
+        spread = int(total_frames * 0.6 * i / max(1, n - 1)) if n > 1 else 0
+        lf = int(total_frames * 0.25) + spread + random.randint(-2, 2)
+        lock_frame.append(max(0, min(total_frames - 1, lf)))
+
+    base = recorder.img.copy()
+    for f in range(total_frames):
+        frame = base.copy()
+        fdraw = ImageDraw.Draw(frame)
+        cx = x
+        for i in range(n):
+            ch = full_text[i] if f >= lock_frame[i] else random.choice(DECRYPT_CHARS)
+            fdraw.text((cx, y), ch, font=font_obj, fill=colors[i])
+            cx += char_w
+        frame.save(os.path.join(recorder.out_dir, f"frame_{recorder.index:04d}.png"))
+        if f % 3 == 0:
+            recorder.click_frames.append(recorder.index)
+        recorder.index += 1
+
+    final = base.copy()
+    fdraw = ImageDraw.Draw(final)
+    cx = x
+    for i in range(n):
+        fdraw.text((cx, y), full_text[i], font=font_obj, fill=colors[i])
+        cx += char_w
+    recorder.img = final
+    recorder.draw = ImageDraw.Draw(final)
+
+
+def dim_region(img, y0, y1, factor=0.45):
+    """Darkens a horizontal band of img in place (a uniform brightness
+    multiply, not a per-pixel alpha trick) -- against this card's
+    near-black background, this reads as the bright foreground text
+    dimming to about half-strength while the background stays
+    essentially unchanged, which is exactly the "scrolled-into-history,
+    de-emphasized" look terminal scrollback has, without needing to
+    track which pixels are text vs. background."""
+    w = img.size[0]
+    region = img.crop((0, y0, w, y1))
+    dimmed = ImageEnhance.Brightness(region).enhance(factor)
+    img.paste(dimmed, (0, y0))
+
+
+def scroll_content(recorder, blank_template, shift_px, content_top=96, content_bottom=None, num_frames=10):
+    """Animates the text-content band (from content_top, i.e. below the
+    terminal chrome bar, down to content_bottom) scrolling upward by
+    shift_px over num_frames frames, revealing blank space at the bottom
+    for new content -- filled from `blank_template` (the chrome+grid+
+    border with nothing typed below it yet, so the revealed area matches
+    the card's real background instead of flat black). content_bottom
+    defaults to 40px above the canvas edge specifically to exclude the
+    card's own decorative outer border (drawn once, low on the canvas,
+    as part of every base_card()) from the scrolled band -- an earlier
+    version cropped all the way to the canvas edge, which swept that
+    border into the moving band and produced a visible duplicate/ghost
+    border wherever it landed after shifting. Content that scrolls above
+    content_top is simply clipped by the canvas edge (standard terminal
+    scrollback behavior -- older lines eventually scroll out of view).
+    Call dim_region() on the not-yet-dimmed portion of the content band
+    before calling this, so what scrolls away also reads as
+    de-emphasized history, not just content that jumped position."""
+    start_img = recorder.img.copy()
+    w, h = start_img.size
+    if content_bottom is None:
+        content_bottom = h - 40
+    band = start_img.crop((0, content_top, w, content_bottom))
+    for step in range(1, num_frames + 1):
+        dy = int(shift_px * step / num_frames)
+        frame = blank_template.copy()
+        frame.paste(band, (0, content_top - dy))
+        frame.save(os.path.join(recorder.out_dir, f"frame_{recorder.index:04d}.png"))
+        recorder.index += 1
+    final = blank_template.copy()
+    final.paste(band, (0, content_top - shift_px))
+    recorder.img = final
+    recorder.draw = ImageDraw.Draw(final)
 
 
 def draw_terminal_chrome(recorder, prompt_text="user@stayhumansec:~$ ./explore.sh"):
@@ -1033,67 +1144,72 @@ def animate_brand_intro_hook(out_dir, video_path, fps=20):
 
 
 def animate_brand_story(out_dir, video_path, fps=20):
-    """Brand story, restructured a fourth time into distinct "screens"
-    with real screen-clear transitions -- every earlier version kept
-    typed text accumulating on one continuous page; this one treats each
-    topic as its own file, cleared away before the next one starts, so
-    it reads as navigating around the site's own file-system framing
-    rather than one long scroll.
+    """Brand story, restructured a fifth time around real terminal
+    scrollback instead of hard screen-clears -- the previous version's
+    clear_screen() typed each new command BEFORE wiping the old output
+    away, so for one visible stretch the new command was drawn directly
+    on top of the still-onscreen previous line (a real bug, caught by
+    scanning dense frame samples across a full render rather than just
+    the handful of spot-checks used before: "not philosophy.md"-style
+    garbling was visible for several frames at every act transition).
+    This version fixes that at the root by never wiping at all -- each
+    act's finished content dims to ~50% brightness and scrolls upward
+    (scroll_content()/dim_region()) before the next act's command starts
+    typing at the same fixed position, so old and new content are never
+    on screen, unstyled, at the same time. Scrollback also fixes the
+    "big blank canvas under two lines of text" look every earlier
+    version had: history visibly accumulates as the video progresses
+    instead of vanishing.
 
-      Act 0 (~5s): `$ whoami` types in, holds, screen wipes clear
-        (clear_screen()), then a single output line types in alone on
-        the clean screen: "not a company. not a bot. just one person,
-        explaining this properly."
-      Act 1 (~7s, fresh screen): `$ cat philosophy.md`, clear, then:
-        "plain language over jargon. no fear-mongering. one real
-        person, not a company."
-      Act 2 (~6s, fresh screen): `$ ls ./pillars`, clear, then all 9
-        real content pillars appear one at a time like directory
-        entries (reveal_line() -- instant per-entry, not typed
-        character by character, matching how `ls` actually prints),
-        ~2.5/second, each colored to its real site accent (see the
-        9-pillar table in CLAUDE.md): cyber-news/ (blue), stay-safe/
-        (orange), cyber-basics/ (green), ai-watch/ (violet), ai-news/
-        (violet), myth-busting/ (gold), case-file/ (pink), deep-dive/
-        (green), story-time/ (coral).
-      Act 3 (~5s, fresh screen): `$ ls ./site`, clear, then real site
-        filenames revealed the same way -- posts/, news/, toolkit.html,
-        tools.html, you_check.quiz, glossary.md, on(my).mind/ --
-        directories in blue, files in cream, matching a real `ls`
-        color convention.
+      Act 0 (~5s, chrome, ACTIVE_Y fixed): `$ whoami` types in, cursor
+        blinks, then the response types in via a decrypt/scramble
+        effect (type_decrypt() -- reserved for `>` response lines only,
+        never the `$` commands, so it stays a purposeful accent instead
+        of overused everywhere): "not a company. not a bot. just one
+        person, explaining this properly."
+      Act 1 (~7s): previous content dims+scrolls up first. `$ cat
+        philosophy.md`, blink, decrypt-reveals: "plain language over
+        jargon. no fear-mongering. one real person, not a company."
+      Act 2 (~7s): dims+scrolls. `$ ls ./pillars`, blink, a brief fake
+        scan bar (`[████░░░░░░] scanning pillars...`) for anticipation,
+        then all 9 real content pillars appear one at a time like real
+        `ls` directory output (reveal_line() -- instant per-entry, not
+        typed, ~2.5/second), each colored to its real site accent (see
+        the 9-pillar table in CLAUDE.md).
+      Act 3 (~6s): dims+scrolls. `$ ls ./site`, blink, scan bar, then
+        real site filenames revealed the same way -- posts/, news/,
+        toolkit.html, tools.html, you_check.quiz, glossary.md,
+        on(my).mind/ -- directories in blue, files in cream.
       (typing stops; fade to black -- a bigger mode change than the
-      terminal-to-terminal wipes, since this is leaving the terminal
-      look entirely -- then a deliberately silent hold before the
-      reveal)
+      scroll transitions, since this leaves the terminal look entirely
+      -- then a deliberately silent hold before the reveal)
       Act 4 (~7s): the one calm non-typed moment -- the brand icon draws
         in with a subtler, less-wobbly stroke than the site's usual
         doodle jitter, wordmark fades in, motto types out character by
         character, tagline fades in.
-      Act 5 (~4s, terminal chrome returns fresh, no clear this time --
-        ends on both lines visible together as the closing screen):
-        `$ follow ./stayhumansec`, cursor blinks, then "one new file,
-        every day."
+      Act 5 (~4s, terminal chrome returns fresh, no scroll -- ends on
+        both lines visible together as the closing screen): `$ follow
+        ./stayhumansec`, cursor blinks, then a decrypt-revealed "one new
+        file, every day."
 
-    Every character typed anywhere (Acts 0/1's lines, both commands in
-    Acts 2/3, Act 4's motto, both lines in Act 5) logs to
-    rec.click_frames and gets a real keystroke sound extracted from a
-    recording (instagram/assets/sfx/keyboard_typing.mp3 --
-    _extract_keyboard_clicks()). Each Act 2/3 directory-entry reveal
-    also logs one click (a single real keystroke standing in for that
-    line "printing", not a full type-in) so the whole video stays
-    sonically consistent. Cursor-blink pauses log to rec.blink_frames
-    for a soft synthesized ambient tick (_synth_blink_tick_samples()).
-    Both are mixed by synthesize_sound_track() and muxed onto the
-    silent video (mux_audio()) automatically before this function
-    returns. The hold right before Act 4's icon reveal logs neither,
-    for genuine silence.
+    Every character typed anywhere (Acts 0/1/5's commands, Act 4's
+    motto) logs to rec.click_frames and gets a real keystroke sound
+    extracted from a recording (instagram/assets/sfx/keyboard_typing.mp3
+    -- _extract_keyboard_clicks()); decrypt-revealed response lines log
+    a sparser click every 3rd scramble frame (a "static" texture, not a
+    per-character keystroke); each Act 2/3 directory-entry reveal logs
+    one click. Cursor-blink pauses and the scan-bar fill log to
+    rec.blink_frames for a soft synthesized ambient tick
+    (_synth_blink_tick_samples()). Both are mixed by
+    synthesize_sound_track() and muxed onto the silent video
+    (mux_audio()) automatically before this function returns. The hold
+    right before Act 4's icon reveal logs neither, for genuine silence.
 
-    Total runtime is roughly 32-34s -- longer than any earlier version,
-    since this one actually covers the pillars/philosophy/site-features
-    ground the shorter cuts left out, on top of realistic typing speed
-    and real reading holds -- exact total frame count is returned by
-    the function and should be read from there / verified via ffprobe,
-    not assumed.
+    Total runtime is roughly 34-38s -- longer again than the previous
+    cut, since scan bars and the decrypt effect's staggered reveal both
+    add time on top of the already-realistic typing/reading pacing --
+    exact total frame count is returned by the function and should be
+    read from there / verified via ffprobe, not assumed.
     """
     from generate_post import (base_card, gray_light, blue, green, gold, pink, violet, quad_bezier,
                                 font, BOLD, MONO_BOLD, MONO_REG)
@@ -1106,6 +1222,8 @@ def animate_brand_story(out_dir, video_path, fps=20):
     CPS = 24  # characters/second -- realistic typing speed, upper-mid of the 15-25 range asked for
     LEFT_X = 70
     LINE_H = 62
+    ACTIVE_Y = 120  # fixed y where every act's content starts typing -- history scrolls above it
+    CONTENT_TOP = 96  # just below the chrome bar -- scroll_content()'s clip boundary
     PROMPT_FONT = font(MONO_BOLD, 34)
     OUTPUT_FONT = font(MONO_REG, 34)
 
@@ -1117,18 +1235,19 @@ def animate_brand_story(out_dir, video_path, fps=20):
         type_text_animated(rec, segments, font_obj, x=x, y=y, num_frames=type_chars(len(full_text)))
 
     def type_output(text, y, max_w=940):
-        """Types a "> " output line, word-wrapped onto as many lines as
-        it needs to stay within max_w -- a single long sentence at this
-        font size can easily be wider than the 1080px canvas, and unlike
-        an earlier version's typed_center() (which shrank the font size
-        to fit), a terminal's own `cat`/`ls` output wraps onto multiple
-        rows rather than shrinking text, which is the more authentic
-        terminal behavior here. Only the first line gets the "> "
-        prefix; continuation lines indent to align under the text
-        (not the marker). Returns (next_free_y, full_text_length) so the
-        caller can size the reading hold off the original sentence, not
-        just the last wrapped fragment."""
-        prefix_w = ImageDraw.Draw(rec.img).textlength("> ", font=OUTPUT_FONT)
+        """Types a "> " output line via the decrypt/scramble effect
+        (type_decrypt()) -- word-wrapped onto as many lines as it needs
+        to stay within max_w, since a single long sentence at this font
+        size can easily be wider than the 1080px canvas (a real bug
+        caught and fixed here: two lines were previously running off
+        the right edge with no wrapping at all). The "> " marker itself
+        is drawn instantly, un-scrambled -- only the response text gets
+        the decrypt effect, keeping it purposeful rather than applied to
+        every character on screen. Returns (next_free_y,
+        full_text_length) so the caller can size the reading hold off
+        the original sentence and scroll by the actual space used."""
+        prefix = "> "
+        prefix_w = ImageDraw.Draw(rec.img).textlength(prefix, font=OUTPUT_FONT)
         avail_w = max_w - prefix_w
         words = text.split(' ')
         lines, cur = [], ''
@@ -1146,9 +1265,11 @@ def animate_brand_story(out_dir, video_path, fps=20):
         cy = y
         for i, ln in enumerate(lines):
             if i == 0:
-                type_line([("> ", gray_light), (ln, cream3)], cy)
+                rec.draw.text((LEFT_X, cy), prefix, font=OUTPUT_FONT, fill=gray_light)
+                rec.snapshot()
+                type_decrypt(rec, [(ln, cream3)], OUTPUT_FONT, LEFT_X + prefix_w, cy, type_chars(len(ln)))
             else:
-                type_line([(ln, cream3)], cy, x=LEFT_X + prefix_w)
+                type_decrypt(rec, [(ln, cream3)], OUTPUT_FONT, LEFT_X + prefix_w, cy, type_chars(len(ln)))
             cy += LINE_H
         return cy, len(text)
 
@@ -1178,80 +1299,115 @@ def animate_brand_story(out_dir, video_path, fps=20):
         rec.img, rec.draw = base, ImageDraw.Draw(base)
 
     def reveal_line(text, color, y, appear_frames=8):
-        """Draws one line instantly (no char-by-char typing) and holds
-        it -- how `ls` actually prints entries, one after another, not
-        typed letter by letter. Still logs one real keystroke click so
-        the directory-listing acts stay sonically consistent with the
-        typed acts."""
+        """Draws one line instantly (no char-by-char typing, no decrypt
+        effect) and holds it -- how `ls` actually prints entries, one
+        after another. Still logs one real keystroke click so the
+        directory-listing acts stay sonically consistent."""
         rec.draw.text((LEFT_X, y), text, font=OUTPUT_FONT, fill=color)
         rec.snapshot()
         rec.click_frames.append(rec.index - 1)
         rec.hold_last_frame(appear_frames - 1)
 
-    def clear_screen(cmd_display, y, wipe_frames=6):
-        """Types `$ {cmd_display}`, holds briefly, then wipes the screen
-        clear top-to-bottom back to the bare chrome -- the "navigating
-        to a different file" transition between acts, standing in for a
-        real terminal `clear`. chrome_base must already be set in the
-        enclosing scope (drawn fresh at the start of each terminal
-        session)."""
-        type_line([("$ ", orange3), (cmd_display, gray_light)], y, PROMPT_FONT)
-        rec.hold_last_frame(5)
-        start_img = rec.img.copy()
-        h = start_img.size[1]
-        for step in range(1, wipe_frames + 1):
-            wipe_y = int(h * step / wipe_frames)
-            frame = start_img.copy()
-            frame.paste(chrome_base.crop((0, 0, chrome_base.size[0], wipe_y)), (0, 0))
+    def scan_bar(label, y, num_frames=12, bar_width=10):
+        """A brief fake progress bar (`[████░░░░░░] label`) that fills
+        in then holds on the completed bar for a moment, purely for
+        anticipation before a directory listing -- then erases itself
+        (rec.img reverts to what it was before this call) so the
+        listing starts on a clean line at the same y. Every 3rd fill
+        step logs a soft ambient tick, matching the "something's
+        working" feel without competing with real keystroke clicks."""
+        base = rec.img.copy()
+        fill_frames = max(1, num_frames - 4)
+        for step in range(1, fill_frames + 1):
+            filled = min(bar_width, round(bar_width * step / fill_frames))
+            bar_text = f"[{'█' * filled}{'░' * (bar_width - filled)}] {label}"
+            frame = base.copy()
+            ImageDraw.Draw(frame).text((LEFT_X, y), bar_text, font=OUTPUT_FONT, fill=gray_light)
             frame.save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+            if step % 3 == 0:
+                rec.blink_frames.append(rec.index)
             rec.index += 1
-        rec.img = chrome_base.copy()
-        rec.draw = ImageDraw.Draw(rec.img)
+        rec.hold_last_frame(4)
+        rec.img, rec.draw = base, ImageDraw.Draw(base)
+
+    def scroll_to_active(prev_content_height, num_frames=10):
+        """Dims the previous act's just-finished content (currently
+        drawn at full brightness in [ACTIVE_Y, ACTIVE_Y+prev_content_
+        height)) to history-level opacity, then scrolls the whole
+        content band upward by exactly that height so it settles just
+        above ACTIVE_Y and the next act's content can start typing at
+        ACTIVE_Y again -- the "scrollback" transition that replaces the
+        old hard clear_screen() wipe (and the overlap bug that came with
+        typing a new command before the wipe removed the old one)."""
+        if prev_content_height <= 0:
+            return
+        dim_region(rec.img, ACTIVE_Y, ACTIVE_Y + prev_content_height, factor=0.45)
+        scroll_content(rec, chrome_base, prev_content_height, content_top=CONTENT_TOP, num_frames=num_frames)
 
     # ================= Act 0: $ whoami =================
     draw_terminal_chrome(rec)
     chrome_base = rec.img.copy()
 
-    clear_screen("whoami", 140)
+    type_line([("$ ", orange3), ("whoami", gray_light)], ACTIVE_Y, PROMPT_FONT)
+    cmd0_end_x = LEFT_X + ImageDraw.Draw(rec.img).textlength("$ whoami", font=PROMPT_FONT)
+    cursor_blink_pause(cmd0_end_x + 6, ACTIVE_Y + 2)
+
     line0 = "not a company. not a bot. just one person, explaining this properly."
-    _, n0 = type_output(line0, 140)
+    cy0, n0 = type_output(line0, ACTIVE_Y + LINE_H)
     reading_hold(n0)
+    act0_height = cy0 - ACTIVE_Y
 
     # ================= Act 1: $ cat philosophy.md =================
-    clear_screen("cat philosophy.md", 140)
+    scroll_to_active(act0_height)
+    type_line([("$ ", orange3), ("cat philosophy.md", gray_light)], ACTIVE_Y, PROMPT_FONT)
+    cmd1_end_x = LEFT_X + ImageDraw.Draw(rec.img).textlength("$ cat philosophy.md", font=PROMPT_FONT)
+    cursor_blink_pause(cmd1_end_x + 6, ACTIVE_Y + 2)
+
     line1 = "plain language over jargon. no fear-mongering. one real person, not a company."
-    _, n1 = type_output(line1, 140)
+    cy1, n1 = type_output(line1, ACTIVE_Y + LINE_H)
     reading_hold(n1)
+    act1_height = cy1 - ACTIVE_Y
 
     # ================= Act 2: $ ls ./pillars =================
-    clear_screen("ls ./pillars", 140)
+    scroll_to_active(act1_height)
+    type_line([("$ ", orange3), ("ls ./pillars", gray_light)], ACTIVE_Y, PROMPT_FONT)
+    cmd2_end_x = LEFT_X + ImageDraw.Draw(rec.img).textlength("$ ls ./pillars", font=PROMPT_FONT)
+    cursor_blink_pause(cmd2_end_x + 6, ACTIVE_Y + 2)
+    scan_bar("scanning pillars...", ACTIVE_Y + LINE_H)
+
     pillars = [
         ("cyber-news/", blue), ("stay-safe/", orange3), ("cyber-basics/", green),
         ("ai-watch/", violet), ("ai-news/", violet), ("myth-busting/", gold),
         ("case-file/", pink), ("deep-dive/", green), ("story-time/", CORAL),
     ]
-    py = 140
+    py = ACTIVE_Y + LINE_H
     for name, color in pillars:
         reveal_line(name, color, py, appear_frames=8)
         py += LINE_H - 6
     rec.hold_last_frame(20)
+    act2_height = py - ACTIVE_Y
 
     # ================= Act 3: $ ls ./site =================
-    clear_screen("ls ./site", 140)
+    scroll_to_active(act2_height)
+    type_line([("$ ", orange3), ("ls ./site", gray_light)], ACTIVE_Y, PROMPT_FONT)
+    cmd3_end_x = LEFT_X + ImageDraw.Draw(rec.img).textlength("$ ls ./site", font=PROMPT_FONT)
+    cursor_blink_pause(cmd3_end_x + 6, ACTIVE_Y + 2)
+    scan_bar("scanning site...", ACTIVE_Y + LINE_H)
+
     features = [
         ("posts/", blue), ("news/", blue), ("toolkit.html", cream3), ("tools.html", cream3),
         ("you_check.quiz", cream3), ("glossary.md", cream3), ("on(my).mind/", blue),
     ]
-    fy = 140
+    fy = ACTIVE_Y + LINE_H
     for name, color in features:
         reveal_line(name, color, fy, appear_frames=8)
         fy += LINE_H - 6
     rec.hold_last_frame(20)
 
     # ---- handoff: typing stops, a fade to black (a bigger mode change
-    # than the terminal-to-terminal wipes above), then a genuinely
-    # silent hold (no clicks, no ticks) right before the brand icon
-    # reveals -- real silence is what makes that moment land ----
+    # than the scroll transitions above), then a genuinely silent hold
+    # (no clicks, no ticks) right before the brand icon reveals -- real
+    # silence is what makes that moment land ----
     black = Image.new("RGB", rec.img.size, (0, 0, 0))
     start_img = rec.img.convert('RGBA')
     end_img = black.convert('RGBA')
@@ -1311,15 +1467,14 @@ def animate_brand_story(out_dir, video_path, fps=20):
     rec.img, rec.draw = img2, d2
     draw_terminal_chrome(rec)
 
-    y5 = 140
+    y5 = ACTIVE_Y
     cmd5 = "follow ./stayhumansec"
     type_line([("$ ", orange3), (cmd5, gray_light)], y5, PROMPT_FONT)
     cmd5_end_x = LEFT_X + ImageDraw.Draw(rec.img).textlength(f"$ {cmd5}", font=PROMPT_FONT)
     cursor_blink_pause(cmd5_end_x + 6, y5 + 2)
 
-    y5 += LINE_H
     line_final = "one new file, every day."
-    type_line([("> ", gray_light), (line_final, cream3)], y5)
+    type_output(line_final, y5 + LINE_H)
     rec.hold_last_frame(28)
 
     total_frames = rec.index - 1
