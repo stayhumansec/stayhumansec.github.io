@@ -485,21 +485,31 @@ def assemble_video(frame_dir, output_path, fps=20, pattern="frame_%04d.png"):
     return output_path
 
 
-def _synth_click_samples(sample_rate, duration, freq):
-    """Generates one short percussive keystroke click as a list of floats
-    in [-1, 1]: a brief tone burst (freq) blended with noise, under a fast
-    exponential-decay envelope so it reads as a "tick" rather than a
-    ringing note. Pure stdlib (random/math) -- no audio libraries or
-    external sound assets, consistent with this pipeline being free and
-    fully local."""
-    n = max(1, int(sample_rate * duration))
+def _synth_click_samples(sample_rate, body_freq=170):
+    """Generates one synthesized mechanical-keyboard keystroke as a list
+    of floats in [-1, 1] -- two layered parts, like a real key press:
+      1. A very short (~3ms) broadband noise transient under a razor-fast
+         decay -- the sharp "click" of the switch/keycap contact.
+      2. A slightly longer (~18ms) low-frequency resonant tone under a
+         fast decay -- the hollow "thock" body resonance underneath it.
+    A single sine+noise blip (the previous version) reads as a soft
+    electronic blip, not a keyboard; this two-layer shape is what
+    actually gives it a mechanical, mechanical-switch character.
+    body_freq is randomized per call by the caller for slight per-key
+    pitch variation, same as a real board's keys never sounding
+    perfectly identical. Pure stdlib (random/math) -- no audio libraries
+    or external sound assets, consistent with this pipeline being free
+    and fully local."""
+    total_duration = 0.02
+    n = max(1, int(sample_rate * total_duration))
     samples = []
     for i in range(n):
         t = i / sample_rate
-        env = math.exp(-t / (duration / 4))
-        tone = math.sin(2 * math.pi * freq * t)
-        noise = random.uniform(-1, 1)
-        samples.append((tone * 0.65 + noise * 0.35) * env)
+        click_env = math.exp(-t / 0.0012)
+        click = random.uniform(-1, 1) * click_env
+        body_env = math.exp(-t / 0.006)
+        body = math.sin(2 * math.pi * body_freq * t) * body_env
+        samples.append(click * 0.55 + body * 0.55)
     return samples
 
 
@@ -518,8 +528,8 @@ def synthesize_typing_track(click_frames, fps, total_frames, out_wav, sample_rat
 
     for cf in click_frames:
         start = int((cf / fps) * sample_rate)
-        freq = random.uniform(2600, 4200)
-        click = _synth_click_samples(sample_rate, duration=0.02, freq=freq)
+        body_freq = random.uniform(140, 210)  # slight per-key pitch variation
+        click = _synth_click_samples(sample_rate, body_freq=body_freq)
         for i, v in enumerate(click):
             idx = start + i
             if idx < n_samples:
@@ -908,7 +918,11 @@ def animate_brand_story(out_dir, video_path, fps=20):
     img, d = base_card()
     rec = FrameRecorder(img, d, out_dir)
 
-    def typed_center(segments, font_path, size, y, type_frames=16, hold_frames=22, erase_frames=9, max_w=980):
+    TYPE_CPS = 7    # deliberate, readable typing speed -- characters/sec
+    ERASE_CPS = 14  # backspacing reads as naturally quicker than typing
+
+    def typed_center(segments, font_path, size, y, type_frames=None, hold_frames=None,
+                      erase_frames=None, max_w=980):
         """Measures the full line's width up front so it can type in
         left-to-right from a fixed x that leaves the finished line
         centered (matching type_text_animated's motto-centering trick --
@@ -917,8 +931,24 @@ def animate_brand_story(out_dir, video_path, fps=20):
         object so it can shrink the size (down to a 20px floor) if the
         line is wider than max_w -- otherwise a long line silently runs
         off the left edge of the 1080px canvas, since the pre-computed
-        centering offset assumes it fits."""
+        centering offset assumes it fits.
+
+        type_frames/hold_frames/erase_frames default to None, which
+        derives pacing from the line's own character count (at
+        TYPE_CPS/ERASE_CPS, plus a reading-time hold) instead of one
+        fixed frame count applied to every line regardless of length --
+        a short line and a long sentence typing at the same fixed frame
+        count either drags or blows past legible, so pacing here scales
+        with how much there actually is to read."""
         full_text = ''.join(s for s, _ in segments)
+        n = len(full_text)
+        if type_frames is None:
+            type_frames = max(20, round(n / TYPE_CPS * fps))
+        if hold_frames is None:
+            hold_frames = max(30, round((1.0 + n * 0.04) * fps))
+        if erase_frames is None:
+            erase_frames = max(10, round(n / ERASE_CPS * fps))
+
         draw = ImageDraw.Draw(rec.img)
         f = font(font_path, size)
         while draw.textlength(full_text, font=f) > max_w and size > 20:
@@ -928,25 +958,24 @@ def animate_brand_story(out_dir, video_path, fps=20):
         x = (1080 - w) / 2
         type_and_erase_line(rec, segments, f, x, y, type_frames, hold_frames, erase_frames)
 
-    def tour_beat(dot_color, headline, sub_line):
-        typed_center([("● ", dot_color), (headline, cream3)], MONO_BOLD, 42, 500)
-        typed_center([(sub_line, gray_light)], MONO_REG, 24, 570, type_frames=20, hold_frames=18, erase_frames=10)
+    def tour_beat(dot_color, headline):
+        typed_center([("● ", dot_color), (headline, cream3)], MONO_BOLD, 42, 510)
 
     # ---- Act 1: philosophy, verbatim from index.html's "What we are" ----
-    typed_center([("Not a company.", cream3)], MONO_BOLD, 42, 510, hold_frames=18)
-    typed_center([("Not a bot.", cream3)], MONO_BOLD, 42, 510, hold_frames=18)
-    typed_center([("Just one person — explaining this properly.", cream3)], MONO_BOLD, 42, 510,
-                 type_frames=28, hold_frames=35, erase_frames=14)
+    typed_center([("Not a company.", cream3)], MONO_BOLD, 42, 510)
+    typed_center([("Not a bot.", cream3)], MONO_BOLD, 42, 510)
+    typed_center([("Just one person — explaining this properly.", cream3)], MONO_BOLD, 42, 510)
 
-    # ---- Act 2: a tour of what's actually here, real copy throughout --
-    # router-card lines from index.html, plus news.html's/notes.html's
-    # own header lines. Bullet color matches each section's real accent.
-    tour_beat(pink, "Am I safe right now?", "Answer a few honest questions, get the exact posts that close your gaps.")
-    tour_beat(blue, "Teach me a term.", "Every piece of jargon on this site, explained like a friend would.")
-    tour_beat(green, "Show me the files.", "Browse every post, filterable by how often it drops.")
-    tour_beat(gold, "What should I install?", "The password managers, VPNs, and apps actually worth using.")
-    tour_beat(blue, "Real stories, sourced.", "Cyber News and AI News, straight from the source — never invented.")
-    tour_beat(violet, "on(my).mind", "Unpolished, on purpose — the thinking behind why this exists.")
+    # ---- Act 2: a tour of what's actually here -- headline only, no
+    # descriptor sub-line (kept to the question/label itself, matching
+    # the real router-card headline from index.html verbatim). Bullet
+    # color matches each section's real accent color.
+    tour_beat(pink, "Am I safe right now?")
+    tour_beat(blue, "Teach me a term.")
+    tour_beat(green, "Show me the files.")
+    tour_beat(gold, "What should I install?")
+    tour_beat(blue, "Real stories, sourced.")
+    tour_beat(violet, "on(my).mind")
 
     # ---- Act 3 (21-30s / 180 frames): brand lockup ----
     ISCALE = 4.0
