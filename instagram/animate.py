@@ -373,6 +373,17 @@ def assemble_video(frame_dir, output_path, fps=20, pattern="frame_%04d.png"):
     is the sweet spot for a hand-drawn reveal: fast enough not to drag,
     slow enough to actually follow the stroke landing. Pass a lower value
     (e.g. 10) to linger longer, or higher (e.g. 30) for a snappier reveal.
+
+    Explicitly encodes and tags full-range (PC/0-255) color rather than
+    ffmpeg's default limited/broadcast range (16-235). Without this, many
+    players assume limited range on an untagged stream and lift the
+    blacks toward gray on playback -- the source frames are correct
+    (verified pixel-for-pixel against the still-image renderer), but
+    playback made the dark grid lines (and everything else against the
+    pure-black background) look washed out/brighter than the actual
+    slides. `in_range=full:out_range=full` on the scale filter fixes the
+    conversion itself, not just the metadata tag, since libswscale can
+    silently do a range conversion during scaling otherwise.
     """
     if shutil.which("ffmpeg") is None:
         raise RuntimeError(
@@ -385,7 +396,11 @@ def assemble_video(frame_dir, output_path, fps=20, pattern="frame_%04d.png"):
         "-i", os.path.join(frame_dir, pattern),
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
-        "-vf", "scale=1080:1080",
+        "-vf", "scale=1080:1080:in_range=full:out_range=full",
+        "-color_range", "pc",
+        "-colorspace", "bt709",
+        "-color_primaries", "bt709",
+        "-color_trc", "bt709",
         output_path,
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -717,8 +732,15 @@ def animate_brand_story(out_dir, video_path, fps=20):
       Act 3 (21-30s / 180f): the same brand lockup as animate_brand_intro
         -- icon draws in, wordmark fades in, motto types out, tagline
         fades in -- so it still ends on one screenshot-recognizable frame.
+      Act 4 (30-33s / 60f): a like/share/follow line fades in beneath the
+        still-visible lockup (the lockup itself is never disturbed, so
+        the screenshot-recognizable frame from Act 3 still holds) --
+        "LIKE. SHARE. FOLLOW FOR ONE NEW FILE, EVERY DAY.", matching the
+        real closer pattern already used across the Instagram captions
+        (AUTOMATED-WORKFLOW.md's slide-4 Like/Comment/Follow prompt, and
+        the site footer's "new file added every day").
 
-    Frame budget at 20fps/30s = 600 frames total, split 120 / 300 / 180.
+    Frame budget at 20fps/33s = 660 frames total, split 120/300/180/60.
     """
     from generate_post import (base_card, quad_bezier, gray_light, blue, green, gold, pink, violet,
                                 font, BOLD, REG, MONO_BOLD)
@@ -803,6 +825,17 @@ def animate_brand_story(out_dir, video_path, fps=20):
     fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=700, num_frames=30)
     rec.hold_last_frame(20)  # 50 frames, 2.5s
     # 60 + 40 + 30 + 50 = 180 frames, exactly 9.0s
+
+    # ---- Act 4 (30-33s / 60 frames): like/share/follow, added beneath
+    # the still-visible lockup -- the lockup itself is never disturbed,
+    # so Act 3's screenshot-recognizable frame still holds throughout ----
+    cta_font = font(MONO_BOLD, 24)
+    cta_segments = [
+        ("LIKE", orange3), (". ", gray_light), ("SHARE", orange3), (". ", gray_light),
+        ("FOLLOW", orange3), (" FOR ONE NEW FILE, EVERY DAY.", gray_light),
+    ]
+    fade_in_segments(rec, cta_segments, cta_font, x='center', y=800, num_frames=25)
+    rec.hold_last_frame(35)  # 25 + 35 = 60 frames, exactly 3.0s
 
     total_frames = rec.index - 1
     assemble_video(out_dir, video_path, fps=fps)
