@@ -559,6 +559,68 @@ def _decode_audio_to_samples(path, sample_rate=44100):
     return [x / 32768.0 for x in ints]
 
 
+def _extract_keyboard_clicks(path, sample_rate=44100, max_clicks=40, click_ms=45, min_gap_ms=70):
+    """Detects individual keystroke transients in a real recording and
+    extracts each one as a short standalone click sample, instead of
+    playing the whole recording as one continuous background loop -- a
+    loop runs on its own separate rhythm and reads as unsynced from the
+    on-screen typing; individual extracted clicks, placed one per
+    keystroke at that keystroke's exact frame (same mechanism the
+    earlier from-scratch synthesis used), are what actually makes the
+    sound track the visual typing.
+
+    Onset detection: per-window average energy (~3ms windows) across the
+    whole recording, a local peak counted as an onset once it clears 35%
+    of the file's loudest window and sits at least min_gap_ms after the
+    previous onset (so one keystroke's decay tail isn't picked up as a
+    second click). Each onset is extracted as a click_ms-long slice,
+    peak-normalized to 1.0 (so quiet/loud detections all play back at a
+    consistent level once scaled by the caller) with a short fade-out on
+    the tail so splicing it into the mix doesn't itself produce an
+    audible click-off.
+    """
+    samples = _decode_audio_to_samples(path, sample_rate)
+    n = len(samples)
+    if n == 0:
+        return []
+
+    win = max(1, int(sample_rate * 0.003))
+    energies = []
+    i = 0
+    while i < n:
+        seg = samples[i:i + win]
+        energies.append(sum(abs(x) for x in seg) / len(seg) if seg else 0.0)
+        i += win
+
+    peak_e = max(energies, default=0.0)
+    if peak_e <= 0:
+        return []
+    threshold = peak_e * 0.35
+    min_gap_windows = max(1, int((min_gap_ms / 1000.0) / (win / sample_rate)))
+
+    onsets = []
+    last_onset_w = -min_gap_windows
+    for wi, e in enumerate(energies):
+        if e >= threshold and (wi - last_onset_w) >= min_gap_windows:
+            onsets.append(wi * win)
+            last_onset_w = wi
+
+    click_len = int(sample_rate * click_ms / 1000.0)
+    fade_len = max(1, int(click_len * 0.25))
+    clicks = []
+    for onset in onsets[:max_clicks]:
+        seg = list(samples[onset:onset + click_len])
+        if not seg:
+            continue
+        peak = max((abs(x) for x in seg), default=0.0) or 1.0
+        seg = [x / peak for x in seg]
+        for k in range(min(fade_len, len(seg))):
+            idx = len(seg) - 1 - k
+            seg[idx] *= k / fade_len
+        clicks.append(seg)
+    return clicks
+
+
 def _synth_scratch_samples(sample_rate):
     """Generates one synthesized pencil/pen "drawing" scratch as a list of
     floats in [-1, 1] -- white noise passed through a simple one-pole
@@ -581,20 +643,26 @@ def _synth_scratch_samples(sample_rate):
     return samples
 
 
-def synthesize_sound_track(keyboard_audio_path, typing_end_frame, scratch_frames, fps, total_frames,
+def synthesize_sound_track(keyboard_audio_path, click_frames, scratch_frames, fps, total_frames,
                             out_wav, sample_rate=44100):
     """Renders a WAV mixing two sound sources onto one track:
 
-      1. A real keyboard-typing recording (`keyboard_audio_path`, an mp3
-         picked out for this video specifically -- see
-         instagram/assets/sfx/keyboard_typing.mp3) looped/trimmed to
-         exactly cover frames 1..typing_end_frame (every act that types
-         text: the Act 1/2 terminal lines and Act 3's motto), starting at
-         t=0 and fading out over its last ~0.15s so it doesn't cut off
-         abruptly right as typing stops. This replaces three earlier
-         from-scratch synthesis attempts (a clean digital tick, a
-         two-layer "mechanical keyboard" thock, a bitcrushed retro
-         clack) with an actual recording, per explicit request.
+      1. Real keystroke clicks, extracted from a real recording
+         (`keyboard_audio_path` -- see instagram/assets/sfx/
+         keyboard_typing.mp3) via _extract_keyboard_clicks(), one placed
+         at every entry in `click_frames` (frame indices recorded by
+         type_text_animated()/type_and_erase_line() every time a
+         character was added or removed) -- i.e. one real click per
+         keystroke, synced to the exact frame that keystroke lands on,
+         the same placement mechanism three earlier from-scratch
+         synthesis attempts used. An earlier version of this function
+         instead played the whole recording once as a continuous
+         background loop under the typing acts -- that's a fixed
+         unrelated rhythm playing alongside the typing, not synced to
+         it, which is why it read as disconnected from what was on
+         screen; per-keystroke placement of the real recording's own
+         individual click sounds is what actually keeps sound and
+         visual in sync.
       2. A softer synthesized pencil-scratch sound (_synth_scratch_samples)
          for every entry in `scratch_frames` (frame indices recorded
          during Act 3's icon draw-in), placed at that frame's exact
@@ -609,16 +677,17 @@ def synthesize_sound_track(keyboard_audio_path, typing_end_frame, scratch_frames
     n_samples = int(duration_sec * sample_rate) + sample_rate  # 1s pad so late sounds don't clip off
     buf = [0.0] * n_samples
 
-    kb_samples = _decode_audio_to_samples(keyboard_audio_path, sample_rate)
-    if kb_samples:
-        typing_span_samples = min(int((typing_end_frame / fps) * sample_rate), n_samples)
-        fade_samples = min(int(0.15 * sample_rate), typing_span_samples)
-        kb_len = len(kb_samples)
-        for i in range(typing_span_samples):
-            v = kb_samples[i % kb_len] * 0.8
-            if i > typing_span_samples - fade_samples:
-                v *= (typing_span_samples - i) / fade_samples
-            buf[i] += v
+    clicks = _extract_keyboard_clicks(keyboard_audio_path, sample_rate)
+    for cf in click_frames:
+        if not clicks:
+            break
+        start = int((cf / fps) * sample_rate)
+        click = random.choice(clicks)
+        amp = random.uniform(0.5, 0.8)  # slight per-keystroke level variation
+        for i, v in enumerate(click):
+            idx = start + i
+            if idx < n_samples:
+                buf[idx] += v * amp
 
     for sf in scratch_frames:
         start = int((sf / fps) * sample_rate)
@@ -975,12 +1044,15 @@ def animate_brand_story(out_dir, video_path, fps=20):
     (type_and_erase_line() -- type in, hold, backspace out, next line
     types on the clean line beneath it) instead of a crossfade dissolve:
     the same type+erase pattern the homepage news ticker actually uses
-    (initNewsTicker in site.js). A real keyboard-typing recording
-    (instagram/assets/sfx/keyboard_typing.mp3) plays under every act that
-    types text (Acts 1-2 and Act 3's motto), looped/trimmed to fit and
-    mixed with a synthesized pencil-scratch sound under Act 3's icon
-    draw-in (synthesize_sound_track()), muxed onto the silent video
-    (mux_audio()) automatically before this function returns.
+    (initNewsTicker in site.js). Every keystroke is logged to
+    rec.click_frames and, after all frames are rendered, matched up with
+    real click sounds extracted from a recording
+    (instagram/assets/sfx/keyboard_typing.mp3 -- see
+    _extract_keyboard_clicks()), one real click placed on each keystroke's
+    exact frame, mixed with a synthesized pencil-scratch sound under Act
+    3's icon draw-in (synthesize_sound_track()), then muxed onto the
+    silent video (mux_audio()) automatically before this function
+    returns.
 
       Act 1 (terminal chrome visible): the philosophy, verbatim from
         index.html's "What we are" section -- "Not a company." / "Not a
@@ -1134,7 +1206,6 @@ def animate_brand_story(out_dir, video_path, fps=20):
     motto_full = ''.join(s for s, _ in motto_text)
     motto_w = ImageDraw.Draw(rec.img).textlength(motto_full, font=motto_font)
     type_text_animated(rec, motto_text, motto_font, x=(1080 - motto_w) / 2, y=630, num_frames=25)
-    typing_end_frame = rec.index  # last frame with any typed text -- see synthesize_sound_track()
     rec.hold_last_frame(5)  # 30 frames, 1.5s
 
     tagline_font = font(MONO_BOLD, 30)
@@ -1164,7 +1235,7 @@ def animate_brand_story(out_dir, video_path, fps=20):
 
     keyboard_audio_path = os.path.join(os.path.dirname(__file__), "assets", "sfx", "keyboard_typing.mp3")
     audio_path = os.path.join(out_dir, "_typing_clicks.wav")
-    synthesize_sound_track(keyboard_audio_path, typing_end_frame, rec.scratch_frames, fps, total_frames, audio_path)
+    synthesize_sound_track(keyboard_audio_path, rec.click_frames, rec.scratch_frames, fps, total_frames, audio_path)
     mux_audio(silent_path, audio_path, video_path)
     os.remove(silent_path)
     os.remove(audio_path)
