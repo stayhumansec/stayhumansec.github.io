@@ -57,6 +57,7 @@ class FrameRecorder:
         self.index = 1
         self.click_frames = []    # frame indices where a keystroke sound should land
         self.scratch_frames = []  # frame indices where a pencil/pen "drawing" sound should land
+        self.impact_frames = []   # frame indices where a hard-cut "impact" thump should land
 
     def snapshot(self):
         path = os.path.join(self.out_dir, f"frame_{self.index:04d}.png")
@@ -214,6 +215,71 @@ def draw_strike_through(recorder, cx, cy, half_size, color, seed=950, num_frames
     wobbly_animated(recorder, pts, color, 7, 1.0, seed=seed, num_frames=num_frames)
     for fi in range(start, recorder.index, 2):
         recorder.scratch_frames.append(fi)
+
+
+def draw_icon_instant(recorder, kind, cx, cy, scale, color):
+    """Draws a full _pillar_icon_strokes() icon in a single shot -- no
+    progressive stroke-by-stroke reveal -- for hard-cut montage beats
+    where the icon should just BE there the instant the cut lands, not
+    draw itself in gradually. Does not snapshot a frame; the caller
+    controls exactly when that happens (usually right after also placing
+    a label, so both appear in the same cut)."""
+    from generate_post import wobbly as _wobbly
+
+    strokes = _pillar_icon_strokes(kind, color)
+    for i, (pts, stroke_color, width) in enumerate(strokes):
+        xf_pts = [(cx + px * scale, cy + py * scale) for (px, py) in pts]
+        _wobbly(recorder.draw, xf_pts, stroke_color, width, 0.8, seed=800 + i)
+
+
+def draw_glitch_scatter(recorder, cx, cy, iscale, cream_color, orange_color, num_frames=14, seed=700):
+    """Draws the brand icon's four pieces (both brackets, the head as a
+    circle outline, the body arc) scattered around their assembled
+    position with rapid, shrinking random jitter each frame -- an
+    unstable, "glitching apart" look that converges toward (but doesn't
+    reach) the correct layout, instead of a calm progressive draw-in.
+    The caller is expected to hard-cut straight to the real assembled
+    icon (generate_post.draw_icon(), a single clean frame) right after
+    this returns -- that cut is the "snap into place" beat, deliberately
+    NOT a crossfade, for the same jump-cut energy as the montage that
+    follows it.
+
+    Every other frame logs to recorder.scratch_frames for a chaotic
+    texture under the effect; recorder.img/draw are left completely
+    untouched (this never composites onto the persistent frame, only
+    saves standalone frames), so whatever was on screen before this call
+    is exactly what's on screen right after it."""
+    from generate_post import quad_bezier, circle_pts, wobbly as _wobbly
+
+    random.seed(seed)
+    base = recorder.img.copy()
+
+    def xf(pt):
+        return (cx - 75 * iscale + pt[0] * iscale, cy - 55.5 * iscale + pt[1] * iscale)
+
+    pieces = [
+        ([xf(p) for p in quad_bezier((38, 16), (20, 50), (38, 84))], cream_color, 8),
+        ([xf(p) for p in quad_bezier((112, 16), (130, 50), (112, 84))], cream_color, 8),
+        ([xf(p) for p in circle_pts(75, 38, 13)], orange_color, 6),
+        ([xf((75 + 17 * math.cos(math.radians(a)), 78 + 17 * math.sin(math.radians(a))))
+          for a in range(180, 361, 8)], orange_color, 6),
+    ]
+
+    max_offset = 90
+    for step in range(num_frames):
+        settle = step / max(1, num_frames - 1)
+        cur_offset = max_offset * (1 - settle) ** 2
+        frame = base.copy()
+        fdraw = ImageDraw.Draw(frame)
+        for pi, (pts, color, width) in enumerate(pieces):
+            dx = random.uniform(-cur_offset, cur_offset)
+            dy = random.uniform(-cur_offset, cur_offset)
+            shifted = [(px + dx, py + dy) for (px, py) in pts]
+            _wobbly(fdraw, shifted, color, width, 1.5, seed=seed + pi * 17 + step)
+        frame.save(os.path.join(recorder.out_dir, f"frame_{recorder.index:04d}.png"))
+        if step % 2 == 0:
+            recorder.scratch_frames.append(recorder.index)
+        recorder.index += 1
 
 
 def fade_in_text(recorder, lines, font_obj, color, x, y, line_height, num_frames=12):
@@ -738,9 +804,29 @@ def _synth_scratch_samples(sample_rate):
     return samples
 
 
-def synthesize_sound_track(keyboard_audio_path, click_frames, scratch_frames, fps, total_frames,
-                            out_wav, sample_rate=44100):
-    """Renders a WAV mixing two sound sources onto one track:
+def _synth_impact_samples(sample_rate):
+    """Generates one synthesized hard-cut "impact" thump as a list of
+    floats in [-1, 1] -- a low (90Hz) sine under a fast decay, with a
+    touch of noise for punch. Used for hard scene-cuts (the glitch-
+    assembly snap, each montage-beat cut), distinct from the keyboard
+    clicks and pencil scratch used elsewhere: those are small/detail
+    sounds, this is a bigger, lower "hit" marking a whole scene
+    changing at once."""
+    total_duration = 0.09
+    n = max(1, int(sample_rate * total_duration))
+    samples = []
+    for i in range(n):
+        t = i / sample_rate
+        env = math.exp(-t / 0.03)
+        tone = math.sin(2 * math.pi * 90 * t)
+        noise = random.uniform(-1, 1) * 0.25
+        samples.append((tone * 0.8 + noise) * env)
+    return samples
+
+
+def synthesize_sound_track(keyboard_audio_path, click_frames, scratch_frames, impact_frames, fps,
+                            total_frames, out_wav, sample_rate=44100):
+    """Renders a WAV mixing three sound sources onto one track:
 
       1. Real keystroke clicks, extracted from a real recording
          (`keyboard_audio_path` -- see instagram/assets/sfx/
@@ -760,9 +846,14 @@ def synthesize_sound_track(keyboard_audio_path, click_frames, scratch_frames, fp
          visual in sync.
       2. A softer synthesized pencil-scratch sound (_synth_scratch_samples)
          for every entry in `scratch_frames` (frame indices recorded
-         during Act 3's icon draw-in), placed at that frame's exact
+         during an icon draw-in), placed at that frame's exact
          timestamp -- this one stays synthesized since it's illustrating
          a hand-drawn stroke, not a keyboard.
+      3. A synthesized low "impact" thump (_synth_impact_samples) for
+         every entry in `impact_frames` (frame indices recorded at hard
+         scene-cuts -- the glitch-assembly snap, each fast-cut montage
+         beat), giving those cuts a felt "hit" instead of landing
+         silently.
 
     ffmpeg (already a hard dependency for assemble_video()/mux_audio())
     does the mp3 decode; everything else is pure stdlib (wave/struct/
@@ -788,6 +879,14 @@ def synthesize_sound_track(keyboard_audio_path, click_frames, scratch_frames, fp
         start = int((sf / fps) * sample_rate)
         scratch = _synth_scratch_samples(sample_rate)
         for i, v in enumerate(scratch):
+            idx = start + i
+            if idx < n_samples:
+                buf[idx] += v
+
+    for imf in impact_frames:
+        start = int((imf / fps) * sample_rate)
+        impact = _synth_impact_samples(sample_rate)
+        for i, v in enumerate(impact):
             idx = start + i
             if idx < n_samples:
                 buf[idx] += v
@@ -1132,140 +1231,126 @@ def animate_brand_intro_hook(out_dir, video_path, fps=20):
 
 
 def animate_brand_story(out_dir, video_path, fps=20):
-    """Brand + site story, rebuilt around small hand-drawn icons instead
-    of long stretches of typed sentences -- an earlier version leaned on
-    type_and_erase_line() for nearly the entire runtime (six question/
-    answer beats plus three philosophy sentences, all pure text on an
-    empty grid) and read as generic/confusing precisely because there
-    was nothing to actually look at, just words appearing and
-    disappearing. This version gives every beat something to watch:
+    """Brand + site story, rebuilt a second time around a fast-cut,
+    trailer-paced structure -- an earlier version replaced typed
+    sentences with calm one-at-a-time icon beats (draw in, fade label,
+    hold, dissolve to next), which fixed "nothing to look at" but was
+    called out as still not intriguing: same measured pacing throughout,
+    no hook, no surprise. This version leads with a wordless visual
+    hook and cuts hard instead of dissolving:
 
-      Act 0 (terminal chrome visible, ~5.5s): the philosophy shown, not
-        just typed -- a generic building icon draws in and gets struck
-        through ("not a company"), a bot-face icon draws in and gets
-        struck through ("not a bot"), then the real brand icon draws in
-        clean with "Just one person." fading in beneath it. The
-        contrast (drawn, crossed out, drawn again clean) carries the
-        point instead of three sentences in a row.
-      Act 1 (terminal chrome visible, ~11s): a tour of six site pillars,
-        each as icon + label instead of a typed question/answer pair --
-        a small line-art icon (shield / lightbulb / folder / magnifier /
-        document / chip) draws in, then the real pillar name fades in
-        underneath in that pillar's own accent color (Stay Safe /
-        Cyber Basics / Case File / Myth Busting / Cyber News / AI Watch
-        -- see the 9-pillar table in CLAUDE.md), holds briefly, then
-        clears for the next.
+      Act 0 (~0.9s): cold open, no text, no logo yet -- the brand icon's
+        four pieces (both brackets, the head, the body arc) appear
+        scattered and jittering unstably around where they should be
+        (draw_glitch_scatter()), then hard-cut to black for a beat of
+        tension. Pure motion, meant to be a little disorienting before
+        anything is explained.
+      Act 1 (~4.6s, terminal chrome visible): a 9-beat hard-cut montage,
+        each beat a single instant frame held ~0.5s then cut (no fades,
+        no dissolves) with a synthesized "impact" thump on every cut --
+        a building icon (NOT A COMPANY), a bot-face icon (NOT A BOT),
+        both struck through, then the real brand icon assembling clean
+        for the first time (JUST ONE PERSON.), then six site-pillar
+        icons in the same rhythm (shield/Stay Safe, lightbulb/Cyber
+        Basics, folder/Case File, magnifier/Myth Busting, document/
+        Cyber News, chip/AI Watch -- see the 9-pillar table in
+        CLAUDE.md), each in that pillar's real accent color.
       (chrome fades out here, handing off to the plain brand-lockup look)
-      Act 2 (~6.5s, trimmed from an earlier 9s cut): the same brand
-        lockup as animate_brand_intro -- icon draws in, wordmark fades
-        in, motto types out, tagline fades in -- so it still ends on one
-        screenshot-recognizable frame. The icon draw-in logs to
-        rec.scratch_frames for a soft pencil/pen sound.
-      Act 3 (~1.5s, trimmed from an earlier 3s cut): a like/share/follow
-        line fades in beneath the still-visible lockup (the lockup
-        itself is never disturbed) -- "LIKE. SHARE. FOLLOW FOR ONE NEW
-        FILE, EVERY DAY.", matching the real closer pattern already used
-        across the Instagram captions.
+      Act 2 (~6.6s): the calm payoff after Act 1's chaos -- the same
+        full brand lockup as animate_brand_intro (icon draws in properly
+        this time, wordmark fades in, motto types out, tagline fades
+        in), landing on one screenshot-recognizable frame.
+      Act 3 (~1.5s): a like/share/follow line fades in beneath the
+        still-visible lockup.
 
-    Every icon draw-in logs to rec.scratch_frames for a synthesized
-    pencil-scratch sound; the motto (the only remaining typed text) logs
-    to rec.click_frames and gets real keyboard clicks extracted from a
-    recording (instagram/assets/sfx/keyboard_typing.mp3 --
-    _extract_keyboard_clicks()). Both are mixed by
+    Every icon draw/instant-draw logs to rec.scratch_frames (pencil-
+    scratch sound) or rec.impact_frames (hard-cut thump, see
+    _synth_impact_samples()); the motto (the only remaining typed text)
+    logs to rec.click_frames and gets real keyboard clicks extracted
+    from a recording (instagram/assets/sfx/keyboard_typing.mp3 --
+    _extract_keyboard_clicks()). All three are mixed by
     synthesize_sound_track() and muxed onto the silent video
     (mux_audio()) automatically before this function returns.
 
-    Total runtime is roughly 20-25s (icon/hold/clear timings are fixed
-    frame counts here, not derived from text length the way the earlier
-    typed version was) -- exact total frame count is returned by the
-    function and should be read from there / verified via ffprobe, not
-    assumed.
+    Total runtime is roughly 14s -- deliberately short for a fast-cut
+    hook video rather than the 20-25s a calmer cut would want -- exact
+    total frame count is returned by the function and should be read
+    from there / verified via ffprobe, not assumed.
     """
     from generate_post import (base_card, quad_bezier, gray_light, blue, green, gold, pink, violet,
-                                font, BOLD, MONO_BOLD)
+                                font, BOLD, MONO_BOLD, draw_icon as draw_brand_icon)
 
     img, d = base_card()
     rec = FrameRecorder(img, d, out_dir)
+
+    # ---- Act 0: wordless cold open -- the mark glitches apart, then a
+    # hard cut to black before anything is explained ----
+    draw_glitch_scatter(rec, 540, 400, 3.0, cream3, orange3, num_frames=14, seed=700)
+    black = Image.new("RGB", rec.img.size, (0, 0, 0))
+    for _ in range(3):
+        black.save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+        rec.index += 1
+    rec.impact_frames.append(rec.index - 1)
+
+    img2, d2 = base_card()
+    rec.img, rec.draw = img2, d2
     draw_terminal_chrome(rec)
     chrome_base = rec.img.copy()
-
-    def clear_beat(num_frames=6):
-        """Cross-dissolves back to the chrome-only base (not a fully
-        blank base_card() -- that's _fade_to_clean_base()'s job, used
-        once at the Act 1 -> Act 2 handoff) so each icon beat clears
-        cleanly without losing the terminal-window frame underneath it."""
-        start = rec.img.convert('RGBA')
-        end = chrome_base.convert('RGBA')
-        for step in range(1, num_frames + 1):
-            t = step / num_frames
-            frame = Image.blend(start, end, t)
-            frame.convert('RGB').save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
-            rec.index += 1
-        rec.img = chrome_base.copy()
-        rec.draw = ImageDraw.Draw(rec.img)
 
     CX, CY = 540, 420
     ICON_SCALE = 1.7
 
-    # ---- Act 0: philosophy, shown rather than just typed ----
-    draw_animated_icon(rec, 'building', CX, CY, ICON_SCALE, gray_light, seed_base=910, stroke_frames=6)
-    draw_strike_through(rec, CX, CY, 34 * ICON_SCALE, pink, seed=951, num_frames=6)
-    rec.hold_last_frame(8)
-    clear_beat()
-
-    draw_animated_icon(rec, 'bot', CX, CY, ICON_SCALE, gray_light, seed_base=920, stroke_frames=6)
-    draw_animated_fill(rec, CX - 8 * ICON_SCALE, CY - 4 * ICON_SCALE, 3 * ICON_SCALE, gray_light, num_frames=4)
-    draw_animated_fill(rec, CX + 8 * ICON_SCALE, CY - 4 * ICON_SCALE, 3 * ICON_SCALE, gray_light, num_frames=4)
-    draw_strike_through(rec, CX, CY, 34 * ICON_SCALE, pink, seed=952, num_frames=6)
-    rec.hold_last_frame(8)
-    clear_beat()
-
-    BRAND_ISCALE = 1.4
-    BOFFX, BOFFY = CX - 75 * BRAND_ISCALE, CY - 60 - 55.5 * BRAND_ISCALE
-
-    def bxf(pt):
-        return (BOFFX + pt[0] * BRAND_ISCALE, BOFFY + pt[1] * BRAND_ISCALE)
-
-    b_start = rec.index
-    left_bracket = quad_bezier(bxf((38, 16)), bxf((20, 50)), bxf((38, 84)), steps=40)
-    wobbly_animated(rec, left_bracket, cream3, 6, 0.9, seed=930, num_frames=6)
-    right_bracket = quad_bezier(bxf((112, 16)), bxf((130, 50)), bxf((112, 84)), steps=40)
-    wobbly_animated(rec, right_bracket, cream3, 6, 0.9, seed=931, num_frames=6)
-    head_cx, head_cy = bxf((75, 38))
-    grow_circle(rec, head_cx, head_cy, max_r=13 * BRAND_ISCALE, color=orange3, num_frames=5)
-    body_arc = [bxf((75 + 17 * math.cos(math.radians(a)), 78 + 17 * math.sin(math.radians(a))))
-                for a in range(180, 361, 4)]
-    wobbly_animated(rec, body_arc, orange3, 4, 0.8, seed=932, num_frames=6)
-    for fi in range(b_start, rec.index, 2):
-        rec.scratch_frames.append(fi)
-
-    label_font = font(MONO_BOLD, 40)
-    fade_in_segments(rec, [("Just one person.", cream3)], label_font, x='center', y=CY + 90, num_frames=10)
-    rec.hold_last_frame(10)
-    clear_beat()
-
-    # ---- Act 1: a tour of six site pillars as icon + label ----
-    def pillar_beat(kind, color, label, seed_base, stroke_frames=5, fill=False):
-        draw_animated_icon(rec, kind, CX, CY, ICON_SCALE, color, seed_base=seed_base, stroke_frames=stroke_frames)
+    # ---- Act 1: 9-beat hard-cut montage -- every beat is one instant
+    # frame held briefly then cut, no fades/dissolves, each cut marked
+    # with a synthesized impact thump ----
+    def montage_beat(kind, color, label, hold_frames=10, fill=False, strike=False, strike_color=None):
+        rec.img = chrome_base.copy()
+        rec.draw = ImageDraw.Draw(rec.img)
+        draw_icon_instant(rec, kind, CX, CY, ICON_SCALE, color)
         if fill:
-            draw_animated_fill(rec, CX, CY, 7 * ICON_SCALE * 0.5, color, num_frames=5)
+            r = 7 * ICON_SCALE * 0.5
+            rec.draw.ellipse([CX - r, CY - r, CX + r, CY + r], fill=color)
+        if strike:
+            from generate_post import wobbly as _wobbly
+            half = 34 * ICON_SCALE
+            pts = quad_bezier((CX - half, CY - half), (CX, CY), (CX + half, CY + half), steps=20)
+            _wobbly(rec.draw, pts, strike_color or pink, 7, 1.0, seed=960)
         label_f = font(MONO_BOLD, 40)
-        fade_in_segments(rec, [(label, color)], label_f, x='center', y=CY + 70, num_frames=8)
-        rec.hold_last_frame(12)
-        clear_beat()
+        lw = rec.draw.textlength(label, font=label_f)
+        rec.draw.text(((1080 - lw) / 2, CY + 70), label, font=label_f, fill=color)
+        rec.snapshot()
+        rec.impact_frames.append(rec.index - 1)
+        rec.hold_last_frame(hold_frames - 1)
 
-    pillar_beat('shield', orange3, "Stay Safe.", seed_base=940)
-    pillar_beat('lightbulb', green, "Cyber Basics.", seed_base=942)
-    pillar_beat('folder', pink, "Case File.", seed_base=944)
-    pillar_beat('magnifier', gold, "Myth Busting.", seed_base=946)
-    pillar_beat('document', blue, "Cyber News.", seed_base=948, stroke_frames=4)
-    pillar_beat('chip', violet, "AI Watch.", seed_base=950, fill=True)
+    def brand_montage_beat(hold_frames=12):
+        rec.img = chrome_base.copy()
+        rec.draw = ImageDraw.Draw(rec.img)
+        biscale = 1.6
+        boffx, boffy = CX - 75 * biscale, CY - 60 - 55.5 * biscale
+        draw_brand_icon(rec.draw, boffx, boffy, biscale, cream3, orange3)
+        label_f = font(MONO_BOLD, 40)
+        label = "Just one person."
+        lw = rec.draw.textlength(label, font=label_f)
+        rec.draw.text(((1080 - lw) / 2, CY + 90), label, font=label_f, fill=cream3)
+        rec.snapshot()
+        rec.impact_frames.append(rec.index - 1)
+        rec.hold_last_frame(hold_frames - 1)
+
+    montage_beat('building', gray_light, "NOT A COMPANY.", strike=True)
+    montage_beat('bot', gray_light, "NOT A BOT.", strike=True)
+    brand_montage_beat()
+    montage_beat('shield', orange3, "Stay Safe.")
+    montage_beat('lightbulb', green, "Cyber Basics.")
+    montage_beat('folder', pink, "Case File.")
+    montage_beat('magnifier', gold, "Myth Busting.")
+    montage_beat('document', blue, "Cyber News.")
+    montage_beat('chip', violet, "AI Watch.", fill=True)
 
     # ---- handoff: fade the terminal chrome out before the brand lockup,
     # which uses the plain grid-card look, not the terminal-window frame.
     _fade_to_clean_base(rec, num_frames=10)
 
-    # ---- Act 2: brand lockup (trimmed pacing vs. animate_brand_intro) ----
+    # ---- Act 2: brand lockup -- the calm payoff after Act 1's chaos ----
     ISCALE = 4.0
     OFFX, OFFY = 540 - 75 * ISCALE, 300 - 55.5 * ISCALE
 
@@ -1323,7 +1408,8 @@ def animate_brand_story(out_dir, video_path, fps=20):
 
     keyboard_audio_path = os.path.join(os.path.dirname(__file__), "assets", "sfx", "keyboard_typing.mp3")
     audio_path = os.path.join(out_dir, "_typing_clicks.wav")
-    synthesize_sound_track(keyboard_audio_path, rec.click_frames, rec.scratch_frames, fps, total_frames, audio_path)
+    synthesize_sound_track(keyboard_audio_path, rec.click_frames, rec.scratch_frames, rec.impact_frames,
+                            fps, total_frames, audio_path)
     mux_audio(silent_path, audio_path, video_path)
     os.remove(silent_path)
     os.remove(audio_path)
