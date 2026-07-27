@@ -541,36 +541,22 @@ def assemble_video(frame_dir, output_path, fps=20, pattern="frame_%04d.png"):
     return output_path
 
 
-def _synth_click_samples(sample_rate, tone_freq=520):
-    """Generates one synthesized retro-typewriter keystroke as a list of
-    floats in [-1, 1] -- a sharp noise transient (the strike) layered
-    under a short square-wave "clack" body (rather than a sine, a square
-    wave has harder edges/more harmonics, which is what actually reads as
-    old hardware instead of a clean modern tone), then bitcrushed
-    (quantized to a small number of amplitude levels) for lo-fi retro
-    texture. Two earlier versions were tried and rejected: a two-layer
-    noise+sine "mechanical keyboard" thock (too real/modern-keyboard) and
-    a single clean high-pitched sine tick (too soft/generic, didn't read
-    as a keyboard at all) -- this is the third pass, aimed specifically
-    at "retro keyboard", not either of those.
-    tone_freq is randomized per call by the caller for slight per-key
-    pitch variation. Pure stdlib (random/math) -- no audio libraries or
-    external sound assets, consistent with this pipeline being free and
-    fully local."""
-    total_duration = 0.014
-    n = max(1, int(sample_rate * total_duration))
-    levels = 12  # bitcrush depth -- fewer levels = grittier/more retro
-    samples = []
-    for i in range(n):
-        t = i / sample_rate
-        noise_env = math.exp(-t / 0.0009)
-        noise = random.uniform(-1, 1) * noise_env
-        body_env = math.exp(-t / 0.0045)
-        square = 1.0 if math.sin(2 * math.pi * tone_freq * t) >= 0 else -1.0
-        body = square * body_env
-        raw = noise * 0.5 + body * 0.5
-        samples.append(round(raw * levels) / levels)
-    return samples
+def _decode_audio_to_samples(path, sample_rate=44100):
+    """Decodes any audio file ffmpeg can read (mp3/wav/etc.) to a list of
+    mono float samples in [-1, 1], via ffmpeg piping raw PCM to stdout --
+    no extra Python audio-decoding library needed, same "ffmpeg is the
+    only non-stdlib dependency" pattern the rest of this pipeline already
+    relies on for video assembly/muxing."""
+    if shutil.which("ffmpeg") is None:
+        raise RuntimeError("ffmpeg not found on PATH.")
+    cmd = ["ffmpeg", "-y", "-i", path, "-f", "s16le", "-ar", str(sample_rate), "-ac", "1", "-"]
+    result = subprocess.run(cmd, capture_output=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"ffmpeg audio decode failed:\n{result.stderr.decode(errors='replace')}")
+    raw = result.stdout
+    n = len(raw) // 2
+    ints = struct.unpack(f'<{n}h', raw[:n * 2])
+    return [x / 32768.0 for x in ints]
 
 
 def _synth_scratch_samples(sample_rate):
@@ -595,30 +581,44 @@ def _synth_scratch_samples(sample_rate):
     return samples
 
 
-def synthesize_sound_track(click_frames, scratch_frames, fps, total_frames, out_wav, sample_rate=44100):
-    """Renders a WAV mixing two kinds of synthesized sound effects onto
-    one track: a retro keystroke tick for every entry in `click_frames`
-    (frame indices recorded by type_text_animated()/type_and_erase_line()
-    every time a character was added or removed) and a softer pencil-
-    scratch sound for every entry in `scratch_frames` (frame indices
-    recorded during Act 3's icon draw-in), each placed at that frame's
-    exact timestamp (frame / fps seconds). Each instance gets a slightly
-    randomized pitch so a run of sounds doesn't sound like a single
-    sample looping. Pure stdlib (wave/struct/math/random) -- no external
-    sound library or downloaded asset.
+def synthesize_sound_track(keyboard_audio_path, typing_end_frame, scratch_frames, fps, total_frames,
+                            out_wav, sample_rate=44100):
+    """Renders a WAV mixing two sound sources onto one track:
+
+      1. A real keyboard-typing recording (`keyboard_audio_path`, an mp3
+         picked out for this video specifically -- see
+         instagram/assets/sfx/keyboard_typing.mp3) looped/trimmed to
+         exactly cover frames 1..typing_end_frame (every act that types
+         text: the Act 1/2 terminal lines and Act 3's motto), starting at
+         t=0 and fading out over its last ~0.15s so it doesn't cut off
+         abruptly right as typing stops. This replaces three earlier
+         from-scratch synthesis attempts (a clean digital tick, a
+         two-layer "mechanical keyboard" thock, a bitcrushed retro
+         clack) with an actual recording, per explicit request.
+      2. A softer synthesized pencil-scratch sound (_synth_scratch_samples)
+         for every entry in `scratch_frames` (frame indices recorded
+         during Act 3's icon draw-in), placed at that frame's exact
+         timestamp -- this one stays synthesized since it's illustrating
+         a hand-drawn stroke, not a keyboard.
+
+    ffmpeg (already a hard dependency for assemble_video()/mux_audio())
+    does the mp3 decode; everything else is pure stdlib (wave/struct/
+    math/random).
     """
     duration_sec = total_frames / fps
     n_samples = int(duration_sec * sample_rate) + sample_rate  # 1s pad so late sounds don't clip off
     buf = [0.0] * n_samples
 
-    for cf in click_frames:
-        start = int((cf / fps) * sample_rate)
-        tone_freq = random.uniform(420, 680)  # slight per-key pitch variation
-        click = _synth_click_samples(sample_rate, tone_freq=tone_freq)
-        for i, v in enumerate(click):
-            idx = start + i
-            if idx < n_samples:
-                buf[idx] += v
+    kb_samples = _decode_audio_to_samples(keyboard_audio_path, sample_rate)
+    if kb_samples:
+        typing_span_samples = min(int((typing_end_frame / fps) * sample_rate), n_samples)
+        fade_samples = min(int(0.15 * sample_rate), typing_span_samples)
+        kb_len = len(kb_samples)
+        for i in range(typing_span_samples):
+            v = kb_samples[i % kb_len] * 0.8
+            if i > typing_span_samples - fade_samples:
+                v *= (typing_span_samples - i) / fade_samples
+            buf[i] += v
 
     for sf in scratch_frames:
         start = int((sf / fps) * sample_rate)
@@ -975,11 +975,12 @@ def animate_brand_story(out_dir, video_path, fps=20):
     (type_and_erase_line() -- type in, hold, backspace out, next line
     types on the clean line beneath it) instead of a crossfade dissolve:
     the same type+erase pattern the homepage news ticker actually uses
-    (initNewsTicker in site.js). Every keystroke is logged to
-    rec.click_frames and, after all frames are rendered, synthesized into
-    a click track (synthesize_typing_track()) and muxed onto the silent
-    video (mux_audio()) automatically before this function returns --
-    free/local/synthesized, no downloaded sound asset.
+    (initNewsTicker in site.js). A real keyboard-typing recording
+    (instagram/assets/sfx/keyboard_typing.mp3) plays under every act that
+    types text (Acts 1-2 and Act 3's motto), looped/trimmed to fit and
+    mixed with a synthesized pencil-scratch sound under Act 3's icon
+    draw-in (synthesize_sound_track()), muxed onto the silent video
+    (mux_audio()) automatically before this function returns.
 
       Act 1 (terminal chrome visible): the philosophy, verbatim from
         index.html's "What we are" section -- "Not a company." / "Not a
@@ -1133,6 +1134,7 @@ def animate_brand_story(out_dir, video_path, fps=20):
     motto_full = ''.join(s for s, _ in motto_text)
     motto_w = ImageDraw.Draw(rec.img).textlength(motto_full, font=motto_font)
     type_text_animated(rec, motto_text, motto_font, x=(1080 - motto_w) / 2, y=630, num_frames=25)
+    typing_end_frame = rec.index  # last frame with any typed text -- see synthesize_sound_track()
     rec.hold_last_frame(5)  # 30 frames, 1.5s
 
     tagline_font = font(MONO_BOLD, 30)
@@ -1160,8 +1162,9 @@ def animate_brand_story(out_dir, video_path, fps=20):
     silent_path = video_path + ".silent.mp4"
     assemble_video(out_dir, silent_path, fps=fps)
 
+    keyboard_audio_path = os.path.join(os.path.dirname(__file__), "assets", "sfx", "keyboard_typing.mp3")
     audio_path = os.path.join(out_dir, "_typing_clicks.wav")
-    synthesize_sound_track(rec.click_frames, rec.scratch_frames, fps, total_frames, audio_path)
+    synthesize_sound_track(keyboard_audio_path, typing_end_frame, rec.scratch_frames, fps, total_frames, audio_path)
     mux_audio(silent_path, audio_path, video_path)
     os.remove(silent_path)
     os.remove(audio_path)
