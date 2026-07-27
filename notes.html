@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notes — stay(human).sec</title>
+<link rel="stylesheet" href="style.css?v=13">
+</head>
+<body>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<nav class="topnav" id="topnav">
+  <a href="index.html" class="nav-brand">
+    <span id="navIcon"></span>
+    <span>stay<span class="b-accent">(human)</span>.sec</span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html#posts">Posts</a>
+    <a href="news.html">News</a>
+    <a href="notes.html">Notes</a>
+    <a href="toolkit.html">Toolkit</a>
+    <a href="tools.html">Utilities</a>
+    <a href="index.html#youcheck">You, Check.</a>
+    <a href="glossary.html">Glossary</a>
+  </div>
+  <div class="nav-right">
+    <button class="nav-prompt-btn" id="cmdkTrigger" aria-label="Open navigation and search">
+      <span class="prompt-lead">stay(human).sec:~$</span>
+      <span class="prompt-text">explore</span><span class="prompt-cursor">_</span>
+    </button>
+    <a href="#" class="nav-cta">Follow @stayhumansec</a>
+  </div>
+</nav>
+
+<div class="path-bar">
+  <div class="path-bar-inner">
+    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ cat NOTES.md</div>
+    <div class="win-controls"><span class="wc-min"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="19"/></svg></span><span class="wc-max"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg></span><span class="wc-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span></div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">// NOTES</div>
+    <h2 class="reveal">Unpolished, on purpose.</h2>
+    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:700px;">Separate from the numbered posts — this is where I write freeform: technical explorations, the thinking behind why this project exists, and honest concerns. Less teaching, more journal. Expect a rougher voice than the rest of the site.</p>
+
+    <div class="tabs reveal" id="notesTabBar">
+      <button class="tab-btn active" data-tab="all">All notes</button>
+      <button class="tab-btn" data-tab="technical">Technical</button>
+      <button class="tab-btn" data-tab="philosophy">Philosophy</button>
+      <button class="tab-btn" data-tab="concerns">Concerns</button>
+    </div>
+
+    <div class="listing-label reveal" id="notesCount">loading notes…</div>
+    <div class="notes-list" id="notesList"></div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand-col">
+      <div class="footer-brand"><span id="footerIcon"></span><span>stay<span>(human)</span>.sec</span></div>
+      <p class="footer-tagline">Cybersecurity, AI, and privacy explained properly — one fact, one fix, every day.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="index.html#intro">What we are</a>
+      <a href="index.html#posts">All posts</a>
+      <a href="glossary.html">Glossary</a>
+    </div>
+    <div class="footer-col">
+      <h4>Follow</h4>
+      <div class="social-row">
+        <a href="#" title="Instagram" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+        </a>
+        <a href="#" title="Telegram" aria-label="Telegram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </a>
+        <a href="#" title="Email" aria-label="Email">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>new file added every day — <a href="#">follow @stayhumansec</a></div>
+    <div>stay(human).sec</div>
+  </div>
+</footer>
+
+<script src="site.js?v=15"></script>
+<script>
+  if (typeof brandIconSVG !== 'function') {
+    document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
+    throw new Error('site.js not loaded.');
+  }
+
+  document.getElementById('navIcon').innerHTML = brandIconSVG(26);
+  document.getElementById('footerIcon').innerHTML = brandIconSVG(24);
+  initBootSequence(initPageFade);
+  setupNavScroll();
+  initScrollProgress();
+  initCursorFX();
+  initCommandPalette();
+  initMobileNav();
+  highlightActiveNav();
+  initScrambleReveal('.section-eyebrow');
+  initScrollReveal();
+
+  var TAG_META = {
+    technical: { label: 'Technical', color: 'var(--blue)' },
+    philosophy: { label: 'Philosophy', color: 'var(--violet)' },
+    concerns: { label: 'Concerns', color: 'var(--pink)' }
+  };
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function noteCard(note) {
+    var meta = TAG_META[note.tag] || { label: note.tag, color: 'var(--cream-dim)' };
+    var body = (note.body || []).map(function (para) {
+      return '<p>' + formatNoteText(para) + '</p>';
+    }).join('');
+
+    return '<div class="note-card declass" data-tag="' + escapeHTML(note.tag || '') + '">' +
+      '<div class="note-card-top">' +
+        '<span class="tag-chip" style="--chip-color:' + meta.color + ';"><span class="chip-dot"></span>' + escapeHTML(meta.label) + '</span>' +
+        '<span class="news-date">' + escapeHTML(fmtDate(note.date)) + '</span>' +
+      '</div>' +
+      '<div class="note-title">' + escapeHTML(note.title) + '</div>' +
+      '<div class="note-body">' + body + '</div>' +
+    '</div>';
+  }
+
+  fetch('notes.json').then(function (r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(function (data) {
+    var notes = (data.notes || []).slice().sort(function (a, b) {
+      return (b.date || '').localeCompare(a.date || '');
+    });
+
+    var list = document.getElementById('notesList');
+    var countEl = document.getElementById('notesCount');
+    var tabBar = document.getElementById('notesTabBar');
+
+    if (!notes.length) {
+      countEl.textContent = 'total 0 notes';
+      list.innerHTML = '<div class="news-empty">No notes yet — check back soon.</div>';
+      return;
+    }
+
+    list.innerHTML = notes.map(noteCard).join('');
+    initScrollReveal({ stagger: true });
+    initDeclassify({ stagger: true });
+
+    function applyFilter(tab) {
+      var cards = list.querySelectorAll('.note-card');
+      var visible = 0;
+      cards.forEach(function (card) {
+        var match = (tab === 'all') || (card.getAttribute('data-tag') === tab);
+        card.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      countEl.textContent = 'total ' + visible + ' note' + (visible === 1 ? '' : 's');
+    }
+
+    applyFilter('all');
+
+    tabBar.addEventListener('click', function (e) {
+      var btn = e.target.closest('.tab-btn');
+      if (!btn) return;
+      tabBar.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      applyFilter(btn.getAttribute('data-tab'));
+    });
+  }).catch(function (err) {
+    document.getElementById('notesList').innerHTML =
+      '<p style="color:var(--pink); font-family:\'JetBrains Mono\',monospace; font-size:13px;">Could not load notes.json — ' + escapeHTML(err.message) +
+      '. If you opened this file directly (file://), most browsers block local fetch() calls — run a local server or view it via GitHub Pages.</p>';
+  });
+</script>
+
+</body>
+</html>
