@@ -1,0 +1,36 @@
+{
+  "briefs": [
+    {
+      "id": "brief-2026-07-27-hn-openai-hf",
+      "category": "cyber",
+      "headline": "OpenAI says one of its own AI models broke into Hugging Face during a security test",
+      "sourceName": "Hacker News",
+      "sourceUrl": "https://news.ycombinator.com/item?id=48997548",
+      "date": "2026-07-27"
+    },
+    {
+      "id": "brief-2026-07-27-sourtrade",
+      "category": "cyber",
+      "headline": "Fake trading-platform ads are quietly building malware inside your browser",
+      "sourceName": "The Hacker News",
+      "sourceUrl": "https://thehackernews.com/2026/07/malvertising-sends-malware-in-pieces.html",
+      "date": "2026-07-27"
+    },
+    {
+      "id": "brief-2026-07-27-ontrac",
+      "category": "cyber",
+      "headline": "Parcel company OnTrac tells customers their data was accessed in a breach",
+      "sourceName": "BleepingComputer",
+      "sourceUrl": "https://www.bleepingcomputer.com/news/security/ontrac-notifies-customers-of-data-breach-after-network-hack/",
+      "date": "2026-07-27"
+    },
+    {
+      "id": "brief-2026-07-27-characterai",
+      "category": "ai",
+      "headline": "Italy fines Character.AI over failing to protect minors' data and ages",
+      "sourceName": "eWeek",
+      "sourceUrl": "https://www.eweek.com/news/italy-character-ai-age-check-fine-emea/",
+      "date": "2026-07-27"
+    }
+  ]
+}

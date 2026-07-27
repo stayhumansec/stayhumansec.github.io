@@ -18,7 +18,9 @@ glossary.html         Full glossary, rendered from the GLOSSARY_TERMS array in s
 404.html              Not-found page, styled as a failed `cat` command
 style.css             All styles for every page (one shared stylesheet, no per-page CSS files)
 site.js               All shared JS: data loading, rendering helpers, animations, nav, command palette
+news.html             News page — every Cyber News/AI News post in one feed, plus the "Also today" curated headline strip below it
 posts.json            All post content — the only content data file; index.html and post.html both read it
+newsBriefs.json       Bare curated headlines for the "Also today" strip on news.html (headline + source + link only, no write-up) — see AUTOMATED-WORKFLOW.md's "Also today" section
 ```
 
 There is no templating engine or bundler. Every HTML file is hand-written, loads `style.css` and `site.js` directly via `<link>`/`<script>` tags, and does its own DOM rendering inline in a `<script>` block at the bottom of the file. `index.html` and `post.html` both fail loudly (visible error message) if `site.js` didn't load or `posts.json` didn't fetch — this is deliberate, since `fetch()` against a local `file://` path is blocked by browsers, and that's the #1 way people break this site testing it locally. Use a local static server (e.g. `python3 -m http.server`) when developing.
