@@ -1033,60 +1033,72 @@ def animate_brand_intro_hook(out_dir, video_path, fps=20):
 
 
 def animate_brand_story(out_dir, video_path, fps=20):
-    """Brand story, rebuilt a third time around pure terminal typing --
-    two earlier versions used hand-drawn doodle icons (a calm one-at-a-
-    time icon tour, then a fast-cut hard-cut icon montage); both are
-    gone from this version entirely per explicit direction: no
-    illustrations at all except the brand mark itself in Act 3, and even
-    that uses a subtler, less-wobbly stroke than the site's usual doodle
-    jitter, since this video's whole identity is "text typing itself."
-    Pacing is also deliberately much slower than either icon version --
-    realistic typing speed (~20-24 characters/second) with real pauses
-    between lines and cursor-blink suspense beats, not rapid cuts.
+    """Brand story, restructured a fourth time into distinct "screens"
+    with real screen-clear transitions -- every earlier version kept
+    typed text accumulating on one continuous page; this one treats each
+    topic as its own file, cleared away before the next one starts, so
+    it reads as navigating around the site's own file-system framing
+    rather than one long scroll.
 
-      Act 1 (terminal chrome + blinking cursor): `$ whoami` types in,
-        cursor blinks for a beat (silence except a soft ambient tick),
-        then three output lines type in and stay on screen (a real
-        terminal log, not a type-and-erase loop): "> not a company.",
-        "> not a bot.", "> just one person, explaining this properly."
-      Act 2 (same terminal session, lines keep accumulating below Act
-        1's): `$ cat mission.md` types in, cursor blinks, then two more
-        output lines: "> cybersecurity. AI. privacy." (each word colored
-        to that topic's real site accent -- blue/violet/orange, the only
-        color accent in this whole section, no icons) and "> explained
-        the way I'd explain it to my own family."
-      (typing stops; chrome fades out; a deliberately silent hold before
-      the reveal -- no clicks, no ticks, real silence, so the next beat
-      actually lands)
-      Act 3: the brand icon draws in with a subtler, less-wobbly stroke
-        than the site's usual doodle jitter (still hand-drawn, just
-        calmer), wordmark fades in, motto types out character by
-        character, tagline fades in -- the same brand lockup every
-        earlier version of this video ends on.
-      Act 4 (terminal chrome returns, fresh session): `$ follow
-        ./stayhumansec` types in, cursor blinks, then "> one new file,
-        every day." types in and holds to close the video.
+      Act 0 (~5s): `$ whoami` types in, holds, screen wipes clear
+        (clear_screen()), then a single output line types in alone on
+        the clean screen: "not a company. not a bot. just one person,
+        explaining this properly."
+      Act 1 (~7s, fresh screen): `$ cat philosophy.md`, clear, then:
+        "plain language over jargon. no fear-mongering. one real
+        person, not a company."
+      Act 2 (~6s, fresh screen): `$ ls ./pillars`, clear, then all 9
+        real content pillars appear one at a time like directory
+        entries (reveal_line() -- instant per-entry, not typed
+        character by character, matching how `ls` actually prints),
+        ~2.5/second, each colored to its real site accent (see the
+        9-pillar table in CLAUDE.md): cyber-news/ (blue), stay-safe/
+        (orange), cyber-basics/ (green), ai-watch/ (violet), ai-news/
+        (violet), myth-busting/ (gold), case-file/ (pink), deep-dive/
+        (green), story-time/ (coral).
+      Act 3 (~5s, fresh screen): `$ ls ./site`, clear, then real site
+        filenames revealed the same way -- posts/, news/, toolkit.html,
+        tools.html, you_check.quiz, glossary.md, on(my).mind/ --
+        directories in blue, files in cream, matching a real `ls`
+        color convention.
+      (typing stops; fade to black -- a bigger mode change than the
+      terminal-to-terminal wipes, since this is leaving the terminal
+      look entirely -- then a deliberately silent hold before the
+      reveal)
+      Act 4 (~7s): the one calm non-typed moment -- the brand icon draws
+        in with a subtler, less-wobbly stroke than the site's usual
+        doodle jitter, wordmark fades in, motto types out character by
+        character, tagline fades in.
+      Act 5 (~4s, terminal chrome returns fresh, no clear this time --
+        ends on both lines visible together as the closing screen):
+        `$ follow ./stayhumansec`, cursor blinks, then "one new file,
+        every day."
 
-    Every character typed anywhere in the video (Acts 1, 2, and 4's
-    terminal lines, plus Act 3's motto) logs to rec.click_frames and
-    gets a real keystroke sound extracted from a recording
-    (instagram/assets/sfx/keyboard_typing.mp3 --
-    _extract_keyboard_clicks()) -- this is the primary sound design
-    throughout, not just under one line. Cursor-blink pauses log to
-    rec.blink_frames for a soft synthesized ambient tick
-    (_synth_blink_tick_samples()). Both are mixed by
-    synthesize_sound_track() and muxed onto the silent video
-    (mux_audio()) automatically before this function returns. No
-    percussive/impact sounds and no pencil-scratch sound in this
-    version -- both were tied to the now-removed doodle icons.
+    Every character typed anywhere (Acts 0/1's lines, both commands in
+    Acts 2/3, Act 4's motto, both lines in Act 5) logs to
+    rec.click_frames and gets a real keystroke sound extracted from a
+    recording (instagram/assets/sfx/keyboard_typing.mp3 --
+    _extract_keyboard_clicks()). Each Act 2/3 directory-entry reveal
+    also logs one click (a single real keystroke standing in for that
+    line "printing", not a full type-in) so the whole video stays
+    sonically consistent. Cursor-blink pauses log to rec.blink_frames
+    for a soft synthesized ambient tick (_synth_blink_tick_samples()).
+    Both are mixed by synthesize_sound_track() and muxed onto the
+    silent video (mux_audio()) automatically before this function
+    returns. The hold right before Act 4's icon reveal logs neither,
+    for genuine silence.
 
-    Total runtime is roughly 20-24s -- deliberately much longer than
-    either doodle-icon version, since realistic typing speed plus real
-    reading holds takes longer than instant icon reveals or hard cuts --
-    exact total frame count is returned by the function and should be
-    read from there / verified via ffprobe, not assumed.
+    Total runtime is roughly 32-34s -- longer than any earlier version,
+    since this one actually covers the pillars/philosophy/site-features
+    ground the shorter cuts left out, on top of realistic typing speed
+    and real reading holds -- exact total frame count is returned by
+    the function and should be read from there / verified via ffprobe,
+    not assumed.
     """
-    from generate_post import base_card, gray_light, blue, violet, font, BOLD, MONO_BOLD, MONO_REG
+    from generate_post import (base_card, gray_light, blue, green, gold, pink, violet, quad_bezier,
+                                font, BOLD, MONO_BOLD, MONO_REG)
+
+    CORAL = (255, 138, 106)  # story-time's one-off accent, not a CSS custom property
 
     img, d = base_card()
     rec = FrameRecorder(img, d, out_dir)
@@ -1104,19 +1116,51 @@ def animate_brand_story(out_dir, video_path, fps=20):
         full_text = ''.join(s for s, _ in segments)
         type_text_animated(rec, segments, font_obj, x=x, y=y, num_frames=type_chars(len(full_text)))
 
+    def type_output(text, y, max_w=940):
+        """Types a "> " output line, word-wrapped onto as many lines as
+        it needs to stay within max_w -- a single long sentence at this
+        font size can easily be wider than the 1080px canvas, and unlike
+        an earlier version's typed_center() (which shrank the font size
+        to fit), a terminal's own `cat`/`ls` output wraps onto multiple
+        rows rather than shrinking text, which is the more authentic
+        terminal behavior here. Only the first line gets the "> "
+        prefix; continuation lines indent to align under the text
+        (not the marker). Returns (next_free_y, full_text_length) so the
+        caller can size the reading hold off the original sentence, not
+        just the last wrapped fragment."""
+        prefix_w = ImageDraw.Draw(rec.img).textlength("> ", font=OUTPUT_FONT)
+        avail_w = max_w - prefix_w
+        words = text.split(' ')
+        lines, cur = [], ''
+        probe = ImageDraw.Draw(rec.img)
+        for w in words:
+            trial = (cur + ' ' + w).strip()
+            if probe.textlength(trial, font=OUTPUT_FONT) <= avail_w or not cur:
+                cur = trial
+            else:
+                lines.append(cur)
+                cur = w
+        if cur:
+            lines.append(cur)
+
+        cy = y
+        for i, ln in enumerate(lines):
+            if i == 0:
+                type_line([("> ", gray_light), (ln, cream3)], cy)
+            else:
+                type_line([(ln, cream3)], cy, x=LEFT_X + prefix_w)
+            cy += LINE_H
+        return cy, len(text)
+
     def reading_hold(text_len):
-        rec.hold_last_frame(max(16, round((0.4 + text_len * 0.022) * fps)))
+        rec.hold_last_frame(max(14, round((0.3 + text_len * 0.018) * fps)))
 
-    def micro_pause(num_frames=3):
-        rec.hold_last_frame(num_frames)
-
-    def cursor_blink_pause(x, y, blinks=1, on_frames=5, off_frames=5, color=None):
+    def cursor_blink_pause(x, y, blinks=2, on_frames=4, off_frames=4, color=None):
         """A held beat with the cursor blinking on/off -- the "suspense"
-        moment after a command types in, before its output appears.
-        Each blink-on logs to rec.blink_frames for a soft ambient tick;
-        the off phases are genuinely silent. Leaves rec.img/draw
-        exactly as they were before this call (the blink never
-        persists)."""
+        moment after a command types in. Each blink-on logs to
+        rec.blink_frames for a soft ambient tick; the off phases are
+        genuinely silent. Leaves rec.img/draw exactly as they were
+        before this call (the blink never persists)."""
         color = color or orange3
         base = rec.img.copy()
         bar_w, bar_h = 14, 30
@@ -1133,58 +1177,96 @@ def animate_brand_story(out_dir, video_path, fps=20):
                 rec.index += 1
         rec.img, rec.draw = base, ImageDraw.Draw(base)
 
-    # ---- Act 1: terminal chrome + blinking cursor, first command ----
+    def reveal_line(text, color, y, appear_frames=8):
+        """Draws one line instantly (no char-by-char typing) and holds
+        it -- how `ls` actually prints entries, one after another, not
+        typed letter by letter. Still logs one real keystroke click so
+        the directory-listing acts stay sonically consistent with the
+        typed acts."""
+        rec.draw.text((LEFT_X, y), text, font=OUTPUT_FONT, fill=color)
+        rec.snapshot()
+        rec.click_frames.append(rec.index - 1)
+        rec.hold_last_frame(appear_frames - 1)
+
+    def clear_screen(cmd_display, y, wipe_frames=6):
+        """Types `$ {cmd_display}`, holds briefly, then wipes the screen
+        clear top-to-bottom back to the bare chrome -- the "navigating
+        to a different file" transition between acts, standing in for a
+        real terminal `clear`. chrome_base must already be set in the
+        enclosing scope (drawn fresh at the start of each terminal
+        session)."""
+        type_line([("$ ", orange3), (cmd_display, gray_light)], y, PROMPT_FONT)
+        rec.hold_last_frame(5)
+        start_img = rec.img.copy()
+        h = start_img.size[1]
+        for step in range(1, wipe_frames + 1):
+            wipe_y = int(h * step / wipe_frames)
+            frame = start_img.copy()
+            frame.paste(chrome_base.crop((0, 0, chrome_base.size[0], wipe_y)), (0, 0))
+            frame.save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+            rec.index += 1
+        rec.img = chrome_base.copy()
+        rec.draw = ImageDraw.Draw(rec.img)
+
+    # ================= Act 0: $ whoami =================
     draw_terminal_chrome(rec)
+    chrome_base = rec.img.copy()
 
-    y = 140
-    type_line([("$ ", orange3), ("whoami", gray_light)], y, PROMPT_FONT)
-    cmd_end_x = LEFT_X + ImageDraw.Draw(rec.img).textlength("$ whoami", font=PROMPT_FONT)
-    cursor_blink_pause(cmd_end_x + 6, y + 2, blinks=2)
+    clear_screen("whoami", 140)
+    line0 = "not a company. not a bot. just one person, explaining this properly."
+    _, n0 = type_output(line0, 140)
+    reading_hold(n0)
 
-    y += LINE_H
-    type_line([("> ", gray_light), ("not a company.", cream3)], y)
-    reading_hold(len("not a company."))
-    micro_pause()
+    # ================= Act 1: $ cat philosophy.md =================
+    clear_screen("cat philosophy.md", 140)
+    line1 = "plain language over jargon. no fear-mongering. one real person, not a company."
+    _, n1 = type_output(line1, 140)
+    reading_hold(n1)
 
-    y += LINE_H
-    type_line([("> ", gray_light), ("not a bot.", cream3)], y)
-    reading_hold(len("not a bot."))
-    micro_pause()
+    # ================= Act 2: $ ls ./pillars =================
+    clear_screen("ls ./pillars", 140)
+    pillars = [
+        ("cyber-news/", blue), ("stay-safe/", orange3), ("cyber-basics/", green),
+        ("ai-watch/", violet), ("ai-news/", violet), ("myth-busting/", gold),
+        ("case-file/", pink), ("deep-dive/", green), ("story-time/", CORAL),
+    ]
+    py = 140
+    for name, color in pillars:
+        reveal_line(name, color, py, appear_frames=8)
+        py += LINE_H - 6
+    rec.hold_last_frame(20)
 
-    y += LINE_H
-    line3 = "just one person, explaining this properly."
-    type_line([("> ", gray_light), (line3, cream3)], y)
-    reading_hold(len(line3))
+    # ================= Act 3: $ ls ./site =================
+    clear_screen("ls ./site", 140)
+    features = [
+        ("posts/", blue), ("news/", blue), ("toolkit.html", cream3), ("tools.html", cream3),
+        ("you_check.quiz", cream3), ("glossary.md", cream3), ("on(my).mind/", blue),
+    ]
+    fy = 140
+    for name, color in features:
+        reveal_line(name, color, fy, appear_frames=8)
+        fy += LINE_H - 6
+    rec.hold_last_frame(20)
 
-    # ---- Act 2: same terminal session, lines keep accumulating below ----
-    y += LINE_H + 16
-    type_line([("$ ", orange3), ("cat mission.md", gray_light)], y, PROMPT_FONT)
-    cmd2_end_x = LEFT_X + ImageDraw.Draw(rec.img).textlength("$ cat mission.md", font=PROMPT_FONT)
-    cursor_blink_pause(cmd2_end_x + 6, y + 2, blinks=2)
-
-    y += LINE_H
-    type_line([("> ", gray_light), ("cybersecurity", blue), (". ", cream3), ("AI", violet),
-               (". ", cream3), ("privacy", orange3), (".", cream3)], y)
-    reading_hold(len("cybersecurity. AI. privacy."))
-    micro_pause()
-
-    y += LINE_H
-    line5 = "explained the way I'd explain it to my own family."
-    type_line([("> ", gray_light), (line5, cream3)], y)
-    reading_hold(len(line5))
-
-    # ---- handoff: typing stops, chrome fades away, then a genuinely
+    # ---- handoff: typing stops, a fade to black (a bigger mode change
+    # than the terminal-to-terminal wipes above), then a genuinely
     # silent hold (no clicks, no ticks) right before the brand icon
     # reveals -- real silence is what makes that moment land ----
-    _fade_to_clean_base(rec, num_frames=10)
-    rec.hold_last_frame(16)
+    black = Image.new("RGB", rec.img.size, (0, 0, 0))
+    start_img = rec.img.convert('RGBA')
+    end_img = black.convert('RGBA')
+    for step in range(1, 9):
+        frame = Image.blend(start_img, end_img, step / 8)
+        frame.convert('RGB').save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+        rec.index += 1
+    fresh_img, fresh_d = base_card()
+    rec.img, rec.draw = fresh_img, fresh_d
+    rec.hold_last_frame(14)
 
-    # ---- Act 3: brand lockup -- the icon draws in with a subtler,
-    # less-wobbly stroke than the site's usual doodle jitter (jitter_amt
-    # 0.4-0.5 here vs. the usual 1.0-1.2), the only illustration in the
-    # whole video ----
-    from generate_post import quad_bezier
-
+    # ================= Act 4: brand lockup -- the one calm, non-typed
+    # moment. The icon draws in with a subtler, less-wobbly stroke than
+    # the site's usual doodle jitter (jitter_amt 0.4-0.45 here vs. the
+    # usual 1.0-1.2), the only illustration in the whole video. =================
     ISCALE = 4.0
     OFFX, OFFY = 540 - 75 * ISCALE, 300 - 55.5 * ISCALE
 
@@ -1200,43 +1282,45 @@ def animate_brand_story(out_dir, video_path, fps=20):
     body_arc = [xf((75 + 17 * math.cos(math.radians(a)), 78 + 17 * math.sin(math.radians(a))))
                 for a in range(180, 361, 4)]
     wobbly_animated(rec, body_arc, orange3, 6, 0.4, seed=303, num_frames=10)
-    rec.hold_last_frame(8)
+    rec.hold_last_frame(6)
 
     wordmark_font = font(BOLD, 88)
     wordmark_segments = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
-    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=500, num_frames=18)
-    rec.hold_last_frame(6)
+    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=500, num_frames=16)
+    rec.hold_last_frame(5)
 
     motto_font = font(MONO_BOLD, 32)
     motto_text = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
     motto_full = ''.join(s for s, _ in motto_text)
     motto_w = ImageDraw.Draw(rec.img).textlength(motto_full, font=motto_font)
     type_text_animated(rec, motto_text, motto_font, x=(1080 - motto_w) / 2, y=630, num_frames=type_chars(len(motto_full)))
-    rec.hold_last_frame(5)
+    rec.hold_last_frame(4)
 
     tagline_font = font(MONO_BOLD, 30)
     tagline_segments = [
         ("USE ", cream3), ("AI", orange3), (". REMAIN ", cream3), ("HUMAN", orange3),
         (". ", cream3), ("PRIVACY", orange3), (" MATTERS.", cream3),
     ]
-    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=700, num_frames=20)
-    rec.hold_last_frame(12)
+    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=700, num_frames=18)
+    rec.hold_last_frame(8)
 
-    # ---- Act 4: terminal chrome returns for a fresh closing session ----
+    # ================= Act 5: terminal chrome returns fresh -- ends on
+    # both lines visible together, no clear this time (the closing
+    # screen). =================
     img2, d2 = base_card()
     rec.img, rec.draw = img2, d2
     draw_terminal_chrome(rec)
 
-    y = 140
-    cmd3 = "$ follow ./stayhumansec"
-    type_line([("$ ", orange3), ("follow ./stayhumansec", gray_light)], y, PROMPT_FONT)
-    cmd3_end_x = LEFT_X + ImageDraw.Draw(rec.img).textlength(cmd3, font=PROMPT_FONT)
-    cursor_blink_pause(cmd3_end_x + 6, y + 2, blinks=2)
+    y5 = 140
+    cmd5 = "follow ./stayhumansec"
+    type_line([("$ ", orange3), (cmd5, gray_light)], y5, PROMPT_FONT)
+    cmd5_end_x = LEFT_X + ImageDraw.Draw(rec.img).textlength(f"$ {cmd5}", font=PROMPT_FONT)
+    cursor_blink_pause(cmd5_end_x + 6, y5 + 2)
 
-    y += LINE_H
+    y5 += LINE_H
     line_final = "one new file, every day."
-    type_line([("> ", gray_light), (line_final, cream3)], y)
-    rec.hold_last_frame(26)
+    type_line([("> ", gray_light), (line_final, cream3)], y5)
+    rec.hold_last_frame(28)
 
     total_frames = rec.index - 1
 
