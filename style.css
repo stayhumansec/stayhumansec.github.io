@@ -563,7 +563,12 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 }
 
 /* ============ NOTES (freeform journal entries — separate from posts) ============ */
+.notes-group{margin-top:60px; padding-top:44px; border-top:1px dashed var(--line);}
+.notes-group:first-child{margin-top:24px; padding-top:0; border-top:none;}
+.notes-group-eyebrow{font-family:'JetBrains Mono', monospace; font-size:13px; letter-spacing:1px; font-weight:700; margin-bottom:10px;}
+.notes-group-intro{color:var(--cream-dim); font-size:15px; margin-bottom:22px; max-width:600px;}
 .notes-list{display:flex; flex-direction:column; gap:20px; margin-top:24px;}
+.notes-group .notes-list{margin-top:0;}
 .note-card{padding:26px 30px; border-radius:16px; background:var(--card); border:1px solid var(--line); transition:border-color .25s ease;}
 .note-card:hover{border-color:var(--orange);}
 .note-card-top{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
