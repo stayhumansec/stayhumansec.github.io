@@ -121,6 +121,101 @@ def grow_circle(recorder, cx, cy, max_r, color, num_frames=8, min_r=0):
         recorder.snapshot()
 
 
+def _pillar_icon_strokes(kind, color):
+    """Returns a small set of (local_points, color, width) stroke specs --
+    centered on (0, 0), roughly ±30px before scaling -- for a minimal
+    line-art icon, in the same hand-drawn style as the brand mark itself
+    (a couple of geometry primitives, not a detailed illustration).
+    `kind` selects which icon: 'shield' (Stay Safe), 'lightbulb' (Cyber
+    Basics), 'folder' (Case File), 'magnifier' (Myth Busting), 'document'
+    (Cyber News), 'chip' (AI Watch -- body only, pairs with a grown
+    center circle for the "watching" pupil), 'building' and 'bot' (the
+    two things stay(human).sec explicitly is NOT, used in the philosophy
+    beat). Kept as data (point lists) rather than inline per-call code so
+    draw_animated_icon() can animate any of them the same way."""
+    from generate_post import quad_bezier, circle_pts, rounded_rect_points
+
+    if kind == 'shield':
+        top_left, top_right, right_mid, left_mid = (-26, -30), (26, -30), (26, 6), (-26, 6)
+        curve = quad_bezier(right_mid, (0, 40), left_mid, steps=14)
+        pts = [top_left, top_right, right_mid] + curve[1:] + [top_left]
+        return [(pts, color, 6)]
+    if kind == 'lightbulb':
+        bulb = circle_pts(0, -8, 16)
+        base = [(-6, 10), (6, 10), (6, 20), (-6, 20), (-6, 10)]
+        return [(bulb, color, 5), (base, color, 5)]
+    if kind == 'folder':
+        body = rounded_rect_points(-26, -10, 26, 22, 5)
+        tab = [(-26, -10), (-16, -10), (-12, -18), (6, -18), (10, -10)]
+        return [(body, color, 5), (tab, color, 5)]
+    if kind == 'magnifier':
+        lens = circle_pts(-4, -4, 15)
+        handle = quad_bezier((8, 8), (18, 18), (27, 27), steps=6)
+        return [(lens, color, 5), (handle, color, 6)]
+    if kind == 'document':
+        body = rounded_rect_points(-18, -24, 18, 24, 4)
+        line1 = [(-10, -10), (10, -10)]
+        line2 = [(-10, 0), (10, 0)]
+        line3 = [(-10, 10), (6, 10)]
+        return [(body, color, 4), (line1, color, 3), (line2, color, 3), (line3, color, 3)]
+    if kind == 'chip':
+        body = rounded_rect_points(-20, -20, 20, 20, 6)
+        return [(body, color, 5)]
+    if kind == 'building':
+        body = rounded_rect_points(-20, -6, 20, 26, 3)
+        roof = [(-24, -6), (0, -26), (24, -6)]
+        return [(body, color, 5), (roof, color, 5)]
+    if kind == 'bot':
+        head = rounded_rect_points(-18, -18, 18, 14, 5)
+        antenna = [(0, -18), (0, -28)]
+        return [(head, color, 5), (antenna, color, 4)]
+    raise ValueError(f"unknown icon kind: {kind!r}")
+
+
+def draw_animated_icon(recorder, kind, cx, cy, scale, color, seed_base=900, stroke_frames=5):
+    """Draws one of _pillar_icon_strokes()'s minimal line-art icons at
+    (cx, cy) scaled up from its local ±30px coordinate space, one stroke
+    at a time via wobbly_animated (same hand-drawn jitter as everything
+    else in this pipeline). Every drawn frame gets logged to
+    recorder.scratch_frames (see synthesize_sound_track()) so the icon
+    draw-in gets the same soft pencil-scratch sound Act 3's logo already
+    uses -- these are small illustrations "sketching in", not typed text,
+    so they get the drawing sound, not a keystroke sound."""
+    strokes = _pillar_icon_strokes(kind, color)
+    for i, (pts, stroke_color, width) in enumerate(strokes):
+        xf_pts = [(cx + px * scale, cy + py * scale) for (px, py) in pts]
+        start = recorder.index
+        wobbly_animated(recorder, xf_pts, stroke_color, width, 0.8, seed=seed_base + i, num_frames=stroke_frames)
+        for fi in range(start, recorder.index, 2):
+            recorder.scratch_frames.append(fi)
+
+
+def draw_animated_fill(recorder, cx, cy, r, color, num_frames=6):
+    """Grows a small filled circle in place (see grow_circle) and logs
+    its frames to recorder.scratch_frames, same drawing-sound treatment
+    as draw_animated_icon() -- used for the AI Watch chip's center
+    "pupil" and the bot icon's eyes, filled shapes that don't have an
+    outline path to draw stroke-by-stroke."""
+    start = recorder.index
+    grow_circle(recorder, cx, cy, r, color, num_frames=num_frames)
+    for fi in range(start, recorder.index, 2):
+        recorder.scratch_frames.append(fi)
+
+
+def draw_strike_through(recorder, cx, cy, half_size, color, seed=950, num_frames=6):
+    """Draws one diagonal wobbly stroke across (cx, cy) -- the "this is
+    NOT what we are" gesture used on the building/bot icons in the
+    philosophy beat, a real visual contrast instead of a spoken/typed
+    negation."""
+    from generate_post import quad_bezier
+
+    pts = quad_bezier((cx - half_size, cy - half_size), (cx, cy), (cx + half_size, cy + half_size), steps=20)
+    start = recorder.index
+    wobbly_animated(recorder, pts, color, 7, 1.0, seed=seed, num_frames=num_frames)
+    for fi in range(start, recorder.index, 2):
+        recorder.scratch_frames.append(fi)
+
+
 def fade_in_text(recorder, lines, font_obj, color, x, y, line_height, num_frames=12):
     """Fades in one or more lines of text over num_frames frames, alpha
     0 -> 255, composited on top of whatever's currently in recorder.img (the
@@ -1037,196 +1132,189 @@ def animate_brand_intro_hook(out_dir, video_path, fps=20):
 
 
 def animate_brand_story(out_dir, video_path, fps=20):
-    """Brand + site story, built for someone who has never heard of
-    stay(human).sec and isn't a security person -- no terminal-scan
-    gimmick, no jargon, just the site's own real philosophy and section
-    copy. Acts 1-2 use a genuine terminal type-and-erase mechanic
-    (type_and_erase_line() -- type in, hold, backspace out, next line
-    types on the clean line beneath it) instead of a crossfade dissolve:
-    the same type+erase pattern the homepage news ticker actually uses
-    (initNewsTicker in site.js). Every keystroke is logged to
-    rec.click_frames and, after all frames are rendered, matched up with
-    real click sounds extracted from a recording
-    (instagram/assets/sfx/keyboard_typing.mp3 -- see
-    _extract_keyboard_clicks()), one real click placed on each keystroke's
-    exact frame, mixed with a synthesized pencil-scratch sound under Act
-    3's icon draw-in (synthesize_sound_track()), then muxed onto the
-    silent video (mux_audio()) automatically before this function
-    returns.
+    """Brand + site story, rebuilt around small hand-drawn icons instead
+    of long stretches of typed sentences -- an earlier version leaned on
+    type_and_erase_line() for nearly the entire runtime (six question/
+    answer beats plus three philosophy sentences, all pure text on an
+    empty grid) and read as generic/confusing precisely because there
+    was nothing to actually look at, just words appearing and
+    disappearing. This version gives every beat something to watch:
 
-      Act 1 (terminal chrome visible): the philosophy, verbatim from
-        index.html's "What we are" section -- "Not a company." / "Not a
-        bot." / "Just one person — explaining this properly."
-      Act 2 (terminal chrome visible): a tour of the site as six
-        question/answer beats -- a question types in, erases, then the
-        answer types in the same spot: the real pillar that question
-        belongs to (Stay Safe / Cyber Basics / Case File / Myth Busting /
-        Cyber News / AI Watch -- see the 9-pillar table in CLAUDE.md),
-        each in that pillar's own real accent color, not a generic
-        descriptor sentence.
+      Act 0 (terminal chrome visible, ~5.5s): the philosophy shown, not
+        just typed -- a generic building icon draws in and gets struck
+        through ("not a company"), a bot-face icon draws in and gets
+        struck through ("not a bot"), then the real brand icon draws in
+        clean with "Just one person." fading in beneath it. The
+        contrast (drawn, crossed out, drawn again clean) carries the
+        point instead of three sentences in a row.
+      Act 1 (terminal chrome visible, ~11s): a tour of six site pillars,
+        each as icon + label instead of a typed question/answer pair --
+        a small line-art icon (shield / lightbulb / folder / magnifier /
+        document / chip) draws in, then the real pillar name fades in
+        underneath in that pillar's own accent color (Stay Safe /
+        Cyber Basics / Case File / Myth Busting / Cyber News / AI Watch
+        -- see the 9-pillar table in CLAUDE.md), holds briefly, then
+        clears for the next.
       (chrome fades out here, handing off to the plain brand-lockup look)
-      Act 3 (180f / 9.0s): the same brand lockup as animate_brand_intro
-        -- icon draws in, wordmark fades in, motto types out, tagline
-        fades in -- so it still ends on one screenshot-recognizable frame.
-        The icon draw-in also logs to rec.scratch_frames for a soft
-        pencil/pen sound layered under the keystroke ticks.
-      Act 4 (60f / 3.0s): a like/share/follow line fades in beneath the
-        still-visible lockup (the lockup itself is never disturbed) --
-        "LIKE. SHARE. FOLLOW FOR ONE NEW FILE, EVERY DAY.", matching the
-        real closer pattern already used across the Instagram captions
-        (AUTOMATED-WORKFLOW.md's slide-4 Like/Comment/Follow prompt, and
-        the site footer's "new file added every day").
+      Act 2 (~6.5s, trimmed from an earlier 9s cut): the same brand
+        lockup as animate_brand_intro -- icon draws in, wordmark fades
+        in, motto types out, tagline fades in -- so it still ends on one
+        screenshot-recognizable frame. The icon draw-in logs to
+        rec.scratch_frames for a soft pencil/pen sound.
+      Act 3 (~1.5s, trimmed from an earlier 3s cut): a like/share/follow
+        line fades in beneath the still-visible lockup (the lockup
+        itself is never disturbed) -- "LIKE. SHARE. FOLLOW FOR ONE NEW
+        FILE, EVERY DAY.", matching the real closer pattern already used
+        across the Instagram captions.
 
-    Acts 1-2's runtime depends on each line's length (typing speed is
-    frames-per-line, not frames-per-second, so longer lines take
-    proportionally longer to type/erase) -- exact total frame count is
-    returned by the function and should be read from there / verified via
-    ffprobe, not assumed.
+    Every icon draw-in logs to rec.scratch_frames for a synthesized
+    pencil-scratch sound; the motto (the only remaining typed text) logs
+    to rec.click_frames and gets real keyboard clicks extracted from a
+    recording (instagram/assets/sfx/keyboard_typing.mp3 --
+    _extract_keyboard_clicks()). Both are mixed by
+    synthesize_sound_track() and muxed onto the silent video
+    (mux_audio()) automatically before this function returns.
+
+    Total runtime is roughly 20-25s (icon/hold/clear timings are fixed
+    frame counts here, not derived from text length the way the earlier
+    typed version was) -- exact total frame count is returned by the
+    function and should be read from there / verified via ffprobe, not
+    assumed.
     """
     from generate_post import (base_card, quad_bezier, gray_light, blue, green, gold, pink, violet,
-                                font, BOLD, REG, MONO_BOLD, MONO_REG)
+                                font, BOLD, MONO_BOLD)
 
     img, d = base_card()
     rec = FrameRecorder(img, d, out_dir)
     draw_terminal_chrome(rec)
+    chrome_base = rec.img.copy()
 
-    TYPE_CPS = 11   # brisk but still readable typing speed -- characters/sec
-    ERASE_CPS = 20  # backspacing reads as naturally quicker than typing
+    def clear_beat(num_frames=6):
+        """Cross-dissolves back to the chrome-only base (not a fully
+        blank base_card() -- that's _fade_to_clean_base()'s job, used
+        once at the Act 1 -> Act 2 handoff) so each icon beat clears
+        cleanly without losing the terminal-window frame underneath it."""
+        start = rec.img.convert('RGBA')
+        end = chrome_base.convert('RGBA')
+        for step in range(1, num_frames + 1):
+            t = step / num_frames
+            frame = Image.blend(start, end, t)
+            frame.convert('RGB').save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+            rec.index += 1
+        rec.img = chrome_base.copy()
+        rec.draw = ImageDraw.Draw(rec.img)
 
-    def typed_center(segments, font_path, size, y, type_frames=None, hold_frames=None,
-                      erase_frames=None, max_w=980):
-        """Measures the full line's width up front so it can type in
-        left-to-right from a fixed x that leaves the finished line
-        centered (matching type_text_animated's motto-centering trick --
-        true centering isn't possible while width is still growing).
-        Takes a font path + starting size rather than a pre-built font
-        object so it can shrink the size (down to a 20px floor) if the
-        line is wider than max_w -- otherwise a long line silently runs
-        off the left edge of the 1080px canvas, since the pre-computed
-        centering offset assumes it fits.
+    CX, CY = 540, 420
+    ICON_SCALE = 1.7
 
-        type_frames/hold_frames/erase_frames default to None, which
-        derives pacing from the line's own character count (at
-        TYPE_CPS/ERASE_CPS, plus a reading-time hold) instead of one
-        fixed frame count applied to every line regardless of length --
-        a short line and a long sentence typing at the same fixed frame
-        count either drags or blows past legible, so pacing here scales
-        with how much there actually is to read."""
-        full_text = ''.join(s for s, _ in segments)
-        n = len(full_text)
-        if type_frames is None:
-            type_frames = max(20, round(n / TYPE_CPS * fps))
-        if hold_frames is None:
-            hold_frames = max(30, round((1.0 + n * 0.04) * fps))
-        if erase_frames is None:
-            erase_frames = max(10, round(n / ERASE_CPS * fps))
+    # ---- Act 0: philosophy, shown rather than just typed ----
+    draw_animated_icon(rec, 'building', CX, CY, ICON_SCALE, gray_light, seed_base=910, stroke_frames=6)
+    draw_strike_through(rec, CX, CY, 34 * ICON_SCALE, pink, seed=951, num_frames=6)
+    rec.hold_last_frame(8)
+    clear_beat()
 
-        draw = ImageDraw.Draw(rec.img)
-        f = font(font_path, size)
-        while draw.textlength(full_text, font=f) > max_w and size > 20:
-            size -= 2
-            f = font(font_path, size)
-        w = draw.textlength(full_text, font=f)
-        x = (1080 - w) / 2
-        type_and_erase_line(rec, segments, f, x, y, type_frames, hold_frames, erase_frames)
+    draw_animated_icon(rec, 'bot', CX, CY, ICON_SCALE, gray_light, seed_base=920, stroke_frames=6)
+    draw_animated_fill(rec, CX - 8 * ICON_SCALE, CY - 4 * ICON_SCALE, 3 * ICON_SCALE, gray_light, num_frames=4)
+    draw_animated_fill(rec, CX + 8 * ICON_SCALE, CY - 4 * ICON_SCALE, 3 * ICON_SCALE, gray_light, num_frames=4)
+    draw_strike_through(rec, CX, CY, 34 * ICON_SCALE, pink, seed=952, num_frames=6)
+    rec.hold_last_frame(8)
+    clear_beat()
 
-    def tour_beat(dot_color, question, pillar_answer):
-        """Types the question, erases it, then types the real pillar name
-        it belongs to (in that pillar's own color) in the same spot --
-        a genuine question/answer beat instead of a question paired with
-        an explanatory sub-line."""
-        typed_center([("● ", dot_color), (question, cream3)], MONO_BOLD, 42, 510)
-        typed_center([(pillar_answer, dot_color)], MONO_BOLD, 46, 510)
+    BRAND_ISCALE = 1.4
+    BOFFX, BOFFY = CX - 75 * BRAND_ISCALE, CY - 60 - 55.5 * BRAND_ISCALE
 
-    # ---- Act 1: philosophy, verbatim from index.html's "What we are" ----
-    typed_center([("Not a company.", cream3)], MONO_BOLD, 42, 510)
-    typed_center([("Not a bot.", cream3)], MONO_BOLD, 42, 510)
-    typed_center([("Just one person — explaining this properly.", cream3)], MONO_BOLD, 42, 510)
+    def bxf(pt):
+        return (BOFFX + pt[0] * BRAND_ISCALE, BOFFY + pt[1] * BRAND_ISCALE)
 
-    # ---- Act 2: a tour of the site as six question/answer beats -- each
-    # question resolves into the real pillar it belongs to (see the
-    # 9-pillar table in CLAUDE.md), colored to match that pillar's own
-    # real accent color, not a generic descriptor sentence.
-    tour_beat(orange3, "Am I safe right now?", "Stay Safe.")
-    tour_beat(green, "Teach me a term.", "Cyber Basics.")
-    tour_beat(pink, "Show me the files.", "Case File.")
-    tour_beat(gold, "Is that actually true?", "Myth Busting.")
-    tour_beat(blue, "What happened today?", "Cyber News.")
-    tour_beat(violet, "What's AI doing with my data?", "AI Watch.")
+    b_start = rec.index
+    left_bracket = quad_bezier(bxf((38, 16)), bxf((20, 50)), bxf((38, 84)), steps=40)
+    wobbly_animated(rec, left_bracket, cream3, 6, 0.9, seed=930, num_frames=6)
+    right_bracket = quad_bezier(bxf((112, 16)), bxf((130, 50)), bxf((112, 84)), steps=40)
+    wobbly_animated(rec, right_bracket, cream3, 6, 0.9, seed=931, num_frames=6)
+    head_cx, head_cy = bxf((75, 38))
+    grow_circle(rec, head_cx, head_cy, max_r=13 * BRAND_ISCALE, color=orange3, num_frames=5)
+    body_arc = [bxf((75 + 17 * math.cos(math.radians(a)), 78 + 17 * math.sin(math.radians(a))))
+                for a in range(180, 361, 4)]
+    wobbly_animated(rec, body_arc, orange3, 4, 0.8, seed=932, num_frames=6)
+    for fi in range(b_start, rec.index, 2):
+        rec.scratch_frames.append(fi)
+
+    label_font = font(MONO_BOLD, 40)
+    fade_in_segments(rec, [("Just one person.", cream3)], label_font, x='center', y=CY + 90, num_frames=10)
+    rec.hold_last_frame(10)
+    clear_beat()
+
+    # ---- Act 1: a tour of six site pillars as icon + label ----
+    def pillar_beat(kind, color, label, seed_base, stroke_frames=5, fill=False):
+        draw_animated_icon(rec, kind, CX, CY, ICON_SCALE, color, seed_base=seed_base, stroke_frames=stroke_frames)
+        if fill:
+            draw_animated_fill(rec, CX, CY, 7 * ICON_SCALE * 0.5, color, num_frames=5)
+        label_f = font(MONO_BOLD, 40)
+        fade_in_segments(rec, [(label, color)], label_f, x='center', y=CY + 70, num_frames=8)
+        rec.hold_last_frame(12)
+        clear_beat()
+
+    pillar_beat('shield', orange3, "Stay Safe.", seed_base=940)
+    pillar_beat('lightbulb', green, "Cyber Basics.", seed_base=942)
+    pillar_beat('folder', pink, "Case File.", seed_base=944)
+    pillar_beat('magnifier', gold, "Myth Busting.", seed_base=946)
+    pillar_beat('document', blue, "Cyber News.", seed_base=948, stroke_frames=4)
+    pillar_beat('chip', violet, "AI Watch.", seed_base=950, fill=True)
 
     # ---- handoff: fade the terminal chrome out before the brand lockup,
     # which uses the plain grid-card look, not the terminal-window frame.
     _fade_to_clean_base(rec, num_frames=10)
 
-    # ---- Act 3 (21-30s / 180 frames): brand lockup ----
+    # ---- Act 2: brand lockup (trimmed pacing vs. animate_brand_intro) ----
     ISCALE = 4.0
     OFFX, OFFY = 540 - 75 * ISCALE, 300 - 55.5 * ISCALE
 
     def xf(pt):
         return (OFFX + pt[0] * ISCALE, OFFY + pt[1] * ISCALE)
 
-    def log_scratch(start_idx, end_idx, step=2):
-        """Marks every other frame in [start_idx, end_idx) as a spot for
-        a pencil/pen "drawing" sound (see _synth_scratch_samples) -- the
-        icon draw-in gets its own sound layer, distinct from the
-        keystroke ticks used for typed text."""
-        for i in range(start_idx, end_idx, step):
-            rec.scratch_frames.append(i)
-
     s = rec.index
     left_bracket = quad_bezier(xf((38, 16)), xf((20, 50)), xf((38, 84)), steps=60)
-    wobbly_animated(rec, left_bracket, cream3, 10, 1.2, seed=301, num_frames=14)
-    log_scratch(s, rec.index)
-
-    s = rec.index
+    wobbly_animated(rec, left_bracket, cream3, 10, 1.2, seed=301, num_frames=10)
     right_bracket = quad_bezier(xf((112, 16)), xf((130, 50)), xf((112, 84)), steps=60)
-    wobbly_animated(rec, right_bracket, cream3, 10, 1.2, seed=302, num_frames=14)
-    log_scratch(s, rec.index)
-
-    s = rec.index
+    wobbly_animated(rec, right_bracket, cream3, 10, 1.2, seed=302, num_frames=10)
     head_cx, head_cy = xf((75, 38))
-    grow_circle(rec, head_cx, head_cy, max_r=13 * ISCALE, color=orange3, num_frames=10)
-    log_scratch(s, rec.index)
-
-    s = rec.index
+    grow_circle(rec, head_cx, head_cy, max_r=13 * ISCALE, color=orange3, num_frames=8)
     body_arc = [xf((75 + 17 * math.cos(math.radians(a)), 78 + 17 * math.sin(math.radians(a))))
                 for a in range(180, 361, 4)]
-    wobbly_animated(rec, body_arc, orange3, 7, 1.0, seed=303, num_frames=12)
-    log_scratch(s, rec.index)
-
-    rec.hold_last_frame(10)  # 50 + 10 = 60 frames, 3.0s
+    wobbly_animated(rec, body_arc, orange3, 7, 1.0, seed=303, num_frames=10)
+    for fi in range(s, rec.index, 2):
+        rec.scratch_frames.append(fi)
+    rec.hold_last_frame(8)
 
     wordmark_font = font(BOLD, 88)
     wordmark_segments = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
-    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=500, num_frames=30)
-    rec.hold_last_frame(10)  # 40 frames, 2.0s
+    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=500, num_frames=20)
+    rec.hold_last_frame(8)
 
     motto_font = font(MONO_BOLD, 32)
     motto_text = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
     motto_full = ''.join(s for s, _ in motto_text)
     motto_w = ImageDraw.Draw(rec.img).textlength(motto_full, font=motto_font)
-    type_text_animated(rec, motto_text, motto_font, x=(1080 - motto_w) / 2, y=630, num_frames=25)
-    rec.hold_last_frame(5)  # 30 frames, 1.5s
+    type_text_animated(rec, motto_text, motto_font, x=(1080 - motto_w) / 2, y=630, num_frames=18)
+    rec.hold_last_frame(4)
 
     tagline_font = font(MONO_BOLD, 30)
     tagline_segments = [
         ("USE ", cream3), ("AI", orange3), (". REMAIN ", cream3), ("HUMAN", orange3),
         (". ", cream3), ("PRIVACY", orange3), (" MATTERS.", cream3),
     ]
-    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=700, num_frames=30)
-    rec.hold_last_frame(20)  # 50 frames, 2.5s
-    # 60 + 40 + 30 + 50 = 180 frames, exactly 9.0s
+    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=700, num_frames=22)
+    rec.hold_last_frame(14)
 
-    # ---- Act 4 (30-33s / 60 frames): like/share/follow, added beneath
-    # the still-visible lockup -- the lockup itself is never disturbed,
-    # so Act 3's screenshot-recognizable frame still holds throughout ----
+    # ---- Act 3: like/share/follow, added beneath the still-visible
+    # lockup -- the lockup itself is never disturbed ----
     cta_font = font(MONO_BOLD, 24)
     cta_segments = [
         ("LIKE", orange3), (". ", gray_light), ("SHARE", orange3), (". ", gray_light),
         ("FOLLOW", orange3), (" FOR ONE NEW FILE, EVERY DAY.", gray_light),
     ]
-    fade_in_segments(rec, cta_segments, cta_font, x='center', y=800, num_frames=25)
-    rec.hold_last_frame(35)  # 25 + 35 = 60 frames, exactly 3.0s
+    fade_in_segments(rec, cta_segments, cta_font, x='center', y=800, num_frames=16)
+    rec.hold_last_frame(14)
 
     total_frames = rec.index - 1
 
