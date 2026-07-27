@@ -37,7 +37,7 @@ import struct
 import subprocess
 import wave
 
-from PIL import Image, ImageDraw, ImageEnhance
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 
 from generate_post import cream3, orange3
 
@@ -438,6 +438,55 @@ def scroll_content(recorder, blank_template, shift_px, content_top=96, content_b
     recorder.draw = ImageDraw.Draw(final)
 
 
+def draw_clean_icon(draw, kind, cx, cy, scale, color, width=5):
+    """Draws one of a small set of pillar icons with plain PIL primitives
+    (ellipse/polygon/line/rounded_rectangle) -- clean, anti-aliased,
+    zero jitter, deliberately NOT the site's wobbly hand-drawn doodle
+    style. Built for animate_silhouette_story()'s pillar act, where
+    icons pop in via scale+alpha (see icon_pop_overlay()-style callers)
+    rather than a stroke-by-stroke reveal, so the draw itself has to be
+    clean to begin with -- there's no reveal animation here masking a
+    rough line. `kind` is one of: 'shield', 'lightbulb', 'folder',
+    'magnifier', 'document', 'chip', 'broadcast', 'chevron', 'book'."""
+    s = scale
+    if kind == 'shield':
+        pts = [(cx - 26 * s, cy - 30 * s), (cx + 26 * s, cy - 30 * s), (cx + 26 * s, cy + 6 * s),
+               (cx, cy + 40 * s), (cx - 26 * s, cy + 6 * s)]
+        draw.line(pts + [pts[0]], fill=color, width=width, joint='curve')
+    elif kind == 'lightbulb':
+        draw.ellipse([cx - 16 * s, cy - 24 * s, cx + 16 * s, cy + 8 * s], outline=color, width=width)
+        draw.rounded_rectangle([cx - 6 * s, cy + 8 * s, cx + 6 * s, cy + 18 * s], radius=3 * s, outline=color, width=width)
+    elif kind == 'folder':
+        draw.rounded_rectangle([cx - 30 * s, cy - 12 * s, cx + 30 * s, cy + 22 * s], radius=5 * s, outline=color, width=width)
+        draw.line([(cx - 30 * s, cy - 12 * s), (cx - 18 * s, cy - 20 * s), (cx + 4 * s, cy - 20 * s), (cx + 12 * s, cy - 12 * s)],
+                   fill=color, width=width, joint='curve')
+    elif kind == 'magnifier':
+        draw.ellipse([cx - 20 * s, cy - 20 * s, cx + 12 * s, cy + 12 * s], outline=color, width=width)
+        draw.line([(cx + 9 * s, cy + 9 * s), (cx + 26 * s, cy + 26 * s)], fill=color, width=width + 1)
+    elif kind == 'document':
+        draw.rounded_rectangle([cx - 20 * s, cy - 28 * s, cx + 20 * s, cy + 28 * s], radius=4 * s, outline=color, width=width)
+        for ly in (-10, 0, 10):
+            draw.line([(cx - 11 * s, cy + ly * s), (cx + 11 * s, cy + ly * s)], fill=color, width=max(2, width - 2))
+    elif kind == 'chip':
+        draw.rounded_rectangle([cx - 22 * s, cy - 22 * s, cx + 22 * s, cy + 22 * s], radius=6 * s, outline=color, width=width)
+        draw.ellipse([cx - 8 * s, cy - 8 * s, cx + 8 * s, cy + 8 * s], fill=color)
+    elif kind == 'broadcast':
+        draw.ellipse([cx - 5 * s, cy - 5 * s, cx + 5 * s, cy + 5 * s], fill=color)
+        for r in (16, 28):
+            draw.arc([cx - r * s, cy - r * s, cx + r * s, cy + r * s], start=-55, end=55, fill=color, width=width)
+            draw.arc([cx - r * s, cy - r * s, cx + r * s, cy + r * s], start=125, end=235, fill=color, width=width)
+    elif kind == 'chevron':
+        draw.ellipse([cx - 28 * s, cy - 28 * s, cx + 28 * s, cy + 28 * s], outline=color, width=width)
+        draw.line([(cx - 10 * s, cy - 8 * s), (cx, cy + 8 * s), (cx + 10 * s, cy - 8 * s)],
+                   fill=color, width=width, joint='curve')
+    elif kind == 'book':
+        draw.line([(cx, cy - 16 * s), (cx, cy + 20 * s)], fill=color, width=width)
+        draw.arc([cx - 30 * s, cy - 20 * s, cx, cy + 24 * s], start=-90, end=90, fill=color, width=width)
+        draw.arc([cx, cy - 20 * s, cx + 30 * s, cy + 24 * s], start=90, end=270, fill=color, width=width)
+    else:
+        raise ValueError(f"unknown icon kind: {kind!r}")
+
+
 def draw_terminal_chrome(recorder, prompt_text="user@stayhumansec:~$ ./explore.sh"):
     """Draws a persistent terminal-window title bar near the top of the
     card -- a rounded outline, a monospace prompt line on the left, and
@@ -498,8 +547,34 @@ def _smoothstep(t):
     starts and ends gently instead of at constant speed, which is what
     actually reads as "smooth" rather than mechanical. Used by
     crossfade_text_beats() for every fade so multi-beat sequences don't
-    feel like a metronome."""
+    feel like a metronome. Symmetric -- eases in and out equally, unlike
+    _ease_out_cubic()/_ease_out_back() below, which is exactly why pure
+    smoothstep on every parameter at once reads as robotic: real motion
+    rarely eases in and out by the same amount."""
+    t = max(0.0, min(1.0, t))
     return t * t * (3 - 2 * t)
+
+
+def _ease_out_cubic(t):
+    """Fast-start, slow-arrival progress curve (1-(1-t)^3) -- unlike
+    _smoothstep()'s symmetric ease, this front-loads the motion so it
+    reads as a real, slightly urgent movement settling into place
+    (a head lowering quickly then arriving gently) rather than a
+    uniform glide the whole way."""
+    t = max(0.0, min(1.0, t))
+    return 1 - (1 - t) ** 3
+
+
+def _ease_out_back(t, overshoot=1.0):
+    """Progress curve that overshoots past 1.0 before settling back to
+    it (Robert Penner's "back ease out") -- used for motions that should
+    read as having real weight/momentum (shoulders tensing past their
+    final position before easing back), not just arriving directly.
+    `overshoot` controls how far past 1.0 it swings; keep this small
+    (well under the default 1.70158) for a "very slight" overshoot
+    rather than a bouncy cartoon one."""
+    t = max(0.0, min(1.0, t)) - 1
+    return t * t * ((overshoot + 1) * t + overshoot) + 1
 
 
 def _render_beat_overlay(size, beat):
@@ -748,6 +823,118 @@ def _synth_blink_tick_samples(sample_rate):
         tone = math.sin(2 * math.pi * 1400 * t)
         samples.append(tone * env * 0.18)
     return samples
+
+
+def _synth_chime_samples(sample_rate):
+    """Generates one soft two-harmonic bell chime as a list of floats in
+    [-1, 1] -- two sine tones (a fundamental + a fifth above it) under a
+    gentle decay, marking a reveal moment. Used for animate_
+    silhouette_story()'s brand-icon reflection appearing -- a small
+    "aha" cue, not a percussive hit."""
+    total_duration = 0.5
+    n = max(1, int(sample_rate * total_duration))
+    samples = []
+    for i in range(n):
+        t = i / sample_rate
+        env = math.exp(-t / 0.18)
+        tone = math.sin(2 * math.pi * 660 * t) * 0.6 + math.sin(2 * math.pi * 990 * t) * 0.3
+        samples.append(tone * env)
+    return samples
+
+
+def _synth_drone_segment(sample_rate, ramp_dur, hold_dur, relax_dur, base_freq=85, peak_freq=99, level=0.16):
+    """Generates a continuous low ambient drone spanning ramp_dur +
+    hold_dur + relax_dur seconds, as a list of floats in [-1, 1] --
+    amplitude fades in over the ramp, sustains with a slow pitch wobble
+    through the hold, then fades back out over the relax phase; pitch
+    rises from base_freq to peak_freq over the ramp and eases back down
+    over relax. Meant to sit under animate_silhouette_story()'s Act 1
+    tension beat: rising in as the shoulders tense and the glow cools,
+    sustaining (with the wobble reading as unease, not a glitch) through
+    the held tense moment, fading back out as the posture relaxes --
+    tracks the *visual* tension curve rather than being placed at a
+    single frame the way every other sound in this file is."""
+    total = ramp_dur + hold_dur + relax_dur
+    n = max(1, int(sample_rate * total))
+    samples = [0.0] * n
+    phase = 0.0
+    for i in range(n):
+        t = i / sample_rate
+        if t < ramp_dur:
+            p = t / ramp_dur if ramp_dur > 0 else 1.0
+            amp = p
+            freq = base_freq + (peak_freq - base_freq) * p
+        elif t < ramp_dur + hold_dur:
+            p = (t - ramp_dur) / hold_dur if hold_dur > 0 else 0.0
+            amp = 1.0
+            freq = peak_freq + 2.5 * math.sin(p * 6.0)
+        else:
+            p = (t - ramp_dur - hold_dur) / relax_dur if relax_dur > 0 else 1.0
+            amp = max(0.0, 1.0 - p)
+            freq = peak_freq - (peak_freq - base_freq) * p
+        phase += 2 * math.pi * freq / sample_rate
+        samples[i] = math.sin(phase) * amp * level
+    return samples
+
+
+def synthesize_silhouette_audio(fps, total_frames, out_wav, drone_events=None, chime_frames=None,
+                                 tick_frames=None, sample_rate=44100):
+    """Renders a WAV for animate_silhouette_story() -- a different mix
+    than synthesize_sound_track() (which is built around click_frames/
+    blink_frames tied to typed text): this video has no typing at all,
+    so its sound design is three different things instead: a continuous
+    ambient drone under the Act 1 tension beat (`drone_events`, a list
+    of {"start_frame", "ramp_frames", "hold_frames", "relax_frames",
+    optionally "base_freq"/"peak_freq"/"level"} dicts -- see
+    _synth_drone_segment()), a soft chime at each entry in
+    `chime_frames` (_synth_chime_samples() -- the icon-reflection
+    reveal), and a soft ambient tick at each entry in `tick_frames`
+    (_synth_blink_tick_samples() -- each pillar icon popping in during
+    Act 2). Acts 3-6 deliberately get no sound at all: they're reading
+    beats, and audio there would compete with reading time rather than
+    reinforce anything."""
+    duration_sec = total_frames / fps
+    n_samples = int(duration_sec * sample_rate) + sample_rate
+    buf = [0.0] * n_samples
+
+    for ev in (drone_events or []):
+        start = int((ev["start_frame"] / fps) * sample_rate)
+        seg = _synth_drone_segment(
+            sample_rate,
+            ev["ramp_frames"] / fps, ev["hold_frames"] / fps, ev["relax_frames"] / fps,
+            base_freq=ev.get("base_freq", 85), peak_freq=ev.get("peak_freq", 99), level=ev.get("level", 0.16),
+        )
+        for i, v in enumerate(seg):
+            idx = start + i
+            if idx < n_samples:
+                buf[idx] += v
+
+    for cf in (chime_frames or []):
+        start = int((cf / fps) * sample_rate)
+        chime = _synth_chime_samples(sample_rate)
+        for i, v in enumerate(chime):
+            idx = start + i
+            if idx < n_samples:
+                buf[idx] += v
+
+    for tf in (tick_frames or []):
+        start = int((tf / fps) * sample_rate)
+        tick = _synth_blink_tick_samples(sample_rate)
+        for i, v in enumerate(tick):
+            idx = start + i
+            if idx < n_samples:
+                buf[idx] += v * 1.4  # a touch louder than the terminal video's blink tick -- this one carries more weight alone
+
+    peak = max((abs(x) for x in buf), default=1.0) or 1.0
+    scale = 0.85 / peak
+    int_samples = [max(-32768, min(32767, int(x * scale * 32767))) for x in buf]
+
+    with wave.open(out_wav, 'w') as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sample_rate)
+        w.writeframes(struct.pack(f'<{len(int_samples)}h', *int_samples))
+    return out_wav
 
 
 def synthesize_sound_track(keyboard_audio_path, click_frames, blink_frames, fps,
@@ -1493,65 +1680,92 @@ def animate_brand_story(out_dir, video_path, fps=20):
 
 
 def animate_silhouette_story(out_dir, video_path, fps=20):
-    """Silhouette micro-story brand video -- completely different
-    mechanism from every typing/icon-montage version before it, and
-    built specifically for smoothness: every other animate_* function in
-    this file accumulates hand-drawn strokes frame by frame (wobbly_
-    animated()) or reveals characters one at a time, which is exactly
-    right for a "sketched" look but is NOT continuous interpolation --
-    there's no previous silhouette reference anywhere in this codebase
-    (only draw_icon()'s small bracket-person mark and the phone-eye
-    explainer's phone illustration), so this is built fresh, and built
-    around parametric redraw instead: every frame fully re-renders the
-    scene from a handful of continuous parameters (head position/size,
-    shoulder height, glow color, alpha layers), each interpolated with
-    _smoothstep() easing across as many frames as the beat needs. That
-    guarantees every transition is smooth by construction -- there's no
-    step where a "next pose" replaces a "previous pose" abruptly, only
-    ever a continuously-moving parameter.
+    """Full 6-act debut brand video, built on the silhouette mechanism's
+    core idea (continuous per-frame parametric interpolation instead of
+    stroke accumulation or character typing) and extended across the
+    whole story -- pillars, philosophy, site, lockup, CTA. No fixed
+    time budget: every beat runs as long as it needs to read clearly,
+    not compressed to hit a duration target, since this is the first
+    video post and is meant to feel complete rather than fast.
 
-      Beat 1 (~1.4s): the silhouette (an orange rim-light outline around
-        a near-black fill -- head ellipse + shoulder trapezoid, filled
-        black to occlude the grid, outlined in orange3, simple/iconic
-        rather than detailed) fades in from alpha 0 to 1.
-      Beat 2 (~1.7s): the head lowers and compresses slightly (a 2D
-        foreshortening trick for "tilting down", not a true 3D
-        rotation) while a phone -- rounded rect body, warm cream glow
-        inset -- fades in below it, staggered a few frames behind the
-        head so the tilt reads as leading the phone's appearance, not
-        simultaneous.
-      Beat 3 (~3s): shoulders raise slightly (tension) while the phone's
-        glow ramps from warm cream to a cold blue-gray, both eased over
-        ~1s, then HOLDS for ~2s with a slow sine-wave brightness pulse
-        on the glow (a controlled, gentle pulse -- not random jitter --
-        the one deliberate "flicker" in the piece, everything else stays
-        strictly stutter-free) so the unease beat actually registers
-        before moving on.
-      Beat 4 (~1.7s): the brand icon fades in on the phone screen (pure
-        alpha compositing, not a stroke draw -- the smoothest possible
-        reveal, no jitter risk at all) as if it's the person's own
-        reflection.
-      Beat 5 (~1.7s): shoulders lower back to relaxed and the glow warms
-        back to cream, both eased, mirroring beat 3's ramp in reverse.
-      Beat 6 (~4.5s): wordmark, motto, and tagline fade in below the
-        (still fully visible) figure via fade_in_segments() -- the same
-        plain alpha-fade mechanism used across every other brand video,
-        calm and steady, no typing effect.
+    Two specific fixes to Act 1's earlier "clumsy" feel, both about
+    varying the motion instead of applying one uniform easing curve to
+    everything:
+      - Asymmetric timing: the head-lower/phone-reveal motion now uses
+        _ease_out_cubic() (fast start, slow arrival) instead of
+        _smoothstep()'s symmetric ease, and the shoulder-tension rise
+        (and its mirrored relax) uses _ease_out_back() with a small
+        overshoot -- tensing slightly past its final position before
+        easing back, instead of arriving directly. Different motions now
+        read as physically distinct instead of one formula stamped on
+        every parameter.
+      - A more convincing phone: narrower width:height ratio (76:178,
+        was 92:168), a thinner outline (2px) distinct from the
+        silhouette's own outline (5px, orange), and the brand-icon
+        reflection is now inset specifically within the screen rect
+        (computed from the phone's own geometry, not just placed near
+        it) with a soft Gaussian-blur bloom composited underneath the
+        sharp icon, so it reads as the icon emitting light onto the
+        screen rather than a flat sticker.
 
-    No sound track -- nothing in this brief asked for audio, and there's
-    no typing/drawing/hard-cut event here that any of this file's
-    existing sound design would attach to, so this returns a silent
-    MP4. Total runtime is roughly 14-15s (longer than the "~10-12s"
-    target because beat 3 is deliberately held long enough to actually
-    read as unease, not rushed past, per the brief's own framing of that
-    as a floor to adjust around, not a hard ceiling) -- exact total
-    frame count is returned by the function and should be read from
-    there / verified via ffprobe, not assumed.
+      Act 1: silhouette fades in -> head lowers/compresses toward a
+        phone fading in below it (asymmetric ease) -> shoulders tense
+        (ease-out-back overshoot) while the phone's glow cools cream to
+        cold blue-gray (smoothstep -- only the shoulder motion gets the
+        overshoot, per brief), held long with a slow controlled pulse
+        -> the brand icon fades in on the phone screen as an inset,
+        bloomed reflection -> shoulders relax and the glow warms back,
+        mirroring the tense-up with the same ease-out-back curve.
+      Act 2: crossfades from the resolved silhouette into a 3x3 grid of
+        all 9 real content pillars -- each icon pops in (scale + alpha,
+        ease-out-back) then its label fades in beside it, color-coded to
+        that pillar's real accent (see the 9-pillar table in CLAUDE.md),
+        one at a time with room to actually land before the next starts.
+      Act 3: crossfades to clean Poppins typography (not typed/terminal)
+        -- "Not a company. Not a bot. Just one person, explaining this
+        properly." -- each line fading in below the last, held long
+        enough to read comfortably.
+      Act 4: crossfades to a clean list of what the site offers (Posts,
+        News, Toolkit, You Check., Glossary, on(my).mind), same calm
+        typography as Act 3, each line fading in with a colored marker.
+      Act 5: crossfades to the brand lockup -- icon fades in (pure alpha,
+        no stroke draw), then wordmark, motto, tagline, calm and steady,
+        matching Act 1's resolved tone.
+      Act 6: "Like. Share. Follow. Comment." fades in beneath the still-
+        visible lockup, then a warm, personal closer fades in under
+        that -- "Trust me, it's worth it." -- written as a genuine aside
+        from the person behind the account, not a corporate CTA line.
+
+    Sound: added deliberately, not everywhere. A continuous low ambient
+    drone (_synth_drone_segment()) rises in under Act 1's tension ramp,
+    sustains through the held tense moment (through the icon reveal,
+    since the posture hasn't resolved yet) with a slow pitch wobble, and
+    fades out as the shoulders relax -- this is the one beat in the
+    video where sound genuinely reinforces an emotional read, so it gets
+    one. A soft chime marks the icon-reflection reveal. A soft ambient
+    tick marks each Act 2 pillar icon landing. Acts 3-6 get no sound at
+    all on purpose: those are reading beats, and audio there would
+    compete with reading time rather than add anything --
+    synthesize_silhouette_audio() keeps this mix deliberately sparse
+    rather than scoring every single moment.
+
+    Every act transition is a crossfade to a blank card
+    (_fade_to_clean_base()), never a hard cut. Total runtime is
+    substantial (a first-post debut video, not a quick hook) -- exact
+    total frame count is returned by the function and should be read
+    from there / verified via ffprobe, not assumed.
     """
-    from generate_post import base_card, gray_light, font, BOLD, MONO_BOLD, draw_icon as draw_brand_icon
+    from generate_post import (base_card, gray_light, blue, green, gold, pink, violet,
+                                font, BOLD, REG, MONO_BOLD, draw_icon as draw_brand_icon)
+
+    CORAL = (255, 138, 106)
 
     base_img, base_draw = base_card()
     rec = FrameRecorder(base_img, base_draw, out_dir)
+
+    drone_events = []
+    chime_frames = []
+    tick_frames = []
 
     HEAD_CX = 540
     HEAD_RX = 66
@@ -1563,15 +1777,16 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
     OUTLINE_W = 5
     SIL_FILL = (0, 0, 0)
 
-    PHONE_W, PHONE_H = 92, 168
+    PHONE_W, PHONE_H = 76, 178
     PHONE_CX, PHONE_CY = 540, 560
-    PHONE_CORNER = 16
+    PHONE_CORNER = 20
+    PHONE_OUTLINE_W = 2
+    SCREEN_INSET = 9
+    SCREEN_RECT = (PHONE_CX - PHONE_W / 2 + SCREEN_INSET, PHONE_CY - PHONE_H / 2 + SCREEN_INSET,
+                    PHONE_CX + PHONE_W / 2 - SCREEN_INSET, PHONE_CY + PHONE_H / 2 - SCREEN_INSET)
 
     GLOW_WARM = cream3
     GLOW_COLD = (120, 150, 210)
-
-    def ease(t):
-        return _smoothstep(max(0.0, min(1.0, t)))
 
     def lerp(a, b, t):
         return a + (b - a) * t
@@ -1600,23 +1815,33 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
         od = ImageDraw.Draw(overlay)
         x0, y0 = PHONE_CX - PHONE_W / 2, PHONE_CY - PHONE_H / 2
         x1, y1 = PHONE_CX + PHONE_W / 2, PHONE_CY + PHONE_H / 2
-        od.rounded_rectangle([x0, y0, x1, y1], radius=PHONE_CORNER, fill=(6, 6, 6, 255),
-                              outline=gray_light + (255,), width=3)
-        inset = 8
-        od.rounded_rectangle([x0 + inset, y0 + inset, x1 - inset, y1 - inset],
-                              radius=max(1, PHONE_CORNER - 6), fill=glow_color + (230,))
+        od.rounded_rectangle([x0, y0, x1, y1], radius=PHONE_CORNER, fill=(10, 10, 10, 255),
+                              outline=gray_light + (255,), width=PHONE_OUTLINE_W)
+        sx0, sy0, sx1, sy1 = SCREEN_RECT
+        od.rounded_rectangle([sx0, sy0, sx1, sy1], radius=max(1, PHONE_CORNER - 8), fill=glow_color + (235,))
         if alpha < 1.0:
             overlay.putalpha(overlay.split()[3].point(lambda a, m=alpha: int(a * m)))
         return overlay
 
-    def icon_overlay(size, alpha, scale=1.7):
-        overlay = Image.new('RGBA', size, (0, 0, 0, 0))
-        od = ImageDraw.Draw(overlay)
-        offx, offy = PHONE_CX - 75 * scale, PHONE_CY - 55.5 * scale
+    def icon_reflection_overlay(size, alpha):
+        """The brand icon inset within the phone's screen rect, with a
+        soft Gaussian-blur bloom composited underneath the sharp icon --
+        reads as the icon emitting light onto the screen, not a flat
+        sticker placed on top of it."""
+        sx0, sy0, sx1, sy1 = SCREEN_RECT
+        screen_w, screen_h = sx1 - sx0, sy1 - sy0
+        scale = min(screen_w * 0.62 / 110, screen_h * 0.62 / 80)
+        offx = sx0 + (screen_w - 110 * scale) / 2 - 20 * scale
+        offy = sy0 + (screen_h - 80 * scale) / 2 - 16 * scale
+        icon_layer = Image.new('RGBA', size, (0, 0, 0, 0))
+        od = ImageDraw.Draw(icon_layer)
         draw_brand_icon(od, offx, offy, scale, cream3 + (255,), orange3 + (255,))
+        bloom = icon_layer.filter(ImageFilter.GaussianBlur(6))
+        bloom.putalpha(bloom.split()[3].point(lambda a: int(a * 0.55)))
+        combined = Image.alpha_composite(bloom, icon_layer)
         if alpha < 1.0:
-            overlay.putalpha(overlay.split()[3].point(lambda a, m=alpha: int(a * m)))
-        return overlay
+            combined.putalpha(combined.split()[3].point(lambda a, m=alpha: int(a * m)))
+        return combined
 
     def render(head_cy, head_ry, shoulder_top, figure_alpha, phone_alpha, glow_color, glow_pulse, icon_alpha):
         frame = base_img.copy().convert('RGBA')
@@ -1625,86 +1850,247 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
             pulsed = tuple(min(255, max(0, int(c * glow_pulse))) for c in glow_color)
             frame = Image.alpha_composite(frame, phone_overlay(frame.size, pulsed, phone_alpha))
         if icon_alpha > 0:
-            frame = Image.alpha_composite(frame, icon_overlay(frame.size, icon_alpha))
+            frame = Image.alpha_composite(frame, icon_reflection_overlay(frame.size, icon_alpha))
         final = frame.convert('RGB')
         final.save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
         rec.index += 1
         rec.img = final
         return final
 
-    # ---- Beat 1: the silhouette fades in (~1.4s) ----
-    n1 = 24
+    # ================= Act 1: silhouette hook =================
+    n1 = 26
     for step in range(n1):
-        t = ease(step / (n1 - 1))
+        t = _smoothstep(step / (n1 - 1))
         render(HEAD_CY_UP, HEAD_RY_UP, SHOULDER_TOP_RELAXED, t, 0.0, GLOW_WARM, 1.0, 0.0)
-    rec.hold_last_frame(10)
+    rec.hold_last_frame(12)
 
-    # ---- Beat 2: head lowers/compresses, phone fades in staggered
-    # behind it (~1.7s) ----
-    n2 = 24
+    # head lowers/compresses (asymmetric ease-out-cubic -- fast start,
+    # slow arrival), phone fades in staggered a few frames behind it
+    n2 = 30
     for step in range(n2):
-        t = ease(step / (n2 - 1))
+        t = _ease_out_cubic(step / (n2 - 1))
         head_cy = lerp(HEAD_CY_UP, HEAD_CY_DOWN, t)
         head_ry = lerp(HEAD_RY_UP, HEAD_RY_DOWN, t)
-        phone_t = ease(max(0.0, (step - 6) / (n2 - 1 - 6)))
+        phone_t = _ease_out_cubic(max(0.0, (step - 7) / (n2 - 1 - 7)))
         render(head_cy, head_ry, SHOULDER_TOP_RELAXED, 1.0, phone_t, GLOW_WARM, 1.0, 0.0)
-    rec.hold_last_frame(10)
+    rec.hold_last_frame(12)
 
-    # ---- Beat 3: tension rises, glow cools -- ramp (~1s) then a long
-    # hold (~2s) with a slow, controlled sine pulse on the glow so the
-    # unease beat actually registers (~3s total) ----
-    n3_ramp = 20
+    # tension rises with a slight overshoot-and-settle (ease-out-back),
+    # glow cools smoothly (smoothstep -- overshoot is a body-language
+    # cue, not appropriate for a color ramp)
+    tension_start_frame = rec.index
+    n3_ramp = 24
     for step in range(n3_ramp):
-        t = ease(step / (n3_ramp - 1))
-        shoulder_top = lerp(SHOULDER_TOP_RELAXED, SHOULDER_TOP_TENSE, t)
-        glow = lerp_color(GLOW_WARM, GLOW_COLD, t)
+        t_shoulder = _ease_out_back(step / (n3_ramp - 1), overshoot=0.6)
+        t_glow = _smoothstep(step / (n3_ramp - 1))
+        shoulder_top = lerp(SHOULDER_TOP_RELAXED, SHOULDER_TOP_TENSE, t_shoulder)
+        glow = lerp_color(GLOW_WARM, GLOW_COLD, t_glow)
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, shoulder_top, 1.0, 1.0, glow, 1.0, 0.0)
-    n3_hold = 40
+
+    # held tense/cold with a slow controlled pulse, long enough to
+    # actually register -- spans through the icon reveal below, since
+    # the posture hasn't resolved yet at that point in the story
+    n3_hold = 46
     for step in range(n3_hold):
         pulse = 1.0 + 0.12 * math.sin(step * 0.35)
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, SHOULDER_TOP_TENSE, 1.0, 1.0, GLOW_COLD, pulse, 0.0)
 
-    # ---- Beat 4: the brand icon fades in on the phone screen -- pure
-    # alpha compositing, no stroke draw, for the smoothest possible
-    # reveal (~1.7s) ----
-    n4 = 24
+    # brand icon fades in as an inset, bloomed reflection -- pure alpha
+    # compositing, no stroke draw at all
+    n4 = 28
     for step in range(n4):
-        t = ease(step / (n4 - 1))
+        t = _smoothstep(step / (n4 - 1))
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, SHOULDER_TOP_TENSE, 1.0, 1.0, GLOW_COLD, 1.0, t)
-    rec.hold_last_frame(10)
+    chime_frames.append(rec.index - 1)
+    rec.hold_last_frame(14)
 
-    # ---- Beat 5: posture eases, glow warms back -- mirrors beat 3's
-    # ramp in reverse (~1.7s) ----
-    n5 = 24
+    # shoulders relax with the same ease-out-back curve as the tense-up
+    # (a matching, mirrored overshoot reads as one consistent body,
+    # not two different animation styles), glow warms back smoothly
+    n5 = 30
     for step in range(n5):
-        t = ease(step / (n5 - 1))
-        shoulder_top = lerp(SHOULDER_TOP_TENSE, SHOULDER_TOP_RELAXED, t)
-        glow = lerp_color(GLOW_COLD, GLOW_WARM, t)
+        t_shoulder = _ease_out_back(step / (n5 - 1), overshoot=0.6)
+        t_glow = _smoothstep(step / (n5 - 1))
+        shoulder_top = lerp(SHOULDER_TOP_TENSE, SHOULDER_TOP_RELAXED, t_shoulder)
+        glow = lerp_color(GLOW_COLD, GLOW_WARM, t_glow)
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, shoulder_top, 1.0, 1.0, glow, 1.0, 1.0)
-    rec.hold_last_frame(10)
+    rec.hold_last_frame(16)
 
-    # ---- Beat 6: wordmark / motto / tagline fade in below the still-
-    # visible figure, calm and steady (~4.5s) ----
-    wordmark_font = font(BOLD, 70)
+    drone_events.append({
+        "start_frame": tension_start_frame,
+        "ramp_frames": n3_ramp,
+        "hold_frames": n3_hold + n4 + 14,
+        "relax_frames": n5,
+    })
+
+    # ================= Act 2: pillars =================
+    _fade_to_clean_base(rec, num_frames=26)
+
+    def icon_pop_in(kind, cx, cy, target_scale, color, num_frames=16, overshoot=0.65):
+        base = rec.img.convert('RGBA')
+        for step in range(1, num_frames + 1):
+            t = step / num_frames
+            eased = _ease_out_back(t, overshoot=overshoot)
+            cur_scale = target_scale * max(0.05, eased)
+            alpha = min(1.0, t / 0.55)
+            overlay = Image.new('RGBA', base.size, (0, 0, 0, 0))
+            od = ImageDraw.Draw(overlay)
+            draw_clean_icon(od, kind, cx, cy, cur_scale, color, width=4)
+            overlay.putalpha(overlay.split()[3].point(lambda a, m=alpha: int(a * m)))
+            frame = Image.alpha_composite(base, overlay)
+            frame.convert('RGB').save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+            rec.index += 1
+        final_overlay = Image.new('RGBA', base.size, (0, 0, 0, 0))
+        od = ImageDraw.Draw(final_overlay)
+        draw_clean_icon(od, kind, cx, cy, target_scale, color, width=4)
+        rec.img = Image.alpha_composite(base, final_overlay).convert('RGB')
+        rec.draw = ImageDraw.Draw(rec.img)
+
+    pillar_defs = [
+        ('document', blue, "Cyber News"), ('shield', orange3, "Stay Safe"), ('lightbulb', green, "Cyber Basics"),
+        ('chip', violet, "AI Watch"), ('broadcast', violet, "AI News"), ('magnifier', gold, "Myth Busting"),
+        ('folder', pink, "Case File"), ('chevron', green, "Deep Dive"), ('book', CORAL, "Story Time"),
+    ]
+    cols = [300, 540, 780]
+    rows_y = [300, 540, 780]
+    label_font = font(BOLD, 24)
+    for i, (kind, color, label) in enumerate(pillar_defs):
+        cx, cy = cols[i % 3], rows_y[i // 3]
+        icon_pop_in(kind, cx, cy, 1.0, color, num_frames=16)
+        tick_frames.append(rec.index - 1)
+        lw = ImageDraw.Draw(rec.img).textlength(label, font=label_font)
+        fade_in_segments(rec, [(label, color)], label_font, x=cx - lw / 2, y=cy + 55, num_frames=12)
+        rec.hold_last_frame(12)
+    rec.hold_last_frame(60)
+
+    # ================= Act 3: philosophy =================
+    _fade_to_clean_base(rec, num_frames=26)
+
+    philosophy_lines = ["Not a company.", "Not a bot.", "Just one person, explaining this properly."]
+    py = 420
+    for line in philosophy_lines:
+        size = 44
+        f = font(BOLD, size)
+        lw = ImageDraw.Draw(rec.img).textlength(line, font=f)
+        while lw > 920 and size > 26:
+            size -= 2
+            f = font(BOLD, size)
+            lw = ImageDraw.Draw(rec.img).textlength(line, font=f)
+        fade_in_segments(rec, [(line, cream3)], f, x=(1080 - lw) / 2, y=py, num_frames=22)
+        py += 84
+        rec.hold_last_frame(18)
+    rec.hold_last_frame(60)
+
+    # ================= Act 4: what's on the site =================
+    _fade_to_clean_base(rec, num_frames=26)
+
+    def fade_in_dot_line(color, text, y, dot_r=9, gap=16, num_frames=16):
+        """Fades in a colored dot + label as one unit -- a real drawn
+        ellipse for the marker, not a "●" text glyph (Poppins doesn't
+        include that character; an earlier version rendered it as a
+        visible tofu/missing-glyph box, caught during frame review)."""
+        f = feature_font
+        ascent, descent = f.getmetrics()
+        text_h = ascent + descent
+        text_w = ImageDraw.Draw(rec.img).textlength(text, font=f)
+        total_w = dot_r * 2 + gap + text_w
+        x0 = (1080 - total_w) / 2
+        dot_cx = x0 + dot_r
+        dot_cy = y + text_h / 2
+        base = rec.img.convert('RGBA')
+        overlay = Image.new('RGBA', base.size, (0, 0, 0, 0))
+        od = ImageDraw.Draw(overlay)
+        od.ellipse([dot_cx - dot_r, dot_cy - dot_r, dot_cx + dot_r, dot_cy + dot_r], fill=color + (255,))
+        od.text((x0 + dot_r * 2 + gap, y), text, font=f, fill=cream3 + (255,))
+        for step in range(1, num_frames + 1):
+            t = _smoothstep(step / num_frames)
+            layer = overlay.copy()
+            layer.putalpha(layer.split()[3].point(lambda a, m=t: int(a * m)))
+            frame = Image.alpha_composite(base, layer)
+            frame.convert('RGB').save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+            rec.index += 1
+        rec.img = Image.alpha_composite(base, overlay).convert('RGB')
+        rec.draw = ImageDraw.Draw(rec.img)
+
+    features = [
+        (blue, "Posts"), (blue, "News"), (orange3, "Toolkit"),
+        (pink, "You, Check."), (green, "Glossary"), (violet, "on(my).mind"),
+    ]
+    feature_font = font(REG, 36)
+    fy = 340
+    for color, text in features:
+        fade_in_dot_line(color, text, fy, num_frames=16)
+        fy += 76
+        rec.hold_last_frame(12)
+    rec.hold_last_frame(60)
+
+    # ================= Act 5: brand lockup =================
+    _fade_to_clean_base(rec, num_frames=26)
+
+    ISCALE = 3.2
+    OFFX, OFFY = 540 - 75 * ISCALE, 340 - 55.5 * ISCALE
+    icon_base = rec.img.convert('RGBA')
+    icon_layer = Image.new('RGBA', icon_base.size, (0, 0, 0, 0))
+    lockup_icon_od = ImageDraw.Draw(icon_layer)
+    draw_brand_icon(lockup_icon_od, OFFX, OFFY, ISCALE, cream3 + (255,), orange3 + (255,))
+    n_icon = 22
+    for step in range(1, n_icon + 1):
+        t = _smoothstep(step / n_icon)
+        layer = icon_layer.copy()
+        layer.putalpha(layer.split()[3].point(lambda a, m=t: int(a * m)))
+        frame = Image.alpha_composite(icon_base, layer)
+        frame.convert('RGB').save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+        rec.index += 1
+    rec.img = Image.alpha_composite(icon_base, icon_layer).convert('RGB')
+    rec.draw = ImageDraw.Draw(rec.img)
+    rec.hold_last_frame(12)
+
+    wordmark_font = font(BOLD, 80)
     wordmark_segments = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
-    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=790, num_frames=18)
-    rec.hold_last_frame(8)
+    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=560, num_frames=20)
+    rec.hold_last_frame(12)
 
-    motto_font = font(MONO_BOLD, 26)
+    motto_font = font(MONO_BOLD, 28)
     motto_segments = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
-    fade_in_segments(rec, motto_segments, motto_font, x='center', y=878, num_frames=14)
-    rec.hold_last_frame(8)
+    fade_in_segments(rec, motto_segments, motto_font, x='center', y=670, num_frames=16)
+    rec.hold_last_frame(12)
 
-    tagline_font = font(MONO_BOLD, 24)
+    tagline_font = font(MONO_BOLD, 26)
     tagline_segments = [
         ("USE ", cream3), ("AI", orange3), (". REMAIN ", cream3), ("HUMAN", orange3),
         (". ", cream3), ("PRIVACY", orange3), (" MATTERS.", cream3),
     ]
-    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=922, num_frames=14)
+    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=718, num_frames=16)
+    rec.hold_last_frame(20)
+
+    # ================= Act 6: CTA =================
+    cta_font = font(BOLD, 34)
+    cta_segments = [
+        ("Like", orange3), (". ", gray_light), ("Share", orange3), (". ", gray_light),
+        ("Follow", orange3), (". ", gray_light), ("Comment", orange3), (".", gray_light),
+    ]
+    cta_w = ImageDraw.Draw(rec.img).textlength(''.join(s for s, _ in cta_segments), font=cta_font)
+    fade_in_segments(rec, cta_segments, cta_font, x=(1080 - cta_w) / 2, y=810, num_frames=18)
     rec.hold_last_frame(24)
 
+    closer_font = font(REG, 28)
+    closer_text = "Trust me, it's worth it."
+    closer_w = ImageDraw.Draw(rec.img).textlength(closer_text, font=closer_font)
+    fade_in_segments(rec, [(closer_text, cream3)], closer_font, x=(1080 - closer_w) / 2, y=862, num_frames=18)
+    rec.hold_last_frame(60)
+
     total_frames = rec.index - 1
-    assemble_video(out_dir, video_path, fps=fps)
+
+    silent_path = video_path + ".silent.mp4"
+    assemble_video(out_dir, silent_path, fps=fps)
+
+    audio_path = os.path.join(out_dir, "_silhouette_audio.wav")
+    synthesize_silhouette_audio(fps, total_frames, audio_path, drone_events=drone_events,
+                                 chime_frames=chime_frames, tick_frames=tick_frames)
+    mux_audio(silent_path, audio_path, video_path)
+    os.remove(silent_path)
+    os.remove(audio_path)
+
     return total_frames
 
 
