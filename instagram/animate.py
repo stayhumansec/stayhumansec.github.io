@@ -250,6 +250,122 @@ def type_text_animated(recorder, segments, font_obj, x, y, num_frames=20, cursor
     recorder.draw = ImageDraw.Draw(recorder.img)
 
 
+def _smoothstep(t):
+    """Eased 0->1 progress curve (3t^2 - 2t^3) instead of linear -- motion
+    starts and ends gently instead of at constant speed, which is what
+    actually reads as "smooth" rather than mechanical. Used by
+    crossfade_text_beats() for every fade so multi-beat sequences don't
+    feel like a metronome."""
+    return t * t * (3 - 2 * t)
+
+
+def _render_beat_overlay(size, beat):
+    """Renders one crossfade_text_beats() beat onto a transparent RGBA
+    overlay, centered horizontally. `beat` is a dict:
+      {"dot": color_or_None, "lines": [(segments, font_obj, y), ...]}
+    segments is a list of (text, color) tuples. If "dot" is set, a small
+    filled circle is drawn centered just above the first line -- the
+    color-coded marker style used by the site's own router cards.
+    Internal helper."""
+    overlay = Image.new('RGBA', size, (0, 0, 0, 0))
+    od = ImageDraw.Draw(overlay)
+    lines = beat['lines']
+    dot_color = beat.get('dot')
+    if dot_color:
+        r = 9
+        cx, cy = size[0] / 2, lines[0][2] - 32
+        od.ellipse([cx - r, cy - r, cx + r, cy + r], fill=dot_color + (255,))
+    for segments, font_obj, y in lines:
+        full_text = ''.join(s for s, _ in segments)
+        line_w = od.textlength(full_text, font=font_obj)
+        cx = (size[0] - line_w) / 2
+        for text, color in segments:
+            od.text((cx, y), text, font=font_obj, fill=color + (255,))
+            cx += od.textlength(text, font=font_obj)
+    return overlay
+
+
+def _shift_vertical(img, dy):
+    """Returns a copy of RGBA image `img` translated vertically by dy
+    pixels (positive = down), transparent where it's shifted off-canvas.
+    Used by crossfade_text_beats() to pair its fades with a drift instead
+    of a static dissolve."""
+    if dy == 0:
+        return img
+    shifted = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    shifted.paste(img, (0, int(round(dy))), img)
+    return shifted
+
+
+def crossfade_text_beats(recorder, beats, transition_frames=15, hold_frames=35):
+    """Smoothly crossfades through a sequence of text "beats" on top of
+    whatever's already frozen in recorder.img -- each beat fades in while
+    the previous one simultaneously fades out (eased via _smoothstep, not
+    linear), instead of a hard cut or a fade-to-black-then-fade-in. This
+    is the primitive that makes a multi-beat sequence (a philosophy line,
+    a tour of site sections, etc.) read as one continuous motion instead
+    of a slideshow.
+
+    IMPORTANT: pass the *entire* sequence of beats to ONE call, not one
+    call per beat -- the crossfade-from-previous-beat state only carries
+    across beats within a single call. Splitting a sequence across
+    multiple calls silently degrades every later beat into a fade-in from
+    the frozen base instead of a true crossfade from the beat before it.
+
+    `beats` is a list of beat-specs, each either a dict
+    `{"dot": color_or_None, "lines": [(segments, font_obj, y), ...]}`
+    (segments = list of (text, color) tuples, lines centered horizontally,
+    see `_render_beat_overlay`), or None/falsy for a "fade to clean base"
+    beat (no text -- useful as the last beat before handing off to a
+    different kind of animation, e.g. a drawn icon, so that handoff is
+    also a fade rather than a cut). Every beat holds at full opacity for
+    hold_frames before the next crossfade begins (the final beat's hold
+    happens via whatever the caller does next, not here) -- hold_frames
+    is either one int applied to every beat, or a list with one value per
+    beat for per-beat pacing. Updates recorder.img/draw to the final
+    composited frame afterward, same pattern as fade_in_segments.
+    """
+    hold_list = hold_frames if isinstance(hold_frames, (list, tuple)) else [hold_frames] * len(beats)
+    if len(hold_list) != len(beats):
+        raise ValueError(f"hold_frames list length ({len(hold_list)}) must match beats length ({len(beats)})")
+
+    SHIFT = 36  # px of vertical drift during a crossfade -- see _shift_vertical note below
+
+    base = recorder.img.convert('RGBA')
+    prev_overlay = None
+    for beat, beat_hold in zip(beats, hold_list):
+        overlay = _render_beat_overlay(base.size, beat) if beat else Image.new('RGBA', base.size, (0, 0, 0, 0))
+        for step in range(1, transition_frames + 1):
+            t = _smoothstep(step / transition_frames)
+            frame = base.copy()
+            if prev_overlay is not None:
+                # Pure alpha-dissolve reads as garbled overlapping text when
+                # two different strings share the same position (unlike a
+                # photo crossfade) -- pairing the fade with a vertical drift
+                # (old text lifts away, new text settles into place) keeps
+                # both legible throughout the transition instead of both
+                # being half-visible in the same spot at once.
+                fading_out = prev_overlay.copy()
+                fading_out.putalpha(fading_out.split()[3].point(lambda a, m=(1 - t): int(a * m)))
+                fading_out = _shift_vertical(fading_out, -SHIFT * t)
+                frame = Image.alpha_composite(frame, fading_out)
+            fading_in = overlay.copy()
+            fading_in.putalpha(fading_in.split()[3].point(lambda a, m=t: int(a * m)))
+            fading_in = _shift_vertical(fading_in, SHIFT * (1 - t))
+            frame = Image.alpha_composite(frame, fading_in)
+            frame.convert('RGB').save(os.path.join(recorder.out_dir, f"frame_{recorder.index:04d}.png"))
+            recorder.index += 1
+
+        held = Image.alpha_composite(base, overlay)
+        for _ in range(beat_hold):
+            held.convert('RGB').save(os.path.join(recorder.out_dir, f"frame_{recorder.index:04d}.png"))
+            recorder.index += 1
+        prev_overlay = overlay
+
+    recorder.img = Image.alpha_composite(base, prev_overlay).convert('RGB')
+    recorder.draw = ImageDraw.Draw(recorder.img)
+
+
 def assemble_video(frame_dir, output_path, fps=20, pattern="frame_%04d.png"):
     """Stitches numbered frame PNGs in frame_dir into an MP4 via ffmpeg.
 
@@ -577,6 +693,116 @@ def animate_brand_intro_hook(out_dir, video_path, fps=20):
 
     # ---- stage 8 (13.5-15s / 30 frames): full lockup holds ----
     rec.hold_last_frame(30)  # exactly 1.5s
+
+    total_frames = rec.index - 1
+    assemble_video(out_dir, video_path, fps=fps)
+    return total_frames
+
+
+def animate_brand_story(out_dir, video_path, fps=20):
+    """30-second brand + site story, built for someone who has never heard
+    of stay(human).sec and isn't a security person -- no terminal-scan
+    gimmick, no jargon, just the site's own real philosophy and section
+    copy, crossfading smoothly beat to beat (crossfade_text_beats(),
+    eased via _smoothstep -- never a hard cut). Three acts:
+
+      Act 1 (0-6s / 120f): the philosophy, verbatim from index.html's
+        "What we are" section -- "Not a company." / "Not a bot." / "Just
+        one person -- explaining this properly."
+      Act 2 (6-21s / 300f): a tour of what's actually on the site, six
+        beats pulled from the homepage's own router-card copy and each
+        page's own real header line (You Check / Glossary / Posts /
+        Toolkit / News / on(my).mind), color-dotted to match each
+        section's real accent color.
+      Act 3 (21-30s / 180f): the same brand lockup as animate_brand_intro
+        -- icon draws in, wordmark fades in, motto types out, tagline
+        fades in -- so it still ends on one screenshot-recognizable frame.
+
+    Frame budget at 20fps/30s = 600 frames total, split 120 / 300 / 180.
+    """
+    from generate_post import (base_card, quad_bezier, gray_light, blue, green, gold, pink, violet,
+                                font, BOLD, REG, MONO_BOLD)
+
+    img, d = base_card()
+    rec = FrameRecorder(img, d, out_dir)
+
+    headline_font = font(BOLD, 56)
+    sub_font = font(REG, 26)
+
+    # ---- Act 1+2 (0-21s / 420 frames): philosophy, then a tour of what's
+    # actually here -- ONE crossfade_text_beats() call spanning both, so
+    # the crossfade-from-previous-beat state carries across the act
+    # boundary too (see crossfade_text_beats' docstring: splitting a
+    # sequence across multiple calls degrades the first beat of the next
+    # call into a fade-in over whatever's already baked into the frozen
+    # base -- i.e. the previous act's last beat would linger, unfaded,
+    # underneath the new one instead of actually crossfading out).
+    def beat(dot_color, headline, sub_line=None):
+        lines = [([(headline, cream3)], headline_font, 490 if sub_line else 510)]
+        if sub_line:
+            lines.append(([(sub_line, gray_light)], sub_font, 570))
+        return {"dot": dot_color, "lines": lines}
+
+    # Real copy throughout: index.html's "What we are" section for the
+    # philosophy beats, router-card lines plus news.html's/notes.html's
+    # own header lines for the tour beats -- nothing invented.
+    story_beats = [
+        {"dot": None, "lines": [([("Not a company.", cream3)], headline_font, 510)]},
+        {"dot": None, "lines": [([("Not a bot.", cream3)], headline_font, 510)]},
+        {"dot": None, "lines": [
+            ([("Just one person —", cream3)], headline_font, 470),
+            ([("explaining this properly.", cream3)], headline_font, 540),
+        ]},
+        beat(pink, "Am I safe right now?", "Answer a few honest questions, get the exact posts that close your gaps."),
+        beat(blue, "Teach me a term.", "Every piece of jargon on this site, explained like a friend would."),
+        beat(green, "Show me the files.", "Browse every post, filterable by how often it drops."),
+        beat(gold, "What should I install?", "The password managers, VPNs, and apps actually worth using."),
+        beat(blue, "Real stories, sourced.", "Cyber News and AI News, straight from the source — never invented."),
+        beat(violet, "on(my).mind", "Unpolished, on purpose — the thinking behind why this exists."),
+        None,  # fades the last beat out to a clean base before Act 3's icon starts drawing
+    ]
+    crossfade_text_beats(rec, story_beats, transition_frames=15,
+                          hold_frames=[15, 15, 45, 35, 35, 35, 35, 35, 20, 0])
+    # 10 beats x 15f transition + sum(holds) = 150 + 270 = 420 frames, exactly 21.0s
+
+    # ---- Act 3 (21-30s / 180 frames): brand lockup ----
+    ISCALE = 4.0
+    OFFX, OFFY = 540 - 75 * ISCALE, 300 - 55.5 * ISCALE
+
+    def xf(pt):
+        return (OFFX + pt[0] * ISCALE, OFFY + pt[1] * ISCALE)
+
+    left_bracket = quad_bezier(xf((38, 16)), xf((20, 50)), xf((38, 84)), steps=60)
+    wobbly_animated(rec, left_bracket, cream3, 10, 1.2, seed=301, num_frames=14)
+    right_bracket = quad_bezier(xf((112, 16)), xf((130, 50)), xf((112, 84)), steps=60)
+    wobbly_animated(rec, right_bracket, cream3, 10, 1.2, seed=302, num_frames=14)
+    head_cx, head_cy = xf((75, 38))
+    grow_circle(rec, head_cx, head_cy, max_r=13 * ISCALE, color=orange3, num_frames=10)
+    body_arc = [xf((75 + 17 * math.cos(math.radians(a)), 78 + 17 * math.sin(math.radians(a))))
+                for a in range(180, 361, 4)]
+    wobbly_animated(rec, body_arc, orange3, 7, 1.0, seed=303, num_frames=12)
+    rec.hold_last_frame(10)  # 50 + 10 = 60 frames, 3.0s
+
+    wordmark_font = font(BOLD, 88)
+    wordmark_segments = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
+    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=500, num_frames=30)
+    rec.hold_last_frame(10)  # 40 frames, 2.0s
+
+    motto_font = font(MONO_BOLD, 32)
+    motto_text = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
+    motto_full = ''.join(s for s, _ in motto_text)
+    motto_w = ImageDraw.Draw(rec.img).textlength(motto_full, font=motto_font)
+    type_text_animated(rec, motto_text, motto_font, x=(1080 - motto_w) / 2, y=630, num_frames=25)
+    rec.hold_last_frame(5)  # 30 frames, 1.5s
+
+    tagline_font = font(MONO_BOLD, 30)
+    tagline_segments = [
+        ("USE ", cream3), ("AI", orange3), (". REMAIN ", cream3), ("HUMAN", orange3),
+        (". ", cream3), ("PRIVACY", orange3), (" MATTERS.", cream3),
+    ]
+    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=700, num_frames=30)
+    rec.hold_last_frame(20)  # 50 frames, 2.5s
+    # 60 + 40 + 30 + 50 = 180 frames, exactly 9.0s
 
     total_frames = rec.index - 1
     assemble_video(out_dir, video_path, fps=fps)
