@@ -300,6 +300,81 @@ even though both currently share the violet accent color.
    an AI News post should end with something concrete the reader can
    actually check or change, not just "here's what AI knows about you now."
 
+## Also today (curated headline briefs — `newsBriefs.json`)
+
+Separate from the one authored Cyber News/AI News post per day above, the
+News page also shows an "Also today" strip of **3-5 bare headlines** —
+headline text, source name, and an outbound link only, no write-up, no our
+own commentary. This is deliberately not another authored `posts.json`
+entry: it's raw curation, clearly labeled on `news.html` as headlines we
+found and linked, not stories we wrote about. Data lives in
+`newsBriefs.json` at the repo root, shape:
+
+```json
+{ "briefs": [
+  { "id": "brief-YYYY-MM-DD-slug", "category": "cyber"|"ai", "headline": "...",
+    "sourceName": "...", "sourceUrl": "...", "date": "YYYY-MM-DD" }
+] }
+```
+
+Pull these **during the same session that generates the day's authored
+post** — this is a static site with no backend, so there is no live
+client-side fetching; a future session (human or automated) searches the
+sources below and writes the results straight into `newsBriefs.json`, the
+same static-data pattern `posts.json` already uses.
+
+**Same hard 50/50 rule as Cyber News/AI News applies here**, applied to the
+3-5 headlines as a set: aim for roughly half cyber, half AI-privacy. If a
+given day genuinely doesn't have enough AI-privacy headlines that clear the
+bar, **show fewer total headlines that day instead of padding the gap**
+with an off-topic AI story or an extra cybersecurity one — same principle
+as "don't stretch a marginal story to fit" above, just applied to a list
+instead of a single post.
+
+**Sources — cybersecurity half:**
+- **Hacker News (news.ycombinator.com)** — public Algolia API, no key
+  needed: `hn.algolia.com/api/v1/search_by_date?tags=story&query=security`.
+  This is the actual news.ycombinator.com link aggregator — distinct from
+  the outlet below despite the near-identical name.
+- **The Hacker News (thehackernews.com)** — RSS feed:
+  `thehackernews.com/feeds/posts/default`
+- **BleepingComputer** — RSS feed: `bleepingcomputer.com/feed/`
+- **Krebs on Security** — RSS feed: `krebsonsecurity.com/feed/`
+
+Filter all four through the same "affects normal people, explainable"
+criteria as the full Cyber News post above — a headline strip is not an
+excuse to relax that bar.
+
+**Sources — AI-privacy half (genuinely the harder side to fill):**
+- **EFF Deeplinks** (`eff.org/rss/updates.xml`) — gets priority when
+  multiple qualifying stories exist on the same day. Of the four core
+  outlets, it's the only one where privacy/data-rights is the outlet's
+  core beat rather than one topic among general tech coverage — WIRED and
+  The Verge cover AI broadly with privacy as one angle among many, The
+  Markup is investigative but low-volume. EFF being privacy-first
+  end-to-end makes it the safest tie-breaker for staying on-topic.
+- **The Markup** (`themarkup.org`) — no reliable RSS cadence, check
+  `themarkup.org/series/artificial-intelligence` directly
+- **WIRED** (Privacy/AI tags) and **The Verge** (AI tag) — higher volume,
+  filter hard against criterion #1 from the AI News sourcing rules (a
+  person's own data through an AI feature, not general AI industry news)
+- **Fallback**: when none of the above four have a qualifying story on a
+  given day — which will happen — a reputable dedicated tech-news outlet
+  (e.g. Tech Times, eWeek) covering a genuinely on-topic story (a chatbot
+  privacy fine, an AI feature's data-handling change) is an acceptable
+  fifth-tier source. This is a real, structural scarcity on the AI-privacy
+  side, not a one-off gap — expect the AI-privacy half of this list to run
+  short, or dip to this fallback tier, more often than the cyber half does.
+
+**Verification before merging:** confirm `newsBriefs.json` is valid JSON,
+every `sourceUrl` is a direct link to the specific story (not an outlet
+homepage), and the cyber/AI split (or the honest shortfall) is reflected
+accurately — don't force the count.
+
+The homepage's typed-headline ticker (`initNewsTicker` in `site.js`) reads
+from both the day's authored post and `newsBriefs.json`, so it has more
+than one headline per day to cycle through.
+
 ## Trigger prompt (for reference)
 
 The owner will typically trigger this with something like:

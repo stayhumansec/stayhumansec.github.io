@@ -599,20 +599,31 @@ function initBootSequence(onDone) {
  * monospace text, one line, hidden entirely if there are no news posts yet
  * rather than showing an awkward empty prompt.
  *
+ * Cycles both our own authored Cyber/AI News posts AND the "Also today"
+ * curated headline briefs (newsBriefs.json, passed as the optional second
+ * argument) so there's more than 1 headline/day to cycle through — same
+ * source news.html itself reads from.
+ *
  * Under prefers-reduced-motion, skips the type/backspace animation
  * entirely and just shows the single most recent headline as static text
  * (still links to news.html, cursor stops blinking via the CSS media query).
  */
-function initNewsTicker(posts) {
+function initNewsTicker(posts, briefs) {
   var bar = document.getElementById('newsTicker');
   var textEl = document.getElementById('newsTickerText');
   if (!bar || !textEl) return;
 
-  var headlines = posts.filter(function (p) {
+  var postHeadlines = posts.filter(function (p) {
     return p.pillar === 'cyber-news' || p.pillar === 'ai-news';
   }).sort(function (a, b) {
     return (b.date || '').localeCompare(a.date || '');
   }).map(function (p) { return p.title; });
+
+  var briefHeadlines = (briefs || []).slice().sort(function (a, b) {
+    return (b.date || '').localeCompare(a.date || '');
+  }).map(function (b) { return b.headline; });
+
+  var headlines = postHeadlines.concat(briefHeadlines);
 
   if (!headlines.length) return; // stays hidden — nothing to tease yet
 
