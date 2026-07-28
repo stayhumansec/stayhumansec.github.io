@@ -1688,34 +1688,27 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
     not compressed to hit a duration target, since this is the first
     video post and is meant to feel complete rather than fast.
 
-    Two specific fixes to Act 1's earlier "clumsy" feel, both about
-    varying the motion instead of applying one uniform easing curve to
-    everything:
-      - Asymmetric timing: the head-lower/phone-reveal motion now uses
-        _ease_out_cubic() (fast start, slow arrival) instead of
-        _smoothstep()'s symmetric ease, and the shoulder-tension rise
-        (and its mirrored relax) uses _ease_out_back() with a small
-        overshoot -- tensing slightly past its final position before
-        easing back, instead of arriving directly. Different motions now
-        read as physically distinct instead of one formula stamped on
-        every parameter.
-      - A more convincing phone: narrower width:height ratio (76:178,
-        was 92:168), a thinner outline (2px) distinct from the
-        silhouette's own outline (5px, orange), and the brand-icon
-        reflection is now inset specifically within the screen rect
-        (computed from the phone's own geometry, not just placed near
-        it) with a soft Gaussian-blur bloom composited underneath the
-        sharp icon, so it reads as the icon emitting light onto the
-        screen rather than a flat sticker.
+    Act 1 motion: back to pure, uniform _smoothstep() easing throughout
+    (head lower, shoulder tension rise/fall, glow color ramp all use the
+    same symmetric curve) -- an intermediate version tried asymmetric
+    ease-out-cubic timing plus a slight overshoot-and-settle on the
+    shoulder tension, aimed at reading as less "formula-driven", but it
+    came back looking slightly bouncy/exaggerated instead of cleaner, so
+    that's reverted here. Two things from that intermediate version DO
+    stay, since they were unrelated fixes, not part of the motion-style
+    change: a more convincing phone (narrower 76:178 width:height ratio,
+    a thin 2px outline distinct from the silhouette's own 5px orange
+    outline) and the brand-icon reflection inset specifically within the
+    phone's screen rect with a soft Gaussian-blur bloom underneath it
+    (reads as the icon emitting light onto the screen, not a flat
+    sticker).
 
       Act 1: silhouette fades in -> head lowers/compresses toward a
-        phone fading in below it (asymmetric ease) -> shoulders tense
-        (ease-out-back overshoot) while the phone's glow cools cream to
-        cold blue-gray (smoothstep -- only the shoulder motion gets the
-        overshoot, per brief), held long with a slow controlled pulse
-        -> the brand icon fades in on the phone screen as an inset,
-        bloomed reflection -> shoulders relax and the glow warms back,
-        mirroring the tense-up with the same ease-out-back curve.
+        phone fading in below it -> shoulders tense while the phone's
+        glow cools cream to cold blue-gray (all smoothstep), held long
+        with a slow controlled pulse -> the brand icon fades in on the
+        phone screen as an inset, bloomed reflection -> shoulders relax
+        and the glow warms back, mirroring the tense-up.
       Act 2: crossfades from the resolved silhouette into a 3x3 grid of
         all 9 real content pillars -- each icon pops in (scale + alpha,
         ease-out-back) then its label fades in beside it, color-coded to
@@ -1754,6 +1747,15 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
     substantial (a first-post debut video, not a quick hook) -- exact
     total frame count is returned by the function and should be read
     from there / verified via ffprobe, not assumed.
+
+    Frame counts throughout are all scaled by fps/20 (see the fr()
+    helper right below) rather than hardcoded -- every beat/hold/fade
+    length in this function was originally written assuming 20fps, so
+    calling this at fps=60 without that scaling would play three times
+    faster, not just smoother. fr() keeps every beat's real-world
+    duration the same regardless of fps and simply renders it with 3x
+    as many frames at 60fps, which is the actual point of raising fps
+    here (maximum smoothness, not a faster video).
     """
     from generate_post import (base_card, gray_light, blue, green, gold, pink, violet,
                                 font, BOLD, REG, MONO_BOLD, draw_icon as draw_brand_icon)
@@ -1787,6 +1789,15 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
 
     GLOW_WARM = cream3
     GLOW_COLD = (120, 150, 210)
+
+    FPS_SCALE = fps / 20.0
+
+    def fr(n):
+        """Scales a frame count written assuming 20fps up (or down) to
+        whatever fps this call actually renders at, so every beat's
+        real-world duration stays the same regardless of fps -- see the
+        docstring note above."""
+        return max(1, round(n * FPS_SCALE))
 
     def lerp(a, b, t):
         return a + (b - a) * t
@@ -1858,75 +1869,76 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
         return final
 
     # ================= Act 1: silhouette hook =================
-    n1 = 26
+    n1 = fr(26)
     for step in range(n1):
         t = _smoothstep(step / (n1 - 1))
         render(HEAD_CY_UP, HEAD_RY_UP, SHOULDER_TOP_RELAXED, t, 0.0, GLOW_WARM, 1.0, 0.0)
-    rec.hold_last_frame(12)
+    rec.hold_last_frame(fr(12))
 
-    # head lowers/compresses (asymmetric ease-out-cubic -- fast start,
-    # slow arrival), phone fades in staggered a few frames behind it
-    n2 = 30
+    # head lowers/compresses, phone fades in staggered a few frames
+    # behind it -- pure smoothstep throughout (reverted from an
+    # asymmetric ease-out-cubic tried in an earlier pass, which read as
+    # slightly bouncy/exaggerated rather than cleaner)
+    n2 = fr(30)
+    stagger = fr(7)
     for step in range(n2):
-        t = _ease_out_cubic(step / (n2 - 1))
+        t = _smoothstep(step / (n2 - 1))
         head_cy = lerp(HEAD_CY_UP, HEAD_CY_DOWN, t)
         head_ry = lerp(HEAD_RY_UP, HEAD_RY_DOWN, t)
-        phone_t = _ease_out_cubic(max(0.0, (step - 7) / (n2 - 1 - 7)))
+        phone_t = _smoothstep(max(0.0, (step - stagger) / (n2 - 1 - stagger)))
         render(head_cy, head_ry, SHOULDER_TOP_RELAXED, 1.0, phone_t, GLOW_WARM, 1.0, 0.0)
-    rec.hold_last_frame(12)
+    rec.hold_last_frame(fr(12))
 
-    # tension rises with a slight overshoot-and-settle (ease-out-back),
-    # glow cools smoothly (smoothstep -- overshoot is a body-language
-    # cue, not appropriate for a color ramp)
+    # tension rises, glow cools -- both pure smoothstep (reverted from
+    # an ease-out-back overshoot tried in an earlier pass)
     tension_start_frame = rec.index
-    n3_ramp = 24
+    n3_ramp = fr(24)
     for step in range(n3_ramp):
-        t_shoulder = _ease_out_back(step / (n3_ramp - 1), overshoot=0.6)
-        t_glow = _smoothstep(step / (n3_ramp - 1))
-        shoulder_top = lerp(SHOULDER_TOP_RELAXED, SHOULDER_TOP_TENSE, t_shoulder)
-        glow = lerp_color(GLOW_WARM, GLOW_COLD, t_glow)
+        t = _smoothstep(step / (n3_ramp - 1))
+        shoulder_top = lerp(SHOULDER_TOP_RELAXED, SHOULDER_TOP_TENSE, t)
+        glow = lerp_color(GLOW_WARM, GLOW_COLD, t)
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, shoulder_top, 1.0, 1.0, glow, 1.0, 0.0)
 
     # held tense/cold with a slow controlled pulse, long enough to
     # actually register -- spans through the icon reveal below, since
     # the posture hasn't resolved yet at that point in the story
-    n3_hold = 46
+    n3_hold = fr(46)
     for step in range(n3_hold):
-        pulse = 1.0 + 0.12 * math.sin(step * 0.35)
+        pulse = 1.0 + 0.12 * math.sin(step * (0.35 / FPS_SCALE))
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, SHOULDER_TOP_TENSE, 1.0, 1.0, GLOW_COLD, pulse, 0.0)
 
     # brand icon fades in as an inset, bloomed reflection -- pure alpha
     # compositing, no stroke draw at all
-    n4 = 28
+    n4 = fr(28)
     for step in range(n4):
         t = _smoothstep(step / (n4 - 1))
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, SHOULDER_TOP_TENSE, 1.0, 1.0, GLOW_COLD, 1.0, t)
     chime_frames.append(rec.index - 1)
-    rec.hold_last_frame(14)
+    n4_hold = fr(14)
+    rec.hold_last_frame(n4_hold)
 
-    # shoulders relax with the same ease-out-back curve as the tense-up
-    # (a matching, mirrored overshoot reads as one consistent body,
-    # not two different animation styles), glow warms back smoothly
-    n5 = 30
+    # shoulders relax, glow warms back -- pure smoothstep, mirroring the
+    # tense-up
+    n5 = fr(30)
     for step in range(n5):
-        t_shoulder = _ease_out_back(step / (n5 - 1), overshoot=0.6)
-        t_glow = _smoothstep(step / (n5 - 1))
-        shoulder_top = lerp(SHOULDER_TOP_TENSE, SHOULDER_TOP_RELAXED, t_shoulder)
-        glow = lerp_color(GLOW_COLD, GLOW_WARM, t_glow)
+        t = _smoothstep(step / (n5 - 1))
+        shoulder_top = lerp(SHOULDER_TOP_TENSE, SHOULDER_TOP_RELAXED, t)
+        glow = lerp_color(GLOW_COLD, GLOW_WARM, t)
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, shoulder_top, 1.0, 1.0, glow, 1.0, 1.0)
-    rec.hold_last_frame(16)
+    rec.hold_last_frame(fr(16))
 
     drone_events.append({
         "start_frame": tension_start_frame,
         "ramp_frames": n3_ramp,
-        "hold_frames": n3_hold + n4 + 14,
+        "hold_frames": n3_hold + n4 + n4_hold,
         "relax_frames": n5,
     })
 
     # ================= Act 2: pillars =================
-    _fade_to_clean_base(rec, num_frames=26)
+    _fade_to_clean_base(rec, num_frames=fr(26))
 
     def icon_pop_in(kind, cx, cy, target_scale, color, num_frames=16, overshoot=0.65):
+        num_frames = fr(num_frames)
         base = rec.img.convert('RGBA')
         for step in range(1, num_frames + 1):
             t = step / num_frames
@@ -1959,12 +1971,12 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
         icon_pop_in(kind, cx, cy, 1.0, color, num_frames=16)
         tick_frames.append(rec.index - 1)
         lw = ImageDraw.Draw(rec.img).textlength(label, font=label_font)
-        fade_in_segments(rec, [(label, color)], label_font, x=cx - lw / 2, y=cy + 55, num_frames=12)
-        rec.hold_last_frame(12)
-    rec.hold_last_frame(60)
+        fade_in_segments(rec, [(label, color)], label_font, x=cx - lw / 2, y=cy + 55, num_frames=fr(12))
+        rec.hold_last_frame(fr(12))
+    rec.hold_last_frame(fr(60))
 
     # ================= Act 3: philosophy =================
-    _fade_to_clean_base(rec, num_frames=26)
+    _fade_to_clean_base(rec, num_frames=fr(26))
 
     philosophy_lines = ["Not a company.", "Not a bot.", "Just one person, explaining this properly."]
     py = 420
@@ -1976,19 +1988,20 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
             size -= 2
             f = font(BOLD, size)
             lw = ImageDraw.Draw(rec.img).textlength(line, font=f)
-        fade_in_segments(rec, [(line, cream3)], f, x=(1080 - lw) / 2, y=py, num_frames=22)
+        fade_in_segments(rec, [(line, cream3)], f, x=(1080 - lw) / 2, y=py, num_frames=fr(22))
         py += 84
-        rec.hold_last_frame(18)
-    rec.hold_last_frame(60)
+        rec.hold_last_frame(fr(18))
+    rec.hold_last_frame(fr(60))
 
     # ================= Act 4: what's on the site =================
-    _fade_to_clean_base(rec, num_frames=26)
+    _fade_to_clean_base(rec, num_frames=fr(26))
 
     def fade_in_dot_line(color, text, y, dot_r=9, gap=16, num_frames=16):
         """Fades in a colored dot + label as one unit -- a real drawn
         ellipse for the marker, not a "●" text glyph (Poppins doesn't
         include that character; an earlier version rendered it as a
         visible tofu/missing-glyph box, caught during frame review)."""
+        num_frames = fr(num_frames)
         f = feature_font
         ascent, descent = f.getmetrics()
         text_h = ascent + descent
@@ -2021,11 +2034,11 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
     for color, text in features:
         fade_in_dot_line(color, text, fy, num_frames=16)
         fy += 76
-        rec.hold_last_frame(12)
-    rec.hold_last_frame(60)
+        rec.hold_last_frame(fr(12))
+    rec.hold_last_frame(fr(60))
 
     # ================= Act 5: brand lockup =================
-    _fade_to_clean_base(rec, num_frames=26)
+    _fade_to_clean_base(rec, num_frames=fr(26))
 
     ISCALE = 3.2
     OFFX, OFFY = 540 - 75 * ISCALE, 340 - 55.5 * ISCALE
@@ -2033,7 +2046,7 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
     icon_layer = Image.new('RGBA', icon_base.size, (0, 0, 0, 0))
     lockup_icon_od = ImageDraw.Draw(icon_layer)
     draw_brand_icon(lockup_icon_od, OFFX, OFFY, ISCALE, cream3 + (255,), orange3 + (255,))
-    n_icon = 22
+    n_icon = fr(22)
     for step in range(1, n_icon + 1):
         t = _smoothstep(step / n_icon)
         layer = icon_layer.copy()
@@ -2043,25 +2056,25 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
         rec.index += 1
     rec.img = Image.alpha_composite(icon_base, icon_layer).convert('RGB')
     rec.draw = ImageDraw.Draw(rec.img)
-    rec.hold_last_frame(12)
+    rec.hold_last_frame(fr(12))
 
     wordmark_font = font(BOLD, 80)
     wordmark_segments = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
-    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=560, num_frames=20)
-    rec.hold_last_frame(12)
+    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=560, num_frames=fr(20))
+    rec.hold_last_frame(fr(12))
 
     motto_font = font(MONO_BOLD, 28)
     motto_segments = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
-    fade_in_segments(rec, motto_segments, motto_font, x='center', y=670, num_frames=16)
-    rec.hold_last_frame(12)
+    fade_in_segments(rec, motto_segments, motto_font, x='center', y=670, num_frames=fr(16))
+    rec.hold_last_frame(fr(12))
 
     tagline_font = font(MONO_BOLD, 26)
     tagline_segments = [
         ("USE ", cream3), ("AI", orange3), (". REMAIN ", cream3), ("HUMAN", orange3),
         (". ", cream3), ("PRIVACY", orange3), (" MATTERS.", cream3),
     ]
-    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=718, num_frames=16)
-    rec.hold_last_frame(20)
+    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=718, num_frames=fr(16))
+    rec.hold_last_frame(fr(20))
 
     # ================= Act 6: CTA =================
     cta_font = font(BOLD, 34)
@@ -2070,14 +2083,14 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
         ("Follow", orange3), (". ", gray_light), ("Comment", orange3), (".", gray_light),
     ]
     cta_w = ImageDraw.Draw(rec.img).textlength(''.join(s for s, _ in cta_segments), font=cta_font)
-    fade_in_segments(rec, cta_segments, cta_font, x=(1080 - cta_w) / 2, y=810, num_frames=18)
-    rec.hold_last_frame(24)
+    fade_in_segments(rec, cta_segments, cta_font, x=(1080 - cta_w) / 2, y=810, num_frames=fr(18))
+    rec.hold_last_frame(fr(24))
 
     closer_font = font(REG, 28)
     closer_text = "Trust me, it's worth it."
     closer_w = ImageDraw.Draw(rec.img).textlength(closer_text, font=closer_font)
-    fade_in_segments(rec, [(closer_text, cream3)], closer_font, x=(1080 - closer_w) / 2, y=862, num_frames=18)
-    rec.hold_last_frame(60)
+    fade_in_segments(rec, [(closer_text, cream3)], closer_font, x=(1080 - closer_w) / 2, y=862, num_frames=fr(18))
+    rec.hold_last_frame(fr(60))
 
     total_frames = rec.index - 1
 
