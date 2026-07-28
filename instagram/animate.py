@@ -1733,17 +1733,21 @@ def animate_debut_video(out_dir, video_path, fps=60):
       Act 3 (website showcase): a browser-window mockup, styled in the
         site's own dark/cream/orange terminal language (the exact same
         base_card() grid+border, the same window-control glyph style as
-        draw_terminal_chrome(), a mono address pill reading
-        "stayhumansec.github.io"), crossfades through six real screens —
+        draw_terminal_chrome(), a terminal-style "$ open
+        stayhumansec.github.io" prompt) steps through six real screens,
+        each closed with a mouse click on the window's own close button
+        before the next one opens (see the click-to-close loop below) --
         the homepage hero (wordmark/motto/tagline plus the boot
         sequence's real "0 trackers / 0 ad scripts / 0 cookies" checkup
         line), the 9-pillar grid (exact labels/colors from CLAUDE.md's
-        pillar table), the "You, Check." quiz (its real eyebrow/heading
-        from index.html), an article page (tag pill, title, stat line,
-        body lines, checklist box -- the real post.html anatomy), the
-        News feed (dated, sourced headline rows), and the Toolkit (its
-        real categories: Password Managers, VPNs, Authenticator Apps,
-        Browsers) -- each screen holds with a short caption underneath,
+        pillar table), the Utilities list (its real eyebrow/heading from
+        tools.html, and its real four tools: Password Coach, Recovery Kit
+        Builder, Breach Exposure Check, Search the Archive), an article
+        page (tag pill, title, stat line, body lines, checklist box --
+        the real post.html anatomy), the News feed (dated, sourced
+        headline rows), and the Toolkit (its real categories: Password
+        Managers, VPNs, Authenticator Apps, Browsers) -- each screen
+        holds with a short caption underneath,
         dissolving smoothly into the next rather than cutting.
       Act 4 (brand lockup, reprised): the same calm wordmark/motto/
         tagline treatment as Act 1's close, standing alone this time as
@@ -1752,7 +1756,10 @@ def animate_debut_video(out_dir, video_path, fps=60):
       Act 5 (CTA): "Like. Share. Follow. Comment." fades in and holds,
         then gives way to a warmer, personal closing line -- "Trust me,
         it's worth it." -- like a genuine aside from the person behind
-        the account, not a company sign-off.
+        the account, not a company sign-off. The video's last beat is
+        the actual site link ("$ open stayhumansec.github.io"), the same
+        "$ " terminal-prompt convention used throughout Act 3, so the
+        one thing worth remembering is legible on its own final frame.
 
     Rendered at whatever fps is passed in (60fps by default, matching
     the already-approved silhouette's own re-render). Act 1's frame
@@ -2106,26 +2113,37 @@ def animate_debut_video(out_dir, video_path, fps=60):
         caption_below(d, "nine pillars -- cybersecurity, AI, and privacy, in equal measure")
         return img
 
-    def screen_quiz():
+    def screen_utilities():
         img, d = new_overlay()
         eyebrow_f = font(MONO_BOLD, 20)
-        d.text((CX0 + 50, CY0 + 60), "// YOU, CHECK.", font=eyebrow_f, fill=orange3)
-        q_f = font(BOLD, 34)
-        d.text((CX0 + 50, CY0 + 110), "A couple of quick questions.", font=q_f, fill=cream3)
-        options = ["Just starting out", "I know the basics", "Fairly careful already", "I've had a scare before"]
-        opt_f = font(REG, 26)
-        oy = CY0 + 200
-        for i, opt in enumerate(options):
-            selected = (i == 1)
-            ox0, ox1 = CX0 + 50, CX1 - 50
-            oy1 = oy + 60
-            if selected:
-                d.rounded_rectangle([ox0, oy, ox1, oy1], radius=14, fill=(46, 28, 16), outline=orange3, width=3)
-            else:
-                d.rounded_rectangle([ox0, oy, ox1, oy1], radius=14, outline=LINE_COLOR, width=2)
-            d.text((ox0 + 26, oy + 16), opt, font=opt_f, fill=cream3 if selected else gray_light)
-            oy = oy1 + 22
-        caption_below(d, "answer honestly, get pointed at exactly the right files")
+        d.text((CX0 + 50, CY0 + 40), "// UTILITIES", font=eyebrow_f, fill=orange3)
+        head_f = font(BOLD, 32)
+        d.text((CX0 + 50, CY0 + 84), "Small, focused, actually useful.", font=head_f, fill=cream3)
+        utilities = [
+            ("PASSWORD COACH", orange3, "teaches the passphrase method"),
+            ("RECOVERY KIT BUILDER", blue, "your 2FA \"lost phone\" plan"),
+            ("BREACH EXPOSURE CHECK", pink, "real k-anonymity breach lookup"),
+            ("SEARCH THE ARCHIVE", green, "local search across every post"),
+        ]
+        cols = 2
+        pad = 26
+        cell_w = (CX1 - CX0 - pad * (cols + 1)) / cols
+        cell_h = 190
+        label_f = font(MONO_BOLD, 16)
+        tag_f = font(REG, 16)
+        for i, (label, color, tag) in enumerate(utilities):
+            r, c = divmod(i, cols)
+            x0 = CX0 + pad + c * (cell_w + pad)
+            y0 = CY0 + 160 + r * (cell_h + pad)
+            x1 = x0 + cell_w
+            d.rounded_rectangle([x0, y0, x1, y0 + cell_h], radius=14, outline=LINE_COLOR, width=2)
+            d.rounded_rectangle([x0 + 24, y0 + 24, x0 + 64, y0 + 64], radius=10, fill=color)
+            d.text((x0 + 24, y0 + 90), label, font=label_f, fill=cream3)
+            ty = y0 + 122
+            for line in wrap_text(d, tag, tag_f, cell_w - 48)[:2]:
+                d.text((x0 + 24, ty), line, font=tag_f, fill=gray_light)
+                ty += 22
+        caption_below(d, "free tools that teach the method, not just hand you an answer")
         return img
 
     def screen_article():
@@ -2202,7 +2220,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
         caption_below(d, "real tools, picked for what they actually protect -- never sponsored")
         return img
 
-    overlays = [screen_hero(), screen_pillars(), screen_quiz(), screen_article(), screen_news(), screen_toolkit()]
+    overlays = [screen_hero(), screen_pillars(), screen_utilities(), screen_article(), screen_news(), screen_toolkit()]
 
     # Each screen's complete "window" (chrome + that screen's own content,
     # composited once) is treated as a single scalable/fadeable image --
@@ -2369,7 +2387,20 @@ def animate_debut_video(out_dir, video_path, fps=60):
     closer_font = font(BOLD, 50)
     closer_segments = [("Trust me, it's worth it.", orange3)]
     fade_in_segments(rec, closer_segments, closer_font, x='center', y=500, num_frames=sec_frames(1.4))
-    rec.hold_last_frame(sec_frames(2.6))
+    rec.hold_last_frame(sec_frames(2.2))
+
+    # ---- final beat: the actual site link, plain and legible, the same
+    # "$ " terminal-prompt convention used throughout Act 3 ----
+    _fade_to_clean_base(rec, sec_frames(1.0))
+
+    link_label_font = font(MONO_BOLD, 24)
+    link_label_segments = [("$ open ", gray_light)]
+    fade_in_segments(rec, link_label_segments, link_label_font, x='center', y=478, num_frames=sec_frames(0.7))
+
+    link_url_font = font(MONO_BOLD, 42)
+    link_url_segments = [("stayhumansec.github.io", orange3)]
+    fade_in_segments(rec, link_url_segments, link_url_font, x='center', y=524, num_frames=sec_frames(0.9))
+    rec.hold_last_frame(sec_frames(3.2))
 
     total_frames = rec.index - 1
     assemble_video(out_dir, video_path, fps=fps)
