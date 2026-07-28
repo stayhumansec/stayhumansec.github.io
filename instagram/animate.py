@@ -1996,7 +1996,13 @@ def animate_debut_video(out_dir, video_path, fps=60):
         d.rounded_rectangle([pill_x0, icon_y - 15, pill_x0 + pill_w, icon_y + 15], radius=15,
                              fill=(8, 7, 6), outline=LINE_COLOR, width=1)
         d.text((pill_x0 + 25, icon_y - 11), addr_text, font=addr_font, fill=gray_light)
-        d.rectangle([BW_X0 + 3, BW_Y0 + CHROME_H, BW_X1 - 3, BW_Y1 - 3], fill=CARD_BG)
+        # Bottom corners rounded to match the outer window border (radius
+        # 18, minus the 3px inset) -- a square-cornered fill here would
+        # poke a jagged notch out past the rounded border underneath it.
+        # Top corners stay square since they sit flush against the
+        # chrome bar's already-squared bottom edge.
+        d.rounded_rectangle([BW_X0 + 3, BW_Y0 + CHROME_H, BW_X1 - 3, BW_Y1 - 3], radius=15,
+                             fill=CARD_BG, corners=(False, False, True, True))
         return img, d
 
     def caption_below(d, text):
