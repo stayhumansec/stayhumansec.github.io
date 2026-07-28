@@ -752,107 +752,6 @@ def _synth_blink_tick_samples(sample_rate):
     return samples
 
 
-def _synth_chime_samples(sample_rate):
-    """Generates one soft two-harmonic bell chime as a list of floats in
-    [-1, 1] -- two sine tones (a fundamental + a fifth above it) under a
-    gentle decay, marking a reveal moment. Used for animate_
-    silhouette_story()'s brand-icon reflection appearing -- a small
-    "aha" cue, not a percussive hit."""
-    total_duration = 0.5
-    n = max(1, int(sample_rate * total_duration))
-    samples = []
-    for i in range(n):
-        t = i / sample_rate
-        env = math.exp(-t / 0.18)
-        tone = math.sin(2 * math.pi * 660 * t) * 0.6 + math.sin(2 * math.pi * 990 * t) * 0.3
-        samples.append(tone * env)
-    return samples
-
-
-def _synth_drone_segment(sample_rate, ramp_dur, hold_dur, relax_dur, base_freq=85, peak_freq=99, level=0.16):
-    """Generates a continuous low ambient drone spanning ramp_dur +
-    hold_dur + relax_dur seconds, as a list of floats in [-1, 1] --
-    amplitude fades in over the ramp, sustains with a slow pitch wobble
-    through the hold, then fades back out over the relax phase; pitch
-    rises from base_freq to peak_freq over the ramp and eases back down
-    over relax. Meant to sit under animate_silhouette_story()'s Act 1
-    tension beat: rising in as the shoulders tense and the glow cools,
-    sustaining (with the wobble reading as unease, not a glitch) through
-    the held tense moment, fading back out as the posture relaxes --
-    tracks the *visual* tension curve rather than being placed at a
-    single frame the way every other sound in this file is."""
-    total = ramp_dur + hold_dur + relax_dur
-    n = max(1, int(sample_rate * total))
-    samples = [0.0] * n
-    phase = 0.0
-    for i in range(n):
-        t = i / sample_rate
-        if t < ramp_dur:
-            p = t / ramp_dur if ramp_dur > 0 else 1.0
-            amp = p
-            freq = base_freq + (peak_freq - base_freq) * p
-        elif t < ramp_dur + hold_dur:
-            p = (t - ramp_dur) / hold_dur if hold_dur > 0 else 0.0
-            amp = 1.0
-            freq = peak_freq + 2.5 * math.sin(p * 6.0)
-        else:
-            p = (t - ramp_dur - hold_dur) / relax_dur if relax_dur > 0 else 1.0
-            amp = max(0.0, 1.0 - p)
-            freq = peak_freq - (peak_freq - base_freq) * p
-        phase += 2 * math.pi * freq / sample_rate
-        samples[i] = math.sin(phase) * amp * level
-    return samples
-
-
-def synthesize_silhouette_audio(fps, total_frames, out_wav, drone_events=None, chime_frames=None,
-                                 sample_rate=44100):
-    """Renders a WAV for animate_silhouette_story() -- a different mix
-    than synthesize_sound_track() (which is built around click_frames/
-    blink_frames tied to typed text): this video has no typing at all,
-    so its sound design is just two deliberate things instead: a
-    continuous ambient drone under the tension beat (`drone_events`, a
-    list of {"start_frame", "ramp_frames", "hold_frames", "relax_frames",
-    optionally "base_freq"/"peak_freq"/"level"} dicts -- see
-    _synth_drone_segment()) and a soft chime at each entry in
-    `chime_frames` (_synth_chime_samples() -- the icon-reflection
-    reveal). Everything else in the video (the resolve, the wordmark/
-    motto/tagline close) deliberately gets no sound at all."""
-    duration_sec = total_frames / fps
-    n_samples = int(duration_sec * sample_rate) + sample_rate
-    buf = [0.0] * n_samples
-
-    for ev in (drone_events or []):
-        start = int((ev["start_frame"] / fps) * sample_rate)
-        seg = _synth_drone_segment(
-            sample_rate,
-            ev["ramp_frames"] / fps, ev["hold_frames"] / fps, ev["relax_frames"] / fps,
-            base_freq=ev.get("base_freq", 85), peak_freq=ev.get("peak_freq", 99), level=ev.get("level", 0.16),
-        )
-        for i, v in enumerate(seg):
-            idx = start + i
-            if idx < n_samples:
-                buf[idx] += v
-
-    for cf in (chime_frames or []):
-        start = int((cf / fps) * sample_rate)
-        chime = _synth_chime_samples(sample_rate)
-        for i, v in enumerate(chime):
-            idx = start + i
-            if idx < n_samples:
-                buf[idx] += v
-
-    peak = max((abs(x) for x in buf), default=1.0) or 1.0
-    scale = 0.85 / peak
-    int_samples = [max(-32768, min(32767, int(x * scale * 32767))) for x in buf]
-
-    with wave.open(out_wav, 'w') as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(sample_rate)
-        w.writeframes(struct.pack(f'<{len(int_samples)}h', *int_samples))
-    return out_wav
-
-
 def synthesize_sound_track(keyboard_audio_path, click_frames, blink_frames, fps,
                             total_frames, out_wav, sample_rate=44100):
     """Renders a WAV mixing two sound sources onto one track:
@@ -1596,73 +1495,65 @@ def animate_brand_story(out_dir, video_path, fps=20):
 
 
 def animate_silhouette_story(out_dir, video_path, fps=20):
-    """Silhouette micro-story brand video -- back to the original
-    single-act scope (figure -> phone -> tension/glow-cool -> icon
-    reflection -> resolve -> brand lockup fades in below), after a
-    detour that extended it into a full 6-act debut video (pillars,
-    philosophy, site features, a second lockup, CTA). That extended cut
-    is reverted here per explicit direction: this stays a single,
-    self-contained ~14-15s piece, not the longer multi-act version --
-    every scene except the original silhouette story (Act 1 plus the
-    wordmark/motto/tagline close) is dropped entirely, not just hidden.
+    """Silhouette micro-story brand video -- completely different
+    mechanism from every typing/icon-montage version before it, and
+    built specifically for smoothness: every other animate_* function in
+    this file accumulates hand-drawn strokes frame by frame (wobbly_
+    animated()) or reveals characters one at a time, which is exactly
+    right for a "sketched" look but is NOT continuous interpolation --
+    there's no previous silhouette reference anywhere in this codebase
+    (only draw_icon()'s small bracket-person mark and the phone-eye
+    explainer's phone illustration), so this is built fresh, and built
+    around parametric redraw instead: every frame fully re-renders the
+    scene from a handful of continuous parameters (head position/size,
+    shoulder height, glow color, alpha layers), each interpolated with
+    _smoothstep() easing across as many frames as the beat needs. That
+    guarantees every transition is smooth by construction -- there's no
+    step where a "next pose" replaces a "previous pose" abruptly, only
+    ever a continuously-moving parameter.
 
-    Built around continuous per-frame parametric interpolation instead
-    of stroke accumulation or character typing -- every frame fully
-    re-renders the scene from a handful of continuous parameters (head
-    position/size, shoulder height, glow color, alpha layers), each
-    eased with _smoothstep() across as many frames as the beat needs.
-    Motion is pure, uniform smoothstep throughout, not asymmetric or
-    overshooting -- an intermediate pass tried ease-out-cubic timing
-    plus a slight overshoot-and-settle on the shoulder tension, aimed at
-    reading as less "formula-driven", but it came back looking slightly
-    bouncy/exaggerated instead of cleaner, so that's reverted. Two other
-    fixes from that same intermediate pass DO stay, since they were
-    unrelated to the motion style: a more convincing phone (narrower
-    76:178 width:height ratio, a thin 2px outline distinct from the
-    silhouette's own 5px orange outline) and the brand-icon reflection
-    inset specifically within the phone's screen rect with a soft
-    Gaussian-blur bloom underneath it (reads as the icon emitting light
-    onto the screen, not a flat sticker).
+      Beat 1 (~1.4s): the silhouette (an orange rim-light outline around
+        a near-black fill -- head ellipse + shoulder trapezoid, filled
+        black to occlude the grid, outlined in orange3, simple/iconic
+        rather than detailed) fades in from alpha 0 to 1.
+      Beat 2 (~1.7s): the head lowers and compresses slightly (a 2D
+        foreshortening trick for "tilting down", not a true 3D
+        rotation) while a phone -- rounded rect body, warm cream glow
+        inset -- fades in below it, staggered a few frames behind the
+        head so the tilt reads as leading the phone's appearance, not
+        simultaneous.
+      Beat 3 (~3s): shoulders raise slightly (tension) while the phone's
+        glow ramps from warm cream to a cold blue-gray, both eased over
+        ~1s, then HOLDS for ~2s with a slow sine-wave brightness pulse
+        on the glow (a controlled, gentle pulse -- not random jitter --
+        the one deliberate "flicker" in the piece, everything else stays
+        strictly stutter-free) so the unease beat actually registers
+        before moving on.
+      Beat 4 (~1.7s): the brand icon fades in on the phone screen (pure
+        alpha compositing, not a stroke draw -- the smoothest possible
+        reveal, no jitter risk at all) as if it's the person's own
+        reflection.
+      Beat 5 (~1.7s): shoulders lower back to relaxed and the glow warms
+        back to cream, both eased, mirroring beat 3's ramp in reverse.
+      Beat 6 (~4.5s): wordmark, motto, and tagline fade in below the
+        (still fully visible) figure via fade_in_segments() -- the same
+        plain alpha-fade mechanism used across every other brand video,
+        calm and steady, no typing effect.
 
-      The silhouette (an orange rim-light outline around a near-black
-        fill, simple/iconic rather than detailed) fades in -> the head
-        lowers/compresses toward a phone fading in below it -> shoulders
-        tense while the phone's glow cools cream to cold blue-gray, held
-        long with a slow controlled pulse so the unease actually
-        registers -> the brand icon fades in on the phone screen as an
-        inset, bloomed reflection -> shoulders relax and the glow warms
-        back, mirroring the tense-up -> wordmark, motto, and tagline
-        fade in below the still-visible figure, calm and steady.
-
-    Sound: a continuous low ambient drone (_synth_drone_segment()) rises
-    in under the tension ramp, sustains through the held tense moment
-    (through the icon reveal, since the posture hasn't resolved yet)
-    with a slow pitch wobble, and fades out as the shoulders relax. A
-    soft chime marks the icon-reflection reveal. synthesize_
-    silhouette_audio() keeps this sparse and specific rather than
-    scoring every moment.
-
-    Rendered at whatever fps is passed in (60fps by default usage in
-    this repo, for maximum smoothness), not hardcoded to 20 -- see the
-    fr() helper right below. Frame counts throughout are all scaled by
-    fps/20 rather than hardcoded -- every beat/hold/fade length in this
-    function was originally written assuming 20fps, so calling this at
-    fps=60 without that scaling would play three times faster, not just
-    smoother. fr() keeps every beat's real-world duration the same
-    regardless of fps and simply renders it with 3x as many frames at
-    60fps, which is the actual point of raising fps
-    here (maximum smoothness, not a faster video).
+    No sound track -- nothing in this brief asked for audio, and there's
+    no typing/drawing/hard-cut event here that any of this file's
+    existing sound design would attach to, so this returns a silent
+    MP4. Total runtime is roughly 14-15s (longer than the "~10-12s"
+    target because beat 3 is deliberately held long enough to actually
+    read as unease, not rushed past, per the brief's own framing of that
+    as a floor to adjust around, not a hard ceiling) -- exact total
+    frame count is returned by the function and should be read from
+    there / verified via ffprobe, not assumed.
     """
-    from generate_post import (base_card, gray_light, blue, green, gold, pink, violet,
-                                font, BOLD, REG, MONO_BOLD, draw_icon as draw_brand_icon)
-
-    CORAL = (255, 138, 106)
+    from generate_post import base_card, gray_light, font, BOLD, MONO_BOLD, draw_icon as draw_brand_icon
 
     base_img, base_draw = base_card()
     rec = FrameRecorder(base_img, base_draw, out_dir)
-
-    drone_events = []
-    chime_frames = []
 
     HEAD_CX = 540
     HEAD_RX = 66
@@ -1674,25 +1565,15 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
     OUTLINE_W = 5
     SIL_FILL = (0, 0, 0)
 
-    PHONE_W, PHONE_H = 76, 178
+    PHONE_W, PHONE_H = 92, 168
     PHONE_CX, PHONE_CY = 540, 560
-    PHONE_CORNER = 20
-    PHONE_OUTLINE_W = 2
-    SCREEN_INSET = 9
-    SCREEN_RECT = (PHONE_CX - PHONE_W / 2 + SCREEN_INSET, PHONE_CY - PHONE_H / 2 + SCREEN_INSET,
-                    PHONE_CX + PHONE_W / 2 - SCREEN_INSET, PHONE_CY + PHONE_H / 2 - SCREEN_INSET)
+    PHONE_CORNER = 16
 
     GLOW_WARM = cream3
     GLOW_COLD = (120, 150, 210)
 
-    FPS_SCALE = fps / 20.0
-
-    def fr(n):
-        """Scales a frame count written assuming 20fps up (or down) to
-        whatever fps this call actually renders at, so every beat's
-        real-world duration stays the same regardless of fps -- see the
-        docstring note above."""
-        return max(1, round(n * FPS_SCALE))
+    def ease(t):
+        return _smoothstep(max(0.0, min(1.0, t)))
 
     def lerp(a, b, t):
         return a + (b - a) * t
@@ -1721,33 +1602,23 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
         od = ImageDraw.Draw(overlay)
         x0, y0 = PHONE_CX - PHONE_W / 2, PHONE_CY - PHONE_H / 2
         x1, y1 = PHONE_CX + PHONE_W / 2, PHONE_CY + PHONE_H / 2
-        od.rounded_rectangle([x0, y0, x1, y1], radius=PHONE_CORNER, fill=(10, 10, 10, 255),
-                              outline=gray_light + (255,), width=PHONE_OUTLINE_W)
-        sx0, sy0, sx1, sy1 = SCREEN_RECT
-        od.rounded_rectangle([sx0, sy0, sx1, sy1], radius=max(1, PHONE_CORNER - 8), fill=glow_color + (235,))
+        od.rounded_rectangle([x0, y0, x1, y1], radius=PHONE_CORNER, fill=(6, 6, 6, 255),
+                              outline=gray_light + (255,), width=3)
+        inset = 8
+        od.rounded_rectangle([x0 + inset, y0 + inset, x1 - inset, y1 - inset],
+                              radius=max(1, PHONE_CORNER - 6), fill=glow_color + (230,))
         if alpha < 1.0:
             overlay.putalpha(overlay.split()[3].point(lambda a, m=alpha: int(a * m)))
         return overlay
 
-    def icon_reflection_overlay(size, alpha):
-        """The brand icon inset within the phone's screen rect, with a
-        soft Gaussian-blur bloom composited underneath the sharp icon --
-        reads as the icon emitting light onto the screen, not a flat
-        sticker placed on top of it."""
-        sx0, sy0, sx1, sy1 = SCREEN_RECT
-        screen_w, screen_h = sx1 - sx0, sy1 - sy0
-        scale = min(screen_w * 0.62 / 110, screen_h * 0.62 / 80)
-        offx = sx0 + (screen_w - 110 * scale) / 2 - 20 * scale
-        offy = sy0 + (screen_h - 80 * scale) / 2 - 16 * scale
-        icon_layer = Image.new('RGBA', size, (0, 0, 0, 0))
-        od = ImageDraw.Draw(icon_layer)
+    def icon_overlay(size, alpha, scale=1.7):
+        overlay = Image.new('RGBA', size, (0, 0, 0, 0))
+        od = ImageDraw.Draw(overlay)
+        offx, offy = PHONE_CX - 75 * scale, PHONE_CY - 55.5 * scale
         draw_brand_icon(od, offx, offy, scale, cream3 + (255,), orange3 + (255,))
-        bloom = icon_layer.filter(ImageFilter.GaussianBlur(6))
-        bloom.putalpha(bloom.split()[3].point(lambda a: int(a * 0.55)))
-        combined = Image.alpha_composite(bloom, icon_layer)
         if alpha < 1.0:
-            combined.putalpha(combined.split()[3].point(lambda a, m=alpha: int(a * m)))
-        return combined
+            overlay.putalpha(overlay.split()[3].point(lambda a, m=alpha: int(a * m)))
+        return overlay
 
     def render(head_cy, head_ry, shoulder_top, figure_alpha, phone_alpha, glow_color, glow_pulse, icon_alpha):
         frame = base_img.copy().convert('RGBA')
@@ -1756,111 +1627,86 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
             pulsed = tuple(min(255, max(0, int(c * glow_pulse))) for c in glow_color)
             frame = Image.alpha_composite(frame, phone_overlay(frame.size, pulsed, phone_alpha))
         if icon_alpha > 0:
-            frame = Image.alpha_composite(frame, icon_reflection_overlay(frame.size, icon_alpha))
+            frame = Image.alpha_composite(frame, icon_overlay(frame.size, icon_alpha))
         final = frame.convert('RGB')
         final.save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
         rec.index += 1
         rec.img = final
         return final
 
-    # ================= Act 1: silhouette hook =================
-    n1 = fr(26)
+    # ---- Beat 1: the silhouette fades in (~1.4s) ----
+    n1 = 24
     for step in range(n1):
-        t = _smoothstep(step / (n1 - 1))
+        t = ease(step / (n1 - 1))
         render(HEAD_CY_UP, HEAD_RY_UP, SHOULDER_TOP_RELAXED, t, 0.0, GLOW_WARM, 1.0, 0.0)
-    rec.hold_last_frame(fr(12))
+    rec.hold_last_frame(10)
 
-    # head lowers/compresses, phone fades in staggered a few frames
-    # behind it -- pure smoothstep throughout (reverted from an
-    # asymmetric ease-out-cubic tried in an earlier pass, which read as
-    # slightly bouncy/exaggerated rather than cleaner)
-    n2 = fr(30)
-    stagger = fr(7)
+    # ---- Beat 2: head lowers/compresses, phone fades in staggered
+    # behind it (~1.7s) ----
+    n2 = 24
     for step in range(n2):
-        t = _smoothstep(step / (n2 - 1))
+        t = ease(step / (n2 - 1))
         head_cy = lerp(HEAD_CY_UP, HEAD_CY_DOWN, t)
         head_ry = lerp(HEAD_RY_UP, HEAD_RY_DOWN, t)
-        phone_t = _smoothstep(max(0.0, (step - stagger) / (n2 - 1 - stagger)))
+        phone_t = ease(max(0.0, (step - 6) / (n2 - 1 - 6)))
         render(head_cy, head_ry, SHOULDER_TOP_RELAXED, 1.0, phone_t, GLOW_WARM, 1.0, 0.0)
-    rec.hold_last_frame(fr(12))
+    rec.hold_last_frame(10)
 
-    # tension rises, glow cools -- both pure smoothstep (reverted from
-    # an ease-out-back overshoot tried in an earlier pass)
-    tension_start_frame = rec.index
-    n3_ramp = fr(24)
+    # ---- Beat 3: tension rises, glow cools -- ramp (~1s) then a long
+    # hold (~2s) with a slow, controlled sine pulse on the glow so the
+    # unease beat actually registers (~3s total) ----
+    n3_ramp = 20
     for step in range(n3_ramp):
-        t = _smoothstep(step / (n3_ramp - 1))
+        t = ease(step / (n3_ramp - 1))
         shoulder_top = lerp(SHOULDER_TOP_RELAXED, SHOULDER_TOP_TENSE, t)
         glow = lerp_color(GLOW_WARM, GLOW_COLD, t)
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, shoulder_top, 1.0, 1.0, glow, 1.0, 0.0)
-
-    # held tense/cold with a slow controlled pulse, long enough to
-    # actually register -- spans through the icon reveal below, since
-    # the posture hasn't resolved yet at that point in the story
-    n3_hold = fr(46)
+    n3_hold = 40
     for step in range(n3_hold):
-        pulse = 1.0 + 0.12 * math.sin(step * (0.35 / FPS_SCALE))
+        pulse = 1.0 + 0.12 * math.sin(step * 0.35)
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, SHOULDER_TOP_TENSE, 1.0, 1.0, GLOW_COLD, pulse, 0.0)
 
-    # brand icon fades in as an inset, bloomed reflection -- pure alpha
-    # compositing, no stroke draw at all
-    n4 = fr(28)
+    # ---- Beat 4: the brand icon fades in on the phone screen -- pure
+    # alpha compositing, no stroke draw, for the smoothest possible
+    # reveal (~1.7s) ----
+    n4 = 24
     for step in range(n4):
-        t = _smoothstep(step / (n4 - 1))
+        t = ease(step / (n4 - 1))
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, SHOULDER_TOP_TENSE, 1.0, 1.0, GLOW_COLD, 1.0, t)
-    chime_frames.append(rec.index - 1)
-    n4_hold = fr(14)
-    rec.hold_last_frame(n4_hold)
+    rec.hold_last_frame(10)
 
-    # shoulders relax, glow warms back -- pure smoothstep, mirroring the
-    # tense-up
-    n5 = fr(30)
+    # ---- Beat 5: posture eases, glow warms back -- mirrors beat 3's
+    # ramp in reverse (~1.7s) ----
+    n5 = 24
     for step in range(n5):
-        t = _smoothstep(step / (n5 - 1))
+        t = ease(step / (n5 - 1))
         shoulder_top = lerp(SHOULDER_TOP_TENSE, SHOULDER_TOP_RELAXED, t)
         glow = lerp_color(GLOW_COLD, GLOW_WARM, t)
         render(HEAD_CY_DOWN, HEAD_RY_DOWN, shoulder_top, 1.0, 1.0, glow, 1.0, 1.0)
-    rec.hold_last_frame(fr(16))
+    rec.hold_last_frame(10)
 
-    drone_events.append({
-        "start_frame": tension_start_frame,
-        "ramp_frames": n3_ramp,
-        "hold_frames": n3_hold + n4 + n4_hold,
-        "relax_frames": n5,
-    })
-
-    # ---- wordmark / motto / tagline fade in below the still-visible
-    # figure, calm and steady ----
+    # ---- Beat 6: wordmark / motto / tagline fade in below the still-
+    # visible figure, calm and steady (~4.5s) ----
     wordmark_font = font(BOLD, 70)
     wordmark_segments = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
-    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=790, num_frames=fr(18))
-    rec.hold_last_frame(fr(8))
+    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=790, num_frames=18)
+    rec.hold_last_frame(8)
 
     motto_font = font(MONO_BOLD, 26)
     motto_segments = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
-    fade_in_segments(rec, motto_segments, motto_font, x='center', y=878, num_frames=fr(14))
-    rec.hold_last_frame(fr(8))
+    fade_in_segments(rec, motto_segments, motto_font, x='center', y=878, num_frames=14)
+    rec.hold_last_frame(8)
 
     tagline_font = font(MONO_BOLD, 24)
     tagline_segments = [
         ("USE ", cream3), ("AI", orange3), (". REMAIN ", cream3), ("HUMAN", orange3),
         (". ", cream3), ("PRIVACY", orange3), (" MATTERS.", cream3),
     ]
-    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=922, num_frames=fr(14))
-    rec.hold_last_frame(fr(24))
+    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=922, num_frames=14)
+    rec.hold_last_frame(24)
 
     total_frames = rec.index - 1
-
-    silent_path = video_path + ".silent.mp4"
-    assemble_video(out_dir, silent_path, fps=fps)
-
-    audio_path = os.path.join(out_dir, "_silhouette_audio.wav")
-    synthesize_silhouette_audio(fps, total_frames, audio_path, drone_events=drone_events,
-                                 chime_frames=chime_frames)
-    mux_audio(silent_path, audio_path, video_path)
-    os.remove(silent_path)
-    os.remove(audio_path)
-
+    assemble_video(out_dir, video_path, fps=fps)
     return total_frames
 
 
