@@ -1710,6 +1710,515 @@ def animate_silhouette_story(out_dir, video_path, fps=20):
     return total_frames
 
 
+def animate_debut_video(out_dir, video_path, fps=60):
+    """Full five-act debut brand video, built directly on top of the
+    already-approved animate_silhouette_story(). Act 1 below is that
+    exact same beat sequence (same geometry, same easing, same simple
+    phone with no bloom/inset, no audio) reproduced verbatim rather than
+    imported, since animate_silhouette_story() assembles and returns its
+    own standalone video and this function needs to keep recording into
+    one continuous FrameRecorder afterward instead of stitching two
+    separately-assembled clips together.
+
+      Act 1 (silhouette hook, unchanged): figure fades in -> head lowers
+        toward a phone fading in below it -> shoulders tense while the
+        phone's glow cools cream-to-cold, held with a slow controlled
+        pulse -> the brand icon fades in on the phone screen as a
+        reflection -> shoulders relax, glow warms back -> wordmark,
+        motto, and tagline fade in calmly below.
+      Act 2 (more about us): three first-person lines about who's
+        actually behind the account, crossfaded one at a time via
+        crossfade_text_beats() (fade+drift, not a hard cut), each held
+        long enough to read comfortably rather than rushed.
+      Act 3 (website showcase): a browser-window mockup, styled in the
+        site's own dark/cream/orange terminal language (the exact same
+        base_card() grid+border, the same window-control glyph style as
+        draw_terminal_chrome(), a mono address pill reading
+        "stayhumansec.github.io"), crossfades through six real screens —
+        the homepage hero (wordmark/motto/tagline plus the boot
+        sequence's real "0 trackers / 0 ad scripts / 0 cookies" checkup
+        line), the 9-pillar grid (exact labels/colors from CLAUDE.md's
+        pillar table), the "You, Check." quiz (its real eyebrow/heading
+        from index.html), an article page (tag pill, title, stat line,
+        body lines, checklist box -- the real post.html anatomy), the
+        News feed (dated, sourced headline rows), and the Toolkit (its
+        real categories: Password Managers, VPNs, Authenticator Apps,
+        Browsers) -- each screen holds with a short caption underneath,
+        dissolving smoothly into the next rather than cutting.
+      Act 4 (brand lockup, reprised): the same calm wordmark/motto/
+        tagline treatment as Act 1's close, standing alone this time as
+        the video's second and final anchor point -- reinforcing the
+        identity after actually showing what it built.
+      Act 5 (CTA): "Like. Share. Follow. Comment." fades in and holds,
+        then gives way to a warmer, personal closing line -- "Trust me,
+        it's worth it." -- like a genuine aside from the person behind
+        the account, not a company sign-off.
+
+    Rendered at whatever fps is passed in (60fps by default, matching
+    the already-approved silhouette's own re-render). Act 1's frame
+    counts were all originally authored assuming 20fps, so fr() below
+    scales them by fps/20 to keep Act 1's real-world timing untouched
+    regardless of fps -- see the identical helper in
+    animate_silhouette_story() for the full rationale. Acts 2-5 are new
+    content with no prior duration to preserve, so their frame counts
+    come directly from a target seconds duration via sec_frames()
+    instead -- every beat runs as long as it genuinely needs to read
+    comfortably, not compressed toward a fixed total.
+
+    No audio track: nothing in this brief asked for sound design beyond
+    what Act 1 already doesn't have, so this returns a silent MP4, same
+    as the approved silhouette.
+    """
+    from generate_post import (base_card, gray_light, blue, green, gold, pink, violet,
+                                font, BOLD, REG, MONO_BOLD, MONO_REG,
+                                draw_icon as draw_brand_icon, wrap_text)
+
+    CORAL = (255, 138, 106)
+    CARD_BG = (13, 12, 10)     # matches --card
+    LINE_COLOR = (58, 53, 44)  # matches --line
+
+    base_img, base_draw = base_card()
+    rec = FrameRecorder(base_img, base_draw, out_dir)
+
+    FPS_SCALE = fps / 20.0
+
+    def fr(n):
+        """Scales an Act-1 frame count written assuming 20fps up (or
+        down) to whatever fps this call actually renders at, so Act 1's
+        real-world duration stays exactly what was already approved."""
+        return max(1, round(n * FPS_SCALE))
+
+    def sec_frames(s):
+        """Frame count for a new (Act 2-5) beat given a target duration
+        in seconds -- no legacy 20fps assumption to preserve here."""
+        return max(1, round(s * fps))
+
+    def lerp(a, b, t):
+        return a + (b - a) * t
+
+    def lerp_color(c1, c2, t):
+        return tuple(int(round(lerp(c1[i], c2[i], t))) for i in range(3))
+
+    def ease(t):
+        return _smoothstep(max(0.0, min(1.0, t)))
+
+    # ================= Act 1: silhouette hook (unchanged) =================
+    HEAD_CX = 540
+    HEAD_RX = 66
+    HEAD_RY_UP, HEAD_RY_DOWN = 66, 58
+    HEAD_CY_UP, HEAD_CY_DOWN = 360, 400
+    SHOULDER_TOP_RELAXED, SHOULDER_TOP_TENSE = 470, 452
+    SHOULDER_BOTTOM = 660
+    SHOULDER_HALF_TOP, SHOULDER_HALF_BOTTOM = 65, 145
+    OUTLINE_W = 5
+    SIL_FILL = (0, 0, 0)
+
+    PHONE_W, PHONE_H = 92, 168
+    PHONE_CX, PHONE_CY = 540, 560
+    PHONE_CORNER = 16
+
+    GLOW_WARM = cream3
+    GLOW_COLD = (120, 150, 210)
+
+    def silhouette_overlay(size, head_cy, head_ry, shoulder_top, alpha):
+        overlay = Image.new('RGBA', size, (0, 0, 0, 0))
+        od = ImageDraw.Draw(overlay)
+        top_l = (HEAD_CX - SHOULDER_HALF_TOP, shoulder_top)
+        top_r = (HEAD_CX + SHOULDER_HALF_TOP, shoulder_top)
+        bot_r = (HEAD_CX + SHOULDER_HALF_BOTTOM, SHOULDER_BOTTOM)
+        bot_l = (HEAD_CX - SHOULDER_HALF_BOTTOM, SHOULDER_BOTTOM)
+        od.polygon([top_l, top_r, bot_r, bot_l], fill=SIL_FILL + (255,))
+        head_box = [HEAD_CX - HEAD_RX, head_cy - head_ry, HEAD_CX + HEAD_RX, head_cy + head_ry]
+        od.ellipse(head_box, fill=SIL_FILL + (255,))
+        od.polygon([top_l, top_r, bot_r, bot_l], outline=orange3 + (255,), width=OUTLINE_W)
+        od.ellipse(head_box, outline=orange3 + (255,), width=OUTLINE_W)
+        if alpha < 1.0:
+            overlay.putalpha(overlay.split()[3].point(lambda a, m=alpha: int(a * m)))
+        return overlay
+
+    def phone_overlay(size, glow_color, alpha):
+        overlay = Image.new('RGBA', size, (0, 0, 0, 0))
+        od = ImageDraw.Draw(overlay)
+        x0, y0 = PHONE_CX - PHONE_W / 2, PHONE_CY - PHONE_H / 2
+        x1, y1 = PHONE_CX + PHONE_W / 2, PHONE_CY + PHONE_H / 2
+        od.rounded_rectangle([x0, y0, x1, y1], radius=PHONE_CORNER, fill=(6, 6, 6, 255),
+                              outline=gray_light + (255,), width=3)
+        inset = 8
+        od.rounded_rectangle([x0 + inset, y0 + inset, x1 - inset, y1 - inset],
+                              radius=max(1, PHONE_CORNER - 6), fill=glow_color + (230,))
+        if alpha < 1.0:
+            overlay.putalpha(overlay.split()[3].point(lambda a, m=alpha: int(a * m)))
+        return overlay
+
+    def icon_overlay(size, alpha, scale=1.7):
+        overlay = Image.new('RGBA', size, (0, 0, 0, 0))
+        od = ImageDraw.Draw(overlay)
+        offx, offy = PHONE_CX - 75 * scale, PHONE_CY - 55.5 * scale
+        draw_brand_icon(od, offx, offy, scale, cream3 + (255,), orange3 + (255,))
+        if alpha < 1.0:
+            overlay.putalpha(overlay.split()[3].point(lambda a, m=alpha: int(a * m)))
+        return overlay
+
+    def render_act1(head_cy, head_ry, shoulder_top, figure_alpha, phone_alpha, glow_color, glow_pulse, icon_alpha):
+        frame = base_img.copy().convert('RGBA')
+        frame = Image.alpha_composite(frame, silhouette_overlay(frame.size, head_cy, head_ry, shoulder_top, figure_alpha))
+        if phone_alpha > 0:
+            pulsed = tuple(min(255, max(0, int(c * glow_pulse))) for c in glow_color)
+            frame = Image.alpha_composite(frame, phone_overlay(frame.size, pulsed, phone_alpha))
+        if icon_alpha > 0:
+            frame = Image.alpha_composite(frame, icon_overlay(frame.size, icon_alpha))
+        final = frame.convert('RGB')
+        final.save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+        rec.index += 1
+        rec.img = final
+        return final
+
+    n1 = fr(24)
+    for step in range(n1):
+        t = ease(step / (n1 - 1))
+        render_act1(HEAD_CY_UP, HEAD_RY_UP, SHOULDER_TOP_RELAXED, t, 0.0, GLOW_WARM, 1.0, 0.0)
+    rec.hold_last_frame(fr(10))
+
+    n2 = fr(24)
+    stagger = fr(6)
+    for step in range(n2):
+        t = ease(step / (n2 - 1))
+        head_cy = lerp(HEAD_CY_UP, HEAD_CY_DOWN, t)
+        head_ry = lerp(HEAD_RY_UP, HEAD_RY_DOWN, t)
+        phone_t = ease(max(0.0, (step - stagger) / (n2 - 1 - stagger)))
+        render_act1(head_cy, head_ry, SHOULDER_TOP_RELAXED, 1.0, phone_t, GLOW_WARM, 1.0, 0.0)
+    rec.hold_last_frame(fr(10))
+
+    n3_ramp = fr(20)
+    for step in range(n3_ramp):
+        t = ease(step / (n3_ramp - 1))
+        shoulder_top = lerp(SHOULDER_TOP_RELAXED, SHOULDER_TOP_TENSE, t)
+        glow = lerp_color(GLOW_WARM, GLOW_COLD, t)
+        render_act1(HEAD_CY_DOWN, HEAD_RY_DOWN, shoulder_top, 1.0, 1.0, glow, 1.0, 0.0)
+    n3_hold = fr(40)
+    for step in range(n3_hold):
+        pulse = 1.0 + 0.12 * math.sin(step * (0.35 / FPS_SCALE))
+        render_act1(HEAD_CY_DOWN, HEAD_RY_DOWN, SHOULDER_TOP_TENSE, 1.0, 1.0, GLOW_COLD, pulse, 0.0)
+
+    n4 = fr(24)
+    for step in range(n4):
+        t = ease(step / (n4 - 1))
+        render_act1(HEAD_CY_DOWN, HEAD_RY_DOWN, SHOULDER_TOP_TENSE, 1.0, 1.0, GLOW_COLD, 1.0, t)
+    rec.hold_last_frame(fr(10))
+
+    n5 = fr(24)
+    for step in range(n5):
+        t = ease(step / (n5 - 1))
+        shoulder_top = lerp(SHOULDER_TOP_TENSE, SHOULDER_TOP_RELAXED, t)
+        glow = lerp_color(GLOW_COLD, GLOW_WARM, t)
+        render_act1(HEAD_CY_DOWN, HEAD_RY_DOWN, shoulder_top, 1.0, 1.0, glow, 1.0, 1.0)
+    rec.hold_last_frame(fr(10))
+
+    wordmark_font = font(BOLD, 70)
+    wordmark_segments = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
+    fade_in_segments(rec, wordmark_segments, wordmark_font, x='center', y=790, num_frames=fr(18))
+    rec.hold_last_frame(fr(8))
+
+    motto_font = font(MONO_BOLD, 26)
+    motto_segments = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
+    fade_in_segments(rec, motto_segments, motto_font, x='center', y=878, num_frames=fr(14))
+    rec.hold_last_frame(fr(8))
+
+    tagline_font = font(MONO_BOLD, 24)
+    tagline_segments = [
+        ("USE ", cream3), ("AI", orange3), (". REMAIN ", cream3), ("HUMAN", orange3),
+        (". ", cream3), ("PRIVACY", orange3), (" MATTERS.", cream3),
+    ]
+    fade_in_segments(rec, tagline_segments, tagline_font, x='center', y=922, num_frames=fr(14))
+    rec.hold_last_frame(fr(30))
+
+    # ================= Act 2: more about us =================
+    _fade_to_clean_base(rec, sec_frames(1.2))
+
+    about_head_font = font(BOLD, 52)
+    about_body_font = font(REG, 36)
+    HEAD_LINE_H = 64
+    BODY_LINE_H = 50
+
+    def text_beat(lines, font_obj, line_h, center_y=520):
+        total_h = line_h * (len(lines) - 1)
+        y = center_y - total_h / 2
+        beat_lines = []
+        for ln in lines:
+            beat_lines.append(([(ln, cream3)], font_obj, y))
+            y += line_h
+        return {"dot": None, "lines": beat_lines}
+
+    wrapped_line2 = wrap_text(
+        rec.draw,
+        "No team. No company. Just someone who got tired of security "
+        "advice that's either too technical, or too scary to actually act on.",
+        about_body_font, 860,
+    )
+
+    about_beats = [
+        text_beat(["Hi. I'm the person writing all of this."], about_head_font, HEAD_LINE_H),
+        text_beat(wrapped_line2, about_body_font, BODY_LINE_H),
+        text_beat(["So I started writing the version I wish existed."], about_head_font, HEAD_LINE_H),
+    ]
+    crossfade_text_beats(
+        rec, about_beats,
+        transition_frames=sec_frames(1.1),
+        hold_frames=[sec_frames(3.2), sec_frames(4.4), sec_frames(3.4)],
+    )
+
+    # ================= Act 3: website showcase =================
+    _fade_to_clean_base(rec, sec_frames(1.2))
+
+    BW_X0, BW_Y0, BW_X1, BW_Y1 = 110, 130, 970, 830
+    CHROME_H = 50
+    CX0, CY0, CX1, CY1 = BW_X0 + 3, BW_Y0 + CHROME_H, BW_X1 - 3, BW_Y1 - 3
+
+    def new_screen_canvas():
+        img, d = base_card()
+        d.rounded_rectangle([BW_X0, BW_Y0, BW_X1, BW_Y1], radius=18, outline=cream3, width=3)
+        d.rounded_rectangle([BW_X0, BW_Y0, BW_X1, BW_Y0 + CHROME_H], radius=18, fill=(23, 20, 16))
+        d.rectangle([BW_X0, BW_Y0 + CHROME_H - 18, BW_X1, BW_Y0 + CHROME_H], fill=(23, 20, 16))
+        d.line([BW_X0, BW_Y0 + CHROME_H, BW_X1, BW_Y0 + CHROME_H], fill=LINE_COLOR, width=2)
+        icon_y = BW_Y0 + CHROME_H / 2
+        mx = BW_X0 + 28
+        d.line([mx, icon_y, mx + 16, icon_y], fill=gray_light, width=2)
+        mx2 = mx + 34
+        d.rounded_rectangle([mx2, icon_y - 7, mx2 + 14, icon_y + 7], radius=2, outline=gray_light, width=2)
+        mx3 = mx2 + 34
+        d.line([mx3, icon_y - 7, mx3 + 14, icon_y + 7], fill=gray_light, width=2)
+        d.line([mx3, icon_y + 7, mx3 + 14, icon_y - 7], fill=gray_light, width=2)
+        addr_font = font(MONO_REG, 20)
+        addr_text = "stayhumansec.github.io"
+        aw = d.textlength(addr_text, font=addr_font)
+        pill_w = aw + 50
+        pill_x0 = BW_X0 + (BW_X1 - BW_X0 - pill_w) / 2
+        d.rounded_rectangle([pill_x0, icon_y - 15, pill_x0 + pill_w, icon_y + 15], radius=15,
+                             fill=(8, 7, 6), outline=LINE_COLOR, width=1)
+        d.text((pill_x0 + 25, icon_y - 11), addr_text, font=addr_font, fill=gray_light)
+        d.rectangle([BW_X0 + 3, BW_Y0 + CHROME_H, BW_X1 - 3, BW_Y1 - 3], fill=CARD_BG)
+        return img, d
+
+    def caption_below(d, text):
+        cap_font = font(REG, 30)
+        cw = d.textlength(text, font=cap_font)
+        d.text(((1080 - cw) / 2, BW_Y1 + 34), text, font=cap_font, fill=gray_light)
+
+    def screen_hero():
+        img, d = new_screen_canvas()
+        cy = CY0 + 170
+        motto_f = font(MONO_BOLD, 18)
+        motto_segs = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
+        full = ''.join(s for s, _ in motto_segs)
+        mx = (1080 - d.textlength(full, font=motto_f)) / 2
+        for txt, col in motto_segs:
+            d.text((mx, cy), txt, font=motto_f, fill=col)
+            mx += d.textlength(txt, font=motto_f)
+        cy += 46
+        wm_f = font(BOLD, 62)
+        wm_segs = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
+        wfull = ''.join(s for s, _ in wm_segs)
+        wx = (1080 - d.textlength(wfull, font=wm_f)) / 2
+        for txt, col in wm_segs:
+            d.text((wx, cy), txt, font=wm_f, fill=col)
+            wx += d.textlength(txt, font=wm_f)
+        cy += 96
+        tl_f = font(MONO_BOLD, 20)
+        tl_segs = [("USE ", cream3), ("AI", orange3), (". REMAIN ", cream3), ("HUMAN", orange3),
+                   (". ", cream3), ("PRIVACY", orange3), (" MATTERS.", cream3)]
+        tfull = ''.join(s for s, _ in tl_segs)
+        tx = (1080 - d.textlength(tfull, font=tl_f)) / 2
+        for txt, col in tl_segs:
+            d.text((tx, cy), txt, font=tl_f, fill=col)
+            tx += d.textlength(txt, font=tl_f)
+        cy += 70
+        chk_f = font(MONO_BOLD, 20)
+        chk_text = "0 TRACKERS   0 AD SCRIPTS   0 COOKIES"
+        chw = d.textlength(chk_text, font=chk_f)
+        d.text(((1080 - chw) / 2, cy), chk_text, font=chk_f, fill=green)
+        caption_below(d, "no trackers, no ads, no cookies -- genuinely")
+        return img
+
+    def screen_pillars():
+        img, d = new_screen_canvas()
+        pillars = [
+            ("CYBER NEWS", blue), ("AI NEWS", violet), ("STAY SAFE", orange3),
+            ("CYBER BASICS", green), ("AI WATCH", violet), ("MYTH BUSTING", gold),
+            ("CASE FILE", pink), ("DEEP DIVE", green), ("STORY TIME", CORAL),
+        ]
+        cols, rows = 3, 3
+        pad = 26
+        cell_w = (CX1 - CX0 - pad * (cols + 1)) / cols
+        cell_h = (CY1 - CY0 - pad * (rows + 1)) / rows
+        label_f = font(MONO_BOLD, 17)
+        for i, (label, color) in enumerate(pillars):
+            r, c = divmod(i, cols)
+            x0 = CX0 + pad + c * (cell_w + pad)
+            y0 = CY0 + pad + r * (cell_h + pad)
+            x1, y1 = x0 + cell_w, y0 + cell_h
+            d.rounded_rectangle([x0, y0, x1, y1], radius=12, outline=LINE_COLOR, width=2)
+            dot_r = 12
+            dcx, dcy = (x0 + x1) / 2, y0 + cell_h * 0.4
+            d.ellipse([dcx - dot_r, dcy - dot_r, dcx + dot_r, dcy + dot_r], fill=color)
+            lw = d.textlength(label, font=label_f)
+            d.text(((x0 + x1) / 2 - lw / 2, y0 + cell_h * 0.68), label, font=label_f, fill=gray_light)
+        caption_below(d, "nine pillars -- cybersecurity, AI, and privacy, in equal measure")
+        return img
+
+    def screen_quiz():
+        img, d = new_screen_canvas()
+        eyebrow_f = font(MONO_BOLD, 20)
+        d.text((CX0 + 50, CY0 + 60), "// YOU, CHECK.", font=eyebrow_f, fill=orange3)
+        q_f = font(BOLD, 34)
+        d.text((CX0 + 50, CY0 + 110), "A couple of quick questions.", font=q_f, fill=cream3)
+        options = ["Just starting out", "I know the basics", "Fairly careful already", "I've had a scare before"]
+        opt_f = font(REG, 26)
+        oy = CY0 + 200
+        for i, opt in enumerate(options):
+            selected = (i == 1)
+            ox0, ox1 = CX0 + 50, CX1 - 50
+            oy1 = oy + 60
+            if selected:
+                d.rounded_rectangle([ox0, oy, ox1, oy1], radius=14, fill=(46, 28, 16), outline=orange3, width=3)
+            else:
+                d.rounded_rectangle([ox0, oy, ox1, oy1], radius=14, outline=LINE_COLOR, width=2)
+            d.text((ox0 + 26, oy + 16), opt, font=opt_f, fill=cream3 if selected else gray_light)
+            oy = oy1 + 22
+        caption_below(d, "answer honestly, get pointed at exactly the right files")
+        return img
+
+    def screen_article():
+        img, d = new_screen_canvas()
+        tag_f = font(BOLD, 20)
+        tag_text = "STAY SAFE"
+        tw = d.textlength(tag_text, font=tag_f)
+        d.rounded_rectangle([CX0 + 50, CY0 + 40, CX0 + 50 + tw + 32, CY0 + 78], radius=17, fill=orange3)
+        d.text((CX0 + 66, CY0 + 49), tag_text, font=tag_f, fill=(0, 0, 0))
+        title_f = font(BOLD, 40)
+        d.text((CX0 + 50, CY0 + 96), "Turn On Two-Factor,", font=title_f, fill=cream3)
+        d.text((CX0 + 50, CY0 + 144), "the Right Way", font=title_f, fill=orange3)
+        stat_f = font(MONO_REG, 20)
+        d.text((CX0 + 50, CY0 + 202), "$ context -- 5 min read", font=stat_f, fill=gray_light)
+        body_widths = [0.86, 0.78, 0.9, 0.7, 0.82]
+        by = CY0 + 254
+        for wfrac in body_widths:
+            bw = (CX1 - CX0 - 100) * wfrac
+            d.rounded_rectangle([CX0 + 50, by, CX0 + 50 + bw, by + 14], radius=7, fill=(60, 55, 46))
+            by += 30
+        cl_y0 = by + 30
+        d.rounded_rectangle([CX0 + 50, cl_y0, CX1 - 50, cl_y0 + 150], radius=14, outline=LINE_COLOR, width=2)
+        item_f = font(REG, 22)
+        items = ["Turn on 2FA on email first", "Use an authenticator app, not SMS", "Save backup codes somewhere safe"]
+        iy = cl_y0 + 22
+        for item in items:
+            d.line([CX0 + 74, iy + 14, CX0 + 82, iy + 22], fill=green, width=3)
+            d.line([CX0 + 82, iy + 22, CX0 + 98, iy + 4], fill=green, width=3)
+            d.text((CX0 + 116, iy), item, font=item_f, fill=cream3)
+            iy += 40
+        caption_below(d, "step-by-step, plain language, every term explained")
+        return img
+
+    def screen_news():
+        img, d = new_screen_canvas()
+        items = [
+            (blue, "Major password manager breach exposes metadata", "BleepingComputer . 2h ago"),
+            (violet, "New AI browser extension quietly reads your pages", "The Verge . 5h ago"),
+            (blue, "Ransomware gang leaks data after refusing to pay", "Krebs on Security . 1d ago"),
+            (violet, "Popular chatbot app changes its chat training policy", "Ars Technica . 1d ago"),
+        ]
+        headline_f = font(BOLD, 25)
+        sub_f = font(MONO_REG, 18)
+        iy = CY0 + 50
+        for color, headline, sub in items:
+            d.ellipse([CX0 + 48, iy + 10, CX0 + 64, iy + 26], fill=color)
+            d.text((CX0 + 86, iy), headline, font=headline_f, fill=cream3)
+            d.text((CX0 + 86, iy + 36), sub, font=sub_f, fill=gray_light)
+            iy += 100
+        caption_below(d, "cyber news and AI news -- every day, sourced and dated")
+        return img
+
+    def screen_toolkit():
+        img, d = new_screen_canvas()
+        cats = [
+            ("PASSWORD MANAGERS", orange3), ("VPNS", blue),
+            ("AUTHENTICATOR APPS", green), ("BROWSERS", violet),
+        ]
+        cols = 2
+        pad = 30
+        cell_w = (CX1 - CX0 - pad * (cols + 1)) / cols
+        cell_h = 160
+        label_f = font(MONO_BOLD, 19)
+        for i, (label, color) in enumerate(cats):
+            r, c = divmod(i, cols)
+            x0 = CX0 + pad + c * (cell_w + pad)
+            y0 = CY0 + 90 + r * (cell_h + pad)
+            x1 = x0 + cell_w
+            d.rounded_rectangle([x0, y0, x1, y0 + cell_h], radius=14, outline=LINE_COLOR, width=2)
+            d.rounded_rectangle([x0 + 24, y0 + 24, x0 + 64, y0 + 64], radius=10, fill=color)
+            lw = d.textlength(label, font=label_f)
+            lx = min(x0 + 24, x1 - 20 - lw)
+            d.text((lx, y0 + 90), label, font=label_f, fill=cream3)
+        caption_below(d, "real tools, picked for what they actually protect -- never sponsored")
+        return img
+
+    screens = [screen_hero(), screen_pillars(), screen_quiz(), screen_article(), screen_news(), screen_toolkit()]
+
+    prev_img = rec.img.convert('RGB')
+    for screen_img in screens:
+        n_trans = sec_frames(1.0)
+        screen_rgb = screen_img.convert('RGB')
+        for step in range(1, n_trans + 1):
+            t = ease(step / n_trans)
+            frame = Image.blend(prev_img, screen_rgb, t)
+            frame.save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+            rec.index += 1
+        rec.hold_last_frame(sec_frames(3.0))
+        prev_img = screen_rgb
+    rec.img = prev_img
+    rec.draw = ImageDraw.Draw(rec.img)
+
+    # ================= Act 4: brand lockup, reprised =================
+    _fade_to_clean_base(rec, sec_frames(1.3))
+
+    wordmark_font2 = font(BOLD, 76)
+    wordmark_segments2 = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
+    fade_in_segments(rec, wordmark_segments2, wordmark_font2, x='center', y=430, num_frames=sec_frames(1.3))
+    rec.hold_last_frame(sec_frames(0.6))
+
+    motto_font2 = font(MONO_BOLD, 28)
+    motto_segments2 = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
+    fade_in_segments(rec, motto_segments2, motto_font2, x='center', y=530, num_frames=sec_frames(1.0))
+    rec.hold_last_frame(sec_frames(0.6))
+
+    tagline_font2 = font(MONO_BOLD, 26)
+    tagline_segments2 = [
+        ("USE ", cream3), ("AI", orange3), (". REMAIN ", cream3), ("HUMAN", orange3),
+        (". ", cream3), ("PRIVACY", orange3), (" MATTERS.", cream3),
+    ]
+    fade_in_segments(rec, tagline_segments2, tagline_font2, x='center', y=580, num_frames=sec_frames(1.0))
+    rec.hold_last_frame(sec_frames(2.4))
+
+    # ================= Act 5: CTA =================
+    _fade_to_clean_base(rec, sec_frames(1.2))
+
+    cta_font = font(BOLD, 54)
+    cta_segments = [("Like", orange3), (". ", cream3), ("Share", orange3), (". ", cream3),
+                     ("Follow", orange3), (". ", cream3), ("Comment", orange3), (".", cream3)]
+    fade_in_segments(rec, cta_segments, cta_font, x='center', y=470, num_frames=sec_frames(1.3))
+    rec.hold_last_frame(sec_frames(2.2))
+
+    _fade_to_clean_base(rec, sec_frames(1.0))
+
+    closer_font = font(BOLD, 50)
+    closer_segments = [("Trust me, it's worth it.", orange3)]
+    fade_in_segments(rec, closer_segments, closer_font, x='center', y=500, num_frames=sec_frames(1.4))
+    rec.hold_last_frame(sec_frames(2.6))
+
+    total_frames = rec.index - 1
+    assemble_video(out_dir, video_path, fps=fps)
+    return total_frames
+
+
 if __name__ == "__main__":
     print("This is a library, not a script to run directly.")
     print("Import it: from animate import FrameRecorder, wobbly_animated, assemble_video")
