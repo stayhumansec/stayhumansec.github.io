@@ -1935,9 +1935,9 @@ def animate_debut_video(out_dir, video_path, fps=60):
     # ================= Act 2: more about us =================
     _fade_to_clean_base(rec, sec_frames(1.2))
 
-    about_head_font = font(BOLD, 52)
+    about_head_font = font(BOLD, 42)
     about_body_font = font(REG, 36)
-    HEAD_LINE_H = 64
+    HEAD_LINE_H = 54
     BODY_LINE_H = 50
 
     def text_beat(lines, font_obj, line_h, center_y=520):
@@ -1974,28 +1974,40 @@ def animate_debut_video(out_dir, video_path, fps=60):
     CHROME_H = 50
     CX0, CY0, CX1, CY1 = BW_X0 + 3, BW_Y0 + CHROME_H, BW_X1 - 3, BW_Y1 - 3
 
+    CHROME_FILL = (36, 32, 26)  # visibly lighter than CARD_BG/black so the
+                                  # title bar actually reads as a bar, not a
+                                  # blank strip indistinguishable from the
+                                  # background behind it
+
     def new_screen_canvas():
         img, d = base_card()
         d.rounded_rectangle([BW_X0, BW_Y0, BW_X1, BW_Y1], radius=18, outline=cream3, width=3)
-        d.rounded_rectangle([BW_X0, BW_Y0, BW_X1, BW_Y0 + CHROME_H], radius=18, fill=(23, 20, 16))
-        d.rectangle([BW_X0, BW_Y0 + CHROME_H - 18, BW_X1, BW_Y0 + CHROME_H], fill=(23, 20, 16))
+        d.rounded_rectangle([BW_X0, BW_Y0, BW_X1, BW_Y0 + CHROME_H], radius=18, fill=CHROME_FILL)
+        d.rectangle([BW_X0, BW_Y0 + CHROME_H - 18, BW_X1, BW_Y0 + CHROME_H], fill=CHROME_FILL)
         d.line([BW_X0, BW_Y0 + CHROME_H, BW_X1, BW_Y0 + CHROME_H], fill=LINE_COLOR, width=2)
+
+        # terminal-style "$ " prompt on the left, the same convention used
+        # everywhere else on the site/brand, instead of a browser address
+        # bar -- this is meant to read as a terminal window, not a literal
+        # web browser chrome.
+        prompt_font = font(MONO_REG, 21)
+        py = BW_Y0 + (CHROME_H - 21) / 2 - 2
+        px = BW_X0 + 26
+        d.text((px, py), "$ ", font=prompt_font, fill=orange3)
+        px += d.textlength("$ ", font=prompt_font)
+        d.text((px, py), "open stayhumansec.github.io", font=prompt_font, fill=gray_light)
+
+        # window control glyphs on the right, matching draw_terminal_
+        # chrome()'s own layout convention elsewhere in this file
         icon_y = BW_Y0 + CHROME_H / 2
-        mx = BW_X0 + 28
-        d.line([mx, icon_y, mx + 16, icon_y], fill=gray_light, width=2)
-        mx2 = mx + 34
-        d.rounded_rectangle([mx2, icon_y - 7, mx2 + 14, icon_y + 7], radius=2, outline=gray_light, width=2)
-        mx3 = mx2 + 34
+        mx3 = BW_X1 - 44
         d.line([mx3, icon_y - 7, mx3 + 14, icon_y + 7], fill=gray_light, width=2)
         d.line([mx3, icon_y + 7, mx3 + 14, icon_y - 7], fill=gray_light, width=2)
-        addr_font = font(MONO_REG, 20)
-        addr_text = "stayhumansec.github.io"
-        aw = d.textlength(addr_text, font=addr_font)
-        pill_w = aw + 50
-        pill_x0 = BW_X0 + (BW_X1 - BW_X0 - pill_w) / 2
-        d.rounded_rectangle([pill_x0, icon_y - 15, pill_x0 + pill_w, icon_y + 15], radius=15,
-                             fill=(8, 7, 6), outline=LINE_COLOR, width=1)
-        d.text((pill_x0 + 25, icon_y - 11), addr_text, font=addr_font, fill=gray_light)
+        mx2 = mx3 - 34
+        d.rounded_rectangle([mx2, icon_y - 7, mx2 + 14, icon_y + 7], radius=2, outline=gray_light, width=2)
+        mx = mx2 - 34
+        d.line([mx, icon_y, mx + 16, icon_y], fill=gray_light, width=2)
+
         # Bottom corners rounded to match the outer window border (radius
         # 18, minus the 3px inset) -- a square-cornered fill here would
         # poke a jagged notch out past the rounded border underneath it.
