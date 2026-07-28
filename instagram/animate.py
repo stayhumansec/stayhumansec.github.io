@@ -2022,8 +2022,21 @@ def animate_debut_video(out_dir, video_path, fps=60):
         cw = d.textlength(text, font=cap_font)
         d.text(((1080 - cw) / 2, BW_Y1 + 34), text, font=cap_font, fill=gray_light)
 
+    def new_overlay():
+        """A transparent full-canvas layer for one screen's unique content
+        (everything except the window border/chrome/CARD_BG fill, which
+        are identical across every screen and drawn once into
+        chrome_base). Keeping per-screen content on its own layer is what
+        lets screens pan past each other instead of cross-dissolving --
+        two different screens' text alpha-blended on top of each other
+        read as garbled, half-formed lettering; sliding one out while the
+        next slides in from clear canvas never puts two glyphs in the
+        same place at the same time."""
+        img = Image.new('RGBA', (1080, 1080), (0, 0, 0, 0))
+        return img, ImageDraw.Draw(img)
+
     def screen_hero():
-        img, d = new_screen_canvas()
+        img, d = new_overlay()
         cy = CY0 + 170
         motto_f = font(MONO_BOLD, 18)
         motto_segs = [("FOR ", gray_light), ("HUMAN", orange3), (". FOR ", gray_light), ("PRIVACY", orange3), (".", gray_light)]
@@ -2058,7 +2071,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
         return img
 
     def screen_pillars():
-        img, d = new_screen_canvas()
+        img, d = new_overlay()
         pillars = [
             ("CYBER NEWS", blue), ("AI NEWS", violet), ("STAY SAFE", orange3),
             ("CYBER BASICS", green), ("AI WATCH", violet), ("MYTH BUSTING", gold),
@@ -2084,7 +2097,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
         return img
 
     def screen_quiz():
-        img, d = new_screen_canvas()
+        img, d = new_overlay()
         eyebrow_f = font(MONO_BOLD, 20)
         d.text((CX0 + 50, CY0 + 60), "// YOU, CHECK.", font=eyebrow_f, fill=orange3)
         q_f = font(BOLD, 34)
@@ -2106,7 +2119,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
         return img
 
     def screen_article():
-        img, d = new_screen_canvas()
+        img, d = new_overlay()
         tag_f = font(BOLD, 20)
         tag_text = "STAY SAFE"
         tw = d.textlength(tag_text, font=tag_f)
@@ -2137,7 +2150,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
         return img
 
     def screen_news():
-        img, d = new_screen_canvas()
+        img, d = new_overlay()
         items = [
             (blue, "Major password manager breach exposes metadata", "BleepingComputer . 2h ago"),
             (violet, "New AI browser extension quietly reads your pages", "The Verge . 5h ago"),
@@ -2156,7 +2169,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
         return img
 
     def screen_toolkit():
-        img, d = new_screen_canvas()
+        img, d = new_overlay()
         cats = [
             ("PASSWORD MANAGERS", orange3), ("VPNS", blue),
             ("AUTHENTICATOR APPS", green), ("BROWSERS", violet),
@@ -2179,21 +2192,49 @@ def animate_debut_video(out_dir, video_path, fps=60):
         caption_below(d, "real tools, picked for what they actually protect -- never sponsored")
         return img
 
-    screens = [screen_hero(), screen_pillars(), screen_quiz(), screen_article(), screen_news(), screen_toolkit()]
+    overlays = [screen_hero(), screen_pillars(), screen_quiz(), screen_article(), screen_news(), screen_toolkit()]
 
-    prev_img = rec.img.convert('RGB')
-    for screen_img in screens:
-        n_trans = sec_frames(1.0)
-        screen_rgb = screen_img.convert('RGB')
+    # The window frame/chrome/blank content fill is identical across every
+    # screen, so it's rendered once as a static base and never touched
+    # again -- only each screen's own overlay (text/cards/dots/caption)
+    # moves. Dissolving the empty window in first (simple shapes only, no
+    # competing text) keeps the "no hard cuts" rule without risking the
+    # garbled-text problem a full-screen cross-dissolve has once real
+    # content is involved.
+    chrome_base, _ = new_screen_canvas()
+    chrome_base = chrome_base.convert('RGBA')
+    dissolve_start = rec.img.convert('RGBA')
+    dissolve_frames = sec_frames(0.8)
+    for step in range(1, dissolve_frames + 1):
+        t = step / dissolve_frames
+        frame = Image.blend(dissolve_start, chrome_base, t)
+        frame.convert('RGB').save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+        rec.index += 1
+    rec.img = chrome_base.convert('RGB')
+    rec.draw = ImageDraw.Draw(rec.img)
+
+    def pan_shift(overlay, dx):
+        if dx == 0:
+            return overlay
+        shifted = Image.new('RGBA', overlay.size, (0, 0, 0, 0))
+        shifted.paste(overlay, (int(round(dx)), 0), overlay)
+        return shifted
+
+    prev_overlay = Image.new('RGBA', (1080, 1080), (0, 0, 0, 0))
+    for overlay in overlays:
+        n_trans = sec_frames(0.7)
         for step in range(1, n_trans + 1):
             t = ease(step / n_trans)
-            frame = Image.blend(prev_img, screen_rgb, t)
-            frame.save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
+            frame = chrome_base.copy()
+            frame = Image.alpha_composite(frame, pan_shift(prev_overlay, -t * 1080))
+            frame = Image.alpha_composite(frame, pan_shift(overlay, (1 - t) * 1080))
+            frame.convert('RGB').save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
             rec.index += 1
+        held = Image.alpha_composite(chrome_base.copy(), overlay)
+        rec.img = held.convert('RGB')
+        rec.draw = ImageDraw.Draw(rec.img)
         rec.hold_last_frame(sec_frames(3.0))
-        prev_img = screen_rgb
-    rec.img = prev_img
-    rec.draw = ImageDraw.Draw(rec.img)
+        prev_overlay = overlay
 
     # ================= Act 4: brand lockup, reprised =================
     _fade_to_clean_base(rec, sec_frames(1.3))
