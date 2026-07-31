@@ -186,7 +186,10 @@ body::after{
    and never actually visible. Switching to position:relative lets it take
    its natural place in the stack, between the hero text and the terminal
    card, instead of overlapping either. */
-@media (max-width:960px){ .hero-3d-stage{position:relative; z-index:1; width:220px; height:220px; top:auto; right:auto; left:auto; transform:none; margin:4px auto 0;} }
+/* Pulled up with a negative bottom margin so the terminal card overlaps its
+   lower portion, echoing the desktop layout where the icon sits behind the
+   terminal (z-index 0 vs 1) rather than floating in its own separate block. */
+@media (max-width:960px){ .hero-3d-stage{position:relative; z-index:0; width:220px; height:220px; top:auto; right:auto; left:auto; transform:none; margin:4px auto -70px;} }
 @media (prefers-reduced-motion: reduce){ .hero-3d-stage{display:none;} }
 
 /* recent-files infinite carousel — content is rendered twice back-to-back
