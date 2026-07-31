@@ -266,6 +266,15 @@ function initMobileNav() {
   document.body.appendChild(backdrop);
   document.body.appendChild(panel);
 
+  // Each link gets its own transition-delay (set directly rather than via
+  // CSS nth-child, since the CTA link sits inside its own wrapper div and
+  // would throw off a pure sibling-index count) so they fade/slide in as a
+  // staggered cascade while the panel opens, not all at once.
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReduced) {
+    panel.querySelectorAll('a').forEach(function (a, i) { a.style.transitionDelay = (i * 40) + 'ms'; });
+  }
+
   function open() { panel.classList.add('open'); backdrop.classList.add('open'); document.body.style.overflow = 'hidden'; }
   function close() { panel.classList.remove('open'); backdrop.classList.remove('open'); document.body.style.overflow = ''; }
 
@@ -309,8 +318,14 @@ function highlightActiveNav() {
 }
 
 /**
- * Ambient cursor glow that softly follows the mouse on dark sections.
- * Skipped entirely on touch devices and under prefers-reduced-motion.
+ * Ambient cursor glow that softly follows the mouse on dark sections, plus
+ * a small ring that tracks the same position and snaps larger/brighter over
+ * clickable elements -- a lightweight "this is interactive" cue instead of
+ * relying on the browser's default pointer cursor alone. Both share the
+ * same --mx/--my position (one mousemove listener, not two), and both are
+ * skipped entirely on touch devices and under prefers-reduced-motion --
+ * there's no hover concept on touch, so nothing here is even created for
+ * it rather than attempting a faked equivalent.
  */
 function initCursorFX() {
   var isFine = window.matchMedia('(pointer: fine)').matches;
@@ -321,14 +336,35 @@ function initCursorFX() {
   glow.className = 'cursor-glow';
   document.body.appendChild(glow);
 
+  var ring = document.createElement('div');
+  ring.className = 'cursor-ring';
+  document.body.appendChild(ring);
+
   function onMove(e) {
     glow.classList.add('active');
+    ring.classList.add('active');
     document.documentElement.style.setProperty('--mx', e.clientX + 'px');
     document.documentElement.style.setProperty('--my', e.clientY + 'px');
   }
   window.addEventListener('mousemove', onMove, { passive: true });
   window.addEventListener('mouseleave', function () {
     glow.classList.remove('active');
+    ring.classList.remove('active');
+  });
+
+  var HOVER_SELECTOR = 'a, button, .pillar-card, .router-card, .file-row, .about-card, ' +
+    '.gloss-term, .tab-btn, .carousel-card, input, select, textarea, [role="button"]';
+
+  // Delegated on document instead of one listener per element -- cheap
+  // regardless of how many interactive elements a given page has, and
+  // automatically covers anything rendered after this runs (post cards,
+  // the file listing, etc.) with no re-binding needed.
+  document.addEventListener('mouseover', function (e) {
+    if (e.target.closest && e.target.closest(HOVER_SELECTOR)) ring.classList.add('hovering');
+  });
+  document.addEventListener('mouseout', function (e) {
+    var next = e.relatedTarget;
+    if (!next || !(next.closest && next.closest(HOVER_SELECTOR))) ring.classList.remove('hovering');
   });
 }
 
@@ -714,6 +750,41 @@ function initNewsTicker(posts, briefs) {
   }
 
   typeLoop();
+}
+
+/**
+ * Builds the homepage's "recent files" infinite carousel: the content is
+ * rendered twice back-to-back and a CSS keyframe scrolls the whole track
+ * left by exactly 50% of its width on a loop, so the seam between the two
+ * copies is invisible -- no JS repositioning math needed to fake the loop.
+ * Pauses on hover/focus (CSS :hover/:focus-within) and on touch (JS, since
+ * touch has no :hover). Under prefers-reduced-motion the content renders
+ * once, unanimated, as a plain static row -- same bailout standard as
+ * every other animation on the site.
+ */
+function initRecentCarousel(posts) {
+  var track = document.getElementById('recentCarouselTrack');
+  if (!track) return;
+  var section = track.closest('.recent-carousel-section');
+
+  var recent = posts.filter(function (p) { return p.badge === 'live'; }).slice(-10).reverse();
+  if (recent.length < 4) { if (section) section.style.display = 'none'; return; }
+
+  function cardHTML(p) {
+    return '<a class="carousel-card" href="post.html?slug=' + encodeURIComponent(p.slug) + '" style="--pillar-color:' + p.pillarColor + ';">' +
+      '<span class="cc-tag">' + escapeHTML(p.pillarLabel || '') + '</span>' +
+      '<span class="cc-title">' + escapeHTML(p.title) + '</span></a>';
+  }
+
+  var cardsHTML = recent.map(cardHTML).join('');
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  track.innerHTML = prefersReduced ? cardsHTML : cardsHTML + cardsHTML;
+  if (prefersReduced || !section) return;
+
+  section.addEventListener('touchstart', function () { track.classList.add('paused'); }, { passive: true });
+  section.addEventListener('touchend', function () {
+    setTimeout(function () { track.classList.remove('paused'); }, 1500);
+  }, { passive: true });
 }
 
 /** Escapes text before it's inserted as HTML, since post content comes from a JSON data file. */

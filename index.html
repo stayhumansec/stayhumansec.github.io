@@ -64,12 +64,18 @@
   </div>
 </section>
 
+<section class="recent-carousel-section" aria-label="Recently added files">
+  <div class="carousel-track" id="recentCarouselTrack" aria-hidden="true"></div>
+</section>
+
 <div class="news-ticker-bar" id="newsTicker" style="display:none;">
   <a href="news.html" class="news-ticker-link">
     <span class="news-ticker-prompt">$ tail -f news.log</span>
     <span class="news-ticker-text" id="newsTickerText"></span><span class="news-ticker-cursor" id="newsTickerCursor">_</span>
   </a>
 </div>
+
+<div class="story-connector reveal" aria-hidden="true"><span class="story-connector-dot"></span></div>
 
 <section class="section" id="router" style="padding-top:70px; padding-bottom:70px;">
   <div class="section-inner">
@@ -166,6 +172,8 @@
   </div>
 </section>
 
+<div class="story-connector reveal" aria-hidden="true"><span class="story-connector-dot"></span></div>
+
 <section class="section section-alt" id="youcheck">
   <div class="section-inner">
     <div class="section-eyebrow reveal">// YOU, CHECK.</div>
@@ -230,7 +238,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=17"></script>
+<script src="site.js?v=18"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML =
@@ -264,6 +272,8 @@
     fetch('newsBriefs.json').then(function (r) { return r.ok ? r.json() : { briefs: [] }; })
       .catch(function () { return { briefs: [] }; })
       .then(function (briefData) { initNewsTicker(posts, briefData.briefs); });
+
+    initRecentCarousel(posts);
 
     // render file list
     var listEl = document.getElementById('fileList');
