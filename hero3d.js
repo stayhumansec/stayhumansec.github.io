@@ -30,7 +30,16 @@ export function mountHero3D(container) {
 
   var renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    // preserveDrawingBuffer:true matters specifically because of the
+    // IntersectionObserver-gated render loop below -- without it, a WebGL
+    // canvas's drawing buffer can be cleared by the browser once rendering
+    // stops (the default assumes every visible frame gets freshly redrawn),
+    // so pausing the loop while the icon is out of view left the canvas
+    // fully blank instead of frozen on its last frame. This showed up on
+    // mobile, where the icon sits further down a taller stacked layout and
+    // starts outside (or barely inside) the initial viewport, but not on
+    // desktop, where the hero is already fully in view on load.
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
   } catch (e) {
     if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
     return;
@@ -91,7 +100,6 @@ export function mountHero3D(container) {
   var scrollTilt = 0, targetScroll = 0;
   var running = true;
   var rafId = null;
-  var visible = true;
 
   function onPointerMove(e) {
     targetPX = (e.clientY / window.innerHeight) * 2 - 1;
@@ -118,18 +126,25 @@ export function mountHero3D(container) {
   window.addEventListener('resize', resize);
   resize();
 
-  var io = new IntersectionObserver(function (entries) {
-    visible = entries[0].isIntersecting;
-    if (visible && running && rafId === null) tick();
-  }, { threshold: 0 });
-  io.observe(container);
-
+  // Deliberately no IntersectionObserver-based pause when scrolled out of
+  // view. That optimization -- stop calling render() while off-screen,
+  // resume on re-intersect -- sounds harmless, but on a real phone (where
+  // this icon commonly starts outside or barely inside the initial
+  // viewport, unlike on desktop where the hero is already fully visible on
+  // load) the canvas would go permanently blank instead of resuming: the
+  // "resume" branch relies on the observer's re-intersect callback firing
+  // and successfully kicking the render loop back on, and that handoff
+  // didn't reliably happen, leaving a healthy WebGL context with real
+  // rendered pixels in its buffer that the browser never painted again.
+  // This is a tiny scene (a couple tubes and a sphere) -- rendering it
+  // continuously regardless of scroll position isn't a meaningful cost,
+  // and it removes an entire class of pause/resume timing bugs outright.
   var frameCount = 0;
   var perfStart = performance.now();
   var lowPerfChecked = false;
 
   function tick() {
-    if (!running || !visible) { rafId = null; return; }
+    if (!running) { rafId = null; return; }
     rafId = requestAnimationFrame(tick);
 
     var elapsed = clock.getElapsedTime();
@@ -161,7 +176,6 @@ export function mountHero3D(container) {
     window.removeEventListener('pointermove', onPointerMove);
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('resize', resize);
-    io.disconnect();
     [leftTube, rightTube, head, arcTube].forEach(function (m) { m.geometry.dispose(); });
     creamMat.dispose();
     orangeMat.dispose();
