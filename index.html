@@ -48,6 +48,7 @@
       </div>
       <p class="reveal" style="margin-top:18px; font-size:13px; color:var(--cream-dim); font-family:'JetBrains Mono', monospace;">No jargon. No fear-mongering. Just what actually helps.</p>
     </div>
+    <div class="hero-3d-stage" id="hero3dStage" aria-hidden="true"></div>
     <div class="hero-terminal" aria-hidden="true">
       <div class="term-bar">
         <div class="term-bar-label">stay(human).sec:~$</div>
@@ -229,7 +230,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=16"></script>
+<script src="site.js?v=17"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML =
@@ -249,6 +250,7 @@
   setupNavScroll();
   initScrollProgress();
   initCursorFX();
+  initHero3D();
   initCommandPalette();
   initMobileNav();
   highlightActiveNav();

@@ -333,6 +333,51 @@ function initCursorFX() {
 }
 
 /**
+ * Gates and, if everything checks out, dynamically imports hero3d.js to
+ * mount a WebGL brand-icon scene over the flat <div id="heroIcon"> SVG icon
+ * already in the hero. The flat icon is the default state, not a fallback
+ * bolted on after — it stays in the DOM unconditionally, and nothing here
+ * ever hides it; hero3d.js only adds a canvas on top of it once a frame has
+ * actually rendered successfully.
+ *
+ * Every check below has to pass before the ~150KB (gzipped) Three.js module
+ * is even requested, so devices that would never benefit don't pay for it:
+ * no hover concept (touch/tablet, same pointer:fine gate as initCursorFX),
+ * prefers-reduced-motion, a metered/Save-Data connection, or a browser that
+ * can't actually create a WebGL context. hero3d.js itself additionally
+ * tears the scene down (reverting to the flat icon) if a live frame-rate
+ * sample comes back too low, so a device that technically supports WebGL
+ * but chokes on it doesn't get stuck with something janky.
+ */
+function initHero3D() {
+  var stage = document.getElementById('hero3dStage');
+  if (!stage) return;
+
+  var isFine = window.matchMedia('(pointer: fine)').matches;
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!isFine || prefersReduced) return;
+
+  if (navigator.connection && navigator.connection.saveData) return;
+
+  var testCanvas = document.createElement('canvas');
+  var gl = null;
+  try {
+    gl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl');
+  } catch (e) {
+    gl = null;
+  }
+  if (!gl) return;
+
+  window.addEventListener('load', function () {
+    import('./hero3d.js').then(function (mod) {
+      mod.mountHero3D(stage);
+    }).catch(function (err) {
+      console.warn('hero3d.js failed to load -- flat icon stays as-is.', err);
+    });
+  });
+}
+
+/**
  * Command palette (⌘K / Ctrl+K): fuzzy-searches all posts plus a fixed set of site pages.
  * Builds its own DOM on first use so no markup needs to be duplicated across pages.
  * Any page that calls this just needs a trigger element with id="cmdkTrigger".
