@@ -40,6 +40,7 @@
       <div class="hero-logo reveal" id="heroIcon"></div>
       <div class="hero-motto reveal"><span class="dot"></span>FOR <b>HUMAN</b>. FOR <b>PRIVACY</b>.</div>
       <div class="wordmark reveal">stay<span>(human)</span>.sec</div>
+      <div class="hero-tagline reveal">USE <b>AI</b>. REMAIN <b>HUMAN</b>. <b>PRIVACY</b> MATTERS.</div>
       <p class="hero-sub reveal">The full write-up for every post — real steps, not just a 60-second summary. If the carousel made you curious, this is where it actually explains itself.</p>
       <div class="hero-cta-row reveal">
         <a href="#posts" class="btn-primary">Start reading →</a>
@@ -47,6 +48,7 @@
       </div>
       <p class="reveal" style="margin-top:18px; font-size:13px; color:var(--cream-dim); font-family:'JetBrains Mono', monospace;">No jargon. No fear-mongering. Just what actually helps.</p>
     </div>
+    <div class="hero-3d-stage" id="hero3dStage" aria-hidden="true"></div>
     <div class="hero-terminal" aria-hidden="true">
       <div class="term-bar">
         <div class="term-bar-label">stay(human).sec:~$</div>
@@ -62,12 +64,18 @@
   </div>
 </section>
 
+<section class="recent-carousel-section" aria-label="Recently added files">
+  <div class="carousel-track" id="recentCarouselTrack" aria-hidden="true"></div>
+</section>
+
 <div class="news-ticker-bar" id="newsTicker" style="display:none;">
   <a href="news.html" class="news-ticker-link">
     <span class="news-ticker-prompt">$ tail -f news.log</span>
     <span class="news-ticker-text" id="newsTickerText"></span><span class="news-ticker-cursor" id="newsTickerCursor">_</span>
   </a>
 </div>
+
+<div class="story-connector reveal" aria-hidden="true"><span class="story-connector-dot"></span></div>
 
 <section class="section" id="router" style="padding-top:70px; padding-bottom:70px;">
   <div class="section-inner">
@@ -164,6 +172,8 @@
   </div>
 </section>
 
+<div class="story-connector reveal" aria-hidden="true"><span class="story-connector-dot"></span></div>
+
 <section class="section section-alt" id="youcheck">
   <div class="section-inner">
     <div class="section-eyebrow reveal">// YOU, CHECK.</div>
@@ -228,7 +238,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=16"></script>
+<script src="site.js?v=18"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML =
@@ -248,6 +258,7 @@
   setupNavScroll();
   initScrollProgress();
   initCursorFX();
+  initHero3D();
   initCommandPalette();
   initMobileNav();
   highlightActiveNav();
@@ -261,6 +272,8 @@
     fetch('newsBriefs.json').then(function (r) { return r.ok ? r.json() : { briefs: [] }; })
       .catch(function () { return { briefs: [] }; })
       .then(function (briefData) { initNewsTicker(posts, briefData.briefs); });
+
+    initRecentCarousel(posts);
 
     // render file list
     var listEl = document.getElementById('fileList');
