@@ -412,7 +412,17 @@ function positionHero3DStage() {
   var innerRect = heroInner.getBoundingClientRect();
   if (!termRect.width || !termRect.height) return;
 
-  var size = termRect.width * 0.85;
+  // Based on whichever of the card's own dimensions is smaller, not just
+  // width -- the terminal is a wide, short card (title bar + a few text
+  // rows), and sizing purely off its width assumed it was roughly square.
+  // Wherever its height-to-width ratio comes out shorter than that (seen on
+  // a phone with "Request Desktop Site" toggled on, where the terminal
+  // renders at its full desktop-column width but not necessarily the same
+  // height a real desktop viewport gives it), a width-based square icon
+  // overflows past the card's top/bottom edges. Bounding by min() instead
+  // guarantees the icon always fits inside the card on both axes, on any
+  // device, without needing to special-case that render mode at all.
+  var size = Math.min(termRect.width, termRect.height) * 0.85;
   stage.style.width = size + 'px';
   stage.style.height = size + 'px';
   stage.style.left = (termRect.left - innerRect.left + (termRect.width - size) / 2) + 'px';
