@@ -228,22 +228,17 @@ html.force-mobile-hero3d .hero-3d-stage{position:relative; z-index:0; width:220p
 @media (prefers-reduced-motion: reduce){ .story-connector{transform:scaleY(1); transition:none;} .story-connector-dot{opacity:1; transition:none;} }
 
 /* hero terminal mock — CSS-only entrance, no JS needed.
-   No backdrop-filter here on purpose (previously blur(9px) saturate(180%)):
-   this card sits directly over the animating .hero-3d-stage WebGL canvas,
-   and live-blurring an animating canvas through backdrop-filter produced a
-   smeared, illegible artifact on real devices under certain viewport/DPR
-   combinations (confirmed on an actual phone) even though it looked fine
-   in most desktop testing -- an unreliable, hard-to-detect-for combination
-   to special-case around. The translucent gradient + border + shadow alone
-   already reads as a glass panel with the icon visible behind it, without
-   the risk of live-sampling a WebGL canvas every frame. saturate() alone
-   (no blur()) is still applied -- it's a plain per-pixel color transform,
-   not a neighborhood sample the way a gaussian blur is, so it doesn't
-   carry the same live-canvas-smearing risk, while still giving the panel
-   some of the richer "glass" quality blur() was contributing. Background
-   gradient opacity was also bumped up slightly to read as glass rather
-   than plain transparency now that blur isn't doing part of that visual
-   work.
+   backdrop-filter: blur(9px) saturate(180%) is back, restoring the frosted-
+   glass look from before the 3D hero existed -- this is a known, explicit
+   tradeoff. blur() live-samples whatever's rendered behind this card every
+   frame, and doing that against the animating .hero-3d-stage WebGL canvas
+   is what produced the smeared, illegible artifact on a real phone under
+   certain viewport/DPR combinations (which prompted removing it in the
+   first place). Restored at the user's explicit request, prioritizing the
+   original frosted look over that risk -- needs re-verification on a real
+   device; if the smear returns, that confirms blur() itself is the cause
+   and the fix has to live elsewhere (e.g. a lighter blur radius, or
+   skipping blur specifically on the narrow/high-DPR devices where it broke).
    translateZ(0) forces this card onto its own explicit GPU compositing
    layer -- on some real mobile GPUs, an animating WebGL <canvas> gets
    promoted to a hardware overlay surface that renders above every other
@@ -251,8 +246,9 @@ html.force-mobile-hero3d .hero-3d-stage{position:relative; z-index:0; width:220p
    WebGL rendering, only real hardware acceleration, which is why it only
    showed up on an actual phone). Putting the terminal card on an equally
    explicit layer keeps it competing for stacking order on the same terms
-   as the canvas instead of being silently overlaid by it. */
-.hero-terminal{position:relative; z-index:1; transform:translateZ(0); background:linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.035)); backdrop-filter:saturate(160%); -webkit-backdrop-filter:saturate(160%); border:1px solid rgba(255,255,255,0.16); border-radius:18px; overflow:hidden; box-shadow:0 40px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.1); opacity:0; animation:termIn .7s var(--ease) .15s forwards;}
+   as the canvas instead of being silently overlaid by it -- unrelated to
+   the blur/smear issue above, kept regardless of the blur decision. */
+.hero-terminal{position:relative; z-index:1; transform:translateZ(0); background:linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015)); backdrop-filter:blur(9px) saturate(180%); -webkit-backdrop-filter:blur(9px) saturate(180%); border:1px solid rgba(255,255,255,0.12); border-radius:18px; overflow:hidden; box-shadow:0 40px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08); opacity:0; animation:termIn .7s var(--ease) .15s forwards;}
 /* translateZ(0) is folded into both keyframe steps -- the animation's own
    transform property fully replaces the base rule's value while running,
    so without it here the layer promotion above would vanish the instant
