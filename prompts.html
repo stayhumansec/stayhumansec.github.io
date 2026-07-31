@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Library — stay(human).sec</title>
+<link rel="stylesheet" href="style.css?v=17">
+</head>
+<body>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<nav class="topnav" id="topnav">
+  <a href="index.html" class="nav-brand">
+    <span id="navIcon"></span>
+    <span>stay<span class="b-accent">(human)</span>.sec</span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html#posts">Posts</a>
+    <a href="news.html">News</a>
+    <a href="notes.html">on(my).mind</a>
+    <a href="toolkit.html">Toolkit</a>
+    <a href="tools.html">Utilities</a>
+    <a href="prompts.html">Prompt Library</a>
+    <a href="index.html#youcheck">You, Check.</a>
+    <a href="glossary.html">Glossary</a>
+  </div>
+  <div class="nav-right">
+    <button class="nav-prompt-btn" id="cmdkTrigger" aria-label="Open navigation and search">
+      <span class="prompt-lead">stay(human).sec:~$</span>
+      <span class="prompt-text">explore</span><span class="prompt-cursor">_</span>
+    </button>
+    <a href="#" class="nav-cta">Follow @stayhumansec</a>
+  </div>
+</nav>
+
+<div class="path-bar">
+  <div class="path-bar-inner">
+    <div class="path-bar-text"><a href="index.html">stay(human).sec</a>:~$ ls ./prompts</div>
+    <div class="win-controls"><span class="wc-min"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="19"/></svg></span><span class="wc-max"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg></span><span class="wc-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span></div>
+  </div>
+</div>
+
+<div class="prompt-disclaimer">
+  <div class="prompt-disclaimer-inner">
+    <span class="prompt-disclaimer-icon" aria-hidden="true">⚠</span>
+    <span><b>AI responses can be wrong or outdated.</b> For anything involving passwords, payments, or account access, always verify through the platform's real official support before acting on AI advice.</span>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">// PROMPT LIBRARY</div>
+    <h2 class="reveal">Don't know the fix? Ask AI the right way.</h2>
+    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:640px;">Same philosophy as Password Coach: we'd rather teach you the method than hand you a one-time answer. There are more specific situations than any one site can write a guide for — so instead, here's a library of pre-written prompts you can copy straight into ChatGPT, Claude, Gemini, or any other AI chat, and walk yourself through the situation step by step.</p>
+
+    <div class="tabs reveal" id="pillarTabs">
+      <button class="tab-btn active" data-pillar="all">All</button>
+    </div>
+
+    <div class="listing-label reveal" id="promptCount">loading prompts…</div>
+    <div class="prompt-grid" id="promptGrid">
+      <div class="skeleton">
+        <div class="skel-line" style="width:30%;"></div>
+        <div class="skel-line" style="width:80%; height:120px; border-radius:12px;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand-col">
+      <div class="footer-brand"><span id="footerIcon"></span><span>stay<span>(human)</span>.sec</span></div>
+      <p class="footer-tagline">Cybersecurity, AI, and privacy explained properly — one fact, one fix, every day.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="index.html#intro">What we are</a>
+      <a href="index.html#posts">All posts</a>
+      <a href="glossary.html">Glossary</a>
+    </div>
+    <div class="footer-col">
+      <h4>Follow</h4>
+      <div class="social-row">
+        <a href="#" title="Instagram" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+        </a>
+        <a href="#" title="Telegram" aria-label="Telegram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </a>
+        <a href="#" title="Email" aria-label="Email">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>new file added every day — <a href="#">follow @stayhumansec</a></div>
+    <div>stay(human).sec</div>
+  </div>
+</footer>
+
+<script src="site.js?v=20"></script>
+<script>
+  if (typeof brandIconSVG !== 'function') {
+    document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
+    throw new Error('site.js not loaded.');
+  }
+
+  document.getElementById('navIcon').innerHTML = brandIconSVG(26);
+  document.getElementById('footerIcon').innerHTML = brandIconSVG(24);
+  initBootSequence(initPageFade);
+  setupNavScroll();
+  initScrollProgress();
+  initCursorFX();
+  initCommandPalette();
+  initMobileNav();
+  highlightActiveNav();
+  initScrambleReveal('.section-eyebrow');
+
+  // Same 9 pillars/colors as CLAUDE.md's table -- kept here rather than in
+  // prompts.json per-entry (schema only carries the pillar slug + its own
+  // color) so the label text has one source of truth on this page.
+  var PILLARS = [
+    { slug: 'cyber-news', label: 'Cyber News' },
+    { slug: 'ai-news', label: 'AI News' },
+    { slug: 'stay-safe', label: 'Stay Safe' },
+    { slug: 'cyber-basics', label: 'Cyber Basics' },
+    { slug: 'ai-watch', label: 'AI Watch' },
+    { slug: 'myth-busting', label: 'Myth Busting' },
+    { slug: 'case-file', label: 'Case File' },
+    { slug: 'deep-dive', label: 'Deep Dive' },
+    { slug: 'story-time', label: 'Story Time' }
+  ];
+  var PILLAR_LABEL = {};
+  PILLARS.forEach(function (p) { PILLAR_LABEL[p.slug] = p.label; });
+
+  var tabsEl = document.getElementById('pillarTabs');
+  PILLARS.forEach(function (p) {
+    var b = document.createElement('button');
+    b.className = 'tab-btn';
+    b.setAttribute('data-pillar', p.slug);
+    b.textContent = p.label;
+    tabsEl.appendChild(b);
+  });
+
+  var gridEl = document.getElementById('promptGrid');
+  var countEl = document.getElementById('promptCount');
+  var currentPillar = 'all';
+  var entries = [];
+
+  function cardHTML(p, i) {
+    var label = PILLAR_LABEL[p.pillar] || p.pillar;
+    return '' +
+      '<div class="prompt-card reveal" data-pillar="' + escapeHTML(p.pillar) + '" style="--pillar-color:' + p.pillarColor + ';">' +
+        '<span class="pc-pillar">' + escapeHTML(label) + '</span>' +
+        '<h3>' + escapeHTML(p.title) + '</h3>' +
+        '<div class="prompt-code"><pre>' + escapeHTML(p.promptText) + '</pre></div>' +
+        '<button class="copy-md-btn" data-copy-idx="' + i + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg><span class="copy-label">Copy prompt</span></button>' +
+        '<div class="prompt-check"><span class="pchk-label">Double-check</span><p>' + escapeHTML(p.checkNote) + '</p></div>' +
+      '</div>';
+  }
+
+  function render() {
+    var visible = currentPillar === 'all' ? entries : entries.filter(function (p) { return p.pillar === currentPillar; });
+    countEl.textContent = 'total ' + visible.length + ' prompt' + (visible.length === 1 ? '' : 's');
+    if (!visible.length) {
+      gridEl.innerHTML = '<div class="prompt-empty">No prompts in this pillar yet — check back soon.</div>';
+      return;
+    }
+    gridEl.innerHTML = visible.map(cardHTML).join('');
+    gridEl.querySelectorAll('.copy-md-btn').forEach(function (btn) {
+      var entry = visible[Number(btn.getAttribute('data-copy-idx'))];
+      setupCopyButton(btn, function () { return entry.promptText; });
+    });
+    initScrollReveal({ stagger: true });
+  }
+
+  tabsEl.addEventListener('click', function (e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    tabsEl.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    currentPillar = btn.getAttribute('data-pillar');
+    render();
+  });
+
+  loadPrompts().then(function (data) {
+    entries = data.prompts || [];
+    render();
+  }).catch(function (err) {
+    countEl.textContent = 'Could not load prompts.json.';
+    gridEl.innerHTML = '<div class="prompt-empty">' + escapeHTML(err.message) + '</div>';
+  });
+</script>
+
+</body>
+</html>

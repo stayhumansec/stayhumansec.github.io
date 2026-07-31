@@ -14,6 +14,7 @@ password-coach.html   Password Coach — teaches the passphrase method, generate
 recovery-kit.html     2FA Recovery Kit Builder — printable "if I lose my phone" plan, localStorage only
 breach-check.html     Breach Exposure Check — k-anonymity password breach lookup via HaveIBeenPwned
 ask.html              Search the Archive — local keyword search over posts.json + glossary, optional AI answer
+prompts.html          Prompt Library — pre-written prompts to copy into any AI chat, see "Prompt Library" section below
 glossary.html         Full glossary, rendered from the GLOSSARY_TERMS array in site.js
 404.html              Not-found page, styled as a failed `cat` command
 style.css             All styles for every page (one shared stylesheet, no per-page CSS files)
@@ -23,6 +24,7 @@ notes.html             on(my).mind — freeform personal writing (technical/phil
 posts.json            All post content — the only content data file; index.html and post.html both read it
 newsBriefs.json       Bare curated headlines for the "Also today" strip on news.html (headline + source + link only, no write-up) — see AUTOMATED-WORKFLOW.md's "Also today" section
 notes.json             All on(my).mind content — deliberately thinner schema than posts.json, see "on(my).mind" section below
+prompts.json           All Prompt Library content — see "Prompt Library" section below
 ```
 
 There is no templating engine or bundler. Every HTML file is hand-written, loads `style.css` and `site.js` directly via `<link>`/`<script>` tags, and does its own DOM rendering inline in a `<script>` block at the bottom of the file. `index.html` and `post.html` both fail loudly (visible error message) if `site.js` didn't load or `posts.json` didn't fetch — this is deliberate, since `fetch()` against a local `file://` path is blocked by browsers, and that's the #1 way people break this site testing it locally. Use a local static server (e.g. `python3 -m http.server`) when developing.
@@ -159,6 +161,19 @@ Every piece of content — carousel, article, or animated explainer script — g
 - Reread the finished piece once specifically hunting for tone that's drifted dry or instructional instead of staying "one person explaining this to a friend" — this can happen even when every individual sentence is factually fine.
 
 This audit was first run in full against `posts.json` and the carousel/social copy in July 2026 — see "Content Balance" below for the topic-coverage half of that audit, and treat both halves (balance and writing quality) as a standard to re-check periodically, not a single fix.
+
+## Prompt Library (`prompts.html` / `prompts.json`)
+
+Extends the same "teach the method, don't just hand over the answer" philosophy behind Password Coach into a new format: rather than writing a guide for every possible situation, this teaches people how to get reliable help from an AI chat (ChatGPT, Claude, Gemini, etc.) for situations too specific or too numerous for the site to cover directly — e.g. "recover my Gmail account," "check what an app permission actually does," "explain this privacy policy clause to me." Each entry is a pre-written prompt someone copies and pastes into whatever AI chat they already use, then works through interactively.
+
+**Schema** (`prompts.json`, repo root): `{ "prompts": [ { slug, title, pillar, pillarColor, promptText, checkNote }, ... ] }`.
+
+- `pillar`/`pillarColor` reuse the exact 9-pillar slugs/colors from the table above (`prompts.html` derives the human-readable label from the slug locally; the schema itself doesn't duplicate a `pillarLabel` field the way `posts.json` does).
+- `promptText` is the literal text copied to the clipboard when someone clicks "Copy prompt" — write it as a complete, self-contained prompt (it should tell the AI what role to play and to ask the person clarifying questions about their specific situation, not assume the AI already has context it doesn't).
+
+**`checkNote` is mandatory on every single entry — never optional, never skipped.** This is where the actual safety guidance for that specific prompt lives: what never to paste into the AI chat, or what to verify through an official/authoritative source before acting on what the AI says. For an account-recovery prompt, for example, that's something like "never share an actual OTP, verification code, or password with an AI chat — no legitimate recovery process needs that, and no prompt on this page should ever ask you to paste one in." A prompt entry without a real, specific `checkNote` is not ready to ship, the same way a news-pillar post without `sourceUrl`/`sourceName`/`date` isn't ready to ship (see the Automated Post Generation Workflow's verification checklist for that precedent).
+
+This is separate from — and doesn't replace — the page-level disclaimer at the top of `prompts.html` ("AI responses can be wrong or outdated. For anything involving passwords, payments, or account access, always verify through the platform's real official support before acting on AI advice."), which applies to every entry generally. `checkNote` is the specific risk for *that* prompt; the banner is the general rule for the whole page. Keep both — don't fold one into the other.
 
 ## Content conventions
 
