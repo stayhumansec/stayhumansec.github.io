@@ -3,12 +3,17 @@
 
 /**
  * Wires up scroll-reveal animation on all elements with the .reveal class.
+ * Bidirectional: an element fades to full opacity while in view, then fades
+ * back down to a dim idle state once it's scrolled past -- above the
+ * viewport on the way down, below it on the way up -- and fades back in if
+ * you scroll to it again. Elements are never unobserved, since re-crossing
+ * the threshold in either direction needs to keep firing.
  * Works identically on touch scroll (phone/tablet) and mouse/trackpad scroll (desktop)
  * because IntersectionObserver reacts to viewport position, not input method.
  * Respects prefers-reduced-motion by skipping the animation entirely.
  *
  * @param {Object} [opts]
- * @param {boolean} [opts.stagger=false] - cascade elements within the same parent container
+ * @param {boolean} [opts.stagger=false] - cascade elements within the same parent container (fade-in only)
  * @param {number} [opts.delayStep=70] - ms between staggered elements
  */
 function initScrollReveal(opts) {
@@ -24,21 +29,34 @@ function initScrollReveal(opts) {
     return;
   }
 
-  var counters = new Map();
+  // Delay is assigned once per element up front, not incremented on every
+  // intersection -- since elements can now re-enter view repeatedly (fade
+  // back in after having faded out), an ever-growing per-scroll counter
+  // would make repeat reveals take longer and longer each time.
+  var delayMap = new WeakMap();
+  if (stagger) {
+    var counters = new Map();
+    els.forEach(function (el) {
+      var parentKey = el.parentElement;
+      var n = counters.get(parentKey) || 0;
+      counters.set(parentKey, n + 1);
+      delayMap.set(el, n * delayStep);
+    });
+  }
+
+  var pendingTimers = new WeakMap();
 
   var observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
+      var el = entry.target;
+      var existingTimer = pendingTimers.get(el);
+      if (existingTimer) clearTimeout(existingTimer);
+
       if (entry.isIntersecting) {
-        var el = entry.target;
-        var delay = 0;
-        if (stagger) {
-          var parentKey = el.parentElement;
-          var n = counters.get(parentKey) || 0;
-          counters.set(parentKey, n + 1);
-          delay = n * delayStep;
-        }
-        setTimeout(function () { el.classList.add('is-visible'); }, delay);
-        observer.unobserve(el);
+        var delay = stagger ? (delayMap.get(el) || 0) : 0;
+        pendingTimers.set(el, setTimeout(function () { el.classList.add('is-visible'); }, delay));
+      } else {
+        el.classList.remove('is-visible');
       }
     });
   }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });

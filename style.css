@@ -622,10 +622,17 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 @keyframes pulse{0%,100%{opacity:0.4;} 50%{opacity:0.8;}}
 
 /* ============ SCROLL REVEAL ============ */
-.reveal{opacity:0; transform:translateY(24px); transition:opacity .7s var(--ease), transform .7s var(--ease);}
-.reveal.is-visible{opacity:var(--target-opacity, 1); transform:translateY(0);}
-.brand-icon.reveal{transform:scale(0.92);}
-.brand-icon.reveal.is-visible{transform:scale(1);}
+/* Bidirectional: sections don't just fade in once and stay -- they fade
+   back down to a dim "ghost" state once scrolled past, in either
+   direction (above on the way down, below on the way up), then fade
+   back to full opacity if you scroll back to them. initScrollReveal()
+   toggles .is-visible on/off as each element crosses the IntersectionObserver
+   threshold rather than unobserving after the first reveal, which is what
+   makes the fade-out-when-passed half of this work. Pure opacity (no
+   translateY) so re-dimming already-read content doesn't also shove it
+   around vertically. */
+.reveal{opacity:0.18; transition:opacity .7s var(--ease);}
+.reveal.is-visible{opacity:var(--target-opacity, 1);}
 
 @media (prefers-reduced-motion: reduce){
   .reveal{opacity:1 !important; transform:none !important; transition:none !important;}
