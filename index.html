@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="view-transition" content="same-origin">
 <title>stay(human).sec — cybersecurity, AI & privacy, explained simply</title>
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
 
@@ -220,7 +220,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=21"></script>
+<script src="site.js?v=22"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML =
@@ -325,13 +325,14 @@
       updateDots();
       var item = questions[current];
       stageEl.innerHTML =
-        '<div class="quiz-card reveal is-visible">' +
+        '<div class="quiz-card reveal">' +
           '<div class="quiz-q">' + escapeHTML(item.question) + '</div>' +
           '<div class="quiz-options">' +
             '<button class="quiz-opt" data-risky="true">' + escapeHTML(item.riskyLabel) + '</button>' +
             '<button class="quiz-opt" data-risky="false">' + escapeHTML(item.safeLabel) + '</button>' +
           '</div>' +
         '</div>';
+      initScrollReveal();
 
       stageEl.querySelectorAll('.quiz-opt').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -374,12 +375,13 @@
       }
 
       stageEl.innerHTML =
-        '<div class="quiz-card reveal is-visible">' +
+        '<div class="quiz-card reveal">' +
           '<div class="quiz-result-badge" style="background:' + bg + '; color:' + color + '; border:1px solid ' + color + ';">' + escapeHTML(badge) + '</div>' +
           '<div class="quiz-result-title">' + escapeHTML(title) + '</div>' +
           '<p class="quiz-result-desc">' + escapeHTML(desc) + '</p>' +
           '<div class="quiz-recs" id="ycRecs"></div>' +
         '</div>';
+      initScrollReveal();
 
       var recsEl = document.getElementById('ycRecs');
       if (recs.length && recsEl) {

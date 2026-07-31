@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2FA Recovery Kit Builder — stay(human).sec</title>
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=18">
 <style>
   @media print {
     .topnav, .path-bar, .site-footer, .scroll-progress, #rkForm, #rkIntro, #rkEducation, .btn-secondary { display:none !important; }
@@ -62,7 +62,7 @@
     </div>
 
     <div id="rkForm" style="max-width:860px; margin-top:32px;">
-      <div class="quiz-card reveal is-visible" style="text-align:left; max-width:none;">
+      <div class="quiz-card reveal" style="text-align:left; max-width:none;">
         <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:12px; margin-bottom:12px;">
           <input type="text" id="rkAccount" placeholder="Account name (e.g. Gmail, Bank of America)" style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:11px 14px; color:var(--cream); font-family:'Poppins',sans-serif; font-size:14px;" />
           <select id="rkMethod" style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:11px 14px; color:var(--cream); font-family:'Poppins',sans-serif; font-size:14px;">
@@ -88,12 +88,12 @@
     </div>
 
     <div id="rkEducation" style="max-width:860px; margin-top:56px;">
-      <div class="section-eyebrow reveal is-visible">// HOW TO ACTUALLY USE THIS</div>
-      <h2 class="reveal is-visible" style="margin-bottom:22px;">A recovery kit only works if it's actually recoverable.</h2>
-      <div class="step reveal is-visible"><p><b style="color:var(--cream);">Never store this on the same phone it's meant to recover</b></p><p>If your phone is what's lost, stolen, or broken, a note saved on it doesn't help. Print this, or save it somewhere you can reach from a different device — a password manager's secure notes, a printed copy in a drawer, or with someone you trust.</p></div>
-      <div class="step reveal is-visible"><p><b style="color:var(--cream);">Never write the actual codes here</b></p><p>This tool is for tracking <i>which method</i> recovers each account, not the backup codes themselves. Keep the real codes wherever your password manager or the account's own instructions recommend.</p></div>
-      <div class="step reveal is-visible"><p><b style="color:var(--cream);">Start with the accounts that matter most</b></p><p>Your primary email first — it can usually reset everything else. Then banking, then anything with 2FA you'd genuinely be stuck without.</p></div>
-      <div class="step reveal is-visible"><p><b style="color:var(--cream);">Everything stays in your browser</b></p><p>This list is saved to this browser's local storage only — nothing is sent anywhere. Clearing your browser data will clear this list too, so print or export it once it's useful.</p></div>
+      <div class="section-eyebrow reveal">// HOW TO ACTUALLY USE THIS</div>
+      <h2 class="reveal" style="margin-bottom:22px;">A recovery kit only works if it's actually recoverable.</h2>
+      <div class="step reveal"><p><b style="color:var(--cream);">Never store this on the same phone it's meant to recover</b></p><p>If your phone is what's lost, stolen, or broken, a note saved on it doesn't help. Print this, or save it somewhere you can reach from a different device — a password manager's secure notes, a printed copy in a drawer, or with someone you trust.</p></div>
+      <div class="step reveal"><p><b style="color:var(--cream);">Never write the actual codes here</b></p><p>This tool is for tracking <i>which method</i> recovers each account, not the backup codes themselves. Keep the real codes wherever your password manager or the account's own instructions recommend.</p></div>
+      <div class="step reveal"><p><b style="color:var(--cream);">Start with the accounts that matter most</b></p><p>Your primary email first — it can usually reset everything else. Then banking, then anything with 2FA you'd genuinely be stuck without.</p></div>
+      <div class="step reveal"><p><b style="color:var(--cream);">Everything stays in your browser</b></p><p>This list is saved to this browser's local storage only — nothing is sent anywhere. Clearing your browser data will clear this list too, so print or export it once it's useful.</p></div>
     </div>
   </div>
 </section>
@@ -131,7 +131,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=21"></script>
+<script src="site.js?v=22"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
@@ -148,7 +148,7 @@
   initMobileNav();
   highlightActiveNav();
   initScrambleReveal('.section-eyebrow');
-  initScrollReveal();
+  initScrollReveal({ stagger: true });
 
   var STORAGE_KEY = 'shs_recovery_kit';
 

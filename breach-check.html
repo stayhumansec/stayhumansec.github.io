@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Breach Exposure Check — stay(human).sec</title>
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
 
@@ -93,7 +93,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=21"></script>
+<script src="site.js?v=22"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
@@ -151,17 +151,18 @@
       var count = await checkBreach(password);
       if (count > 0) {
         resultsEl.innerHTML =
-          '<div class="warn-box reveal is-visible"><div class="label">⚠ FOUND IN ' + fmtCount(count) + ' BREACH' + (count === 1 ? '' : 'ES') + '</div>' +
+          '<div class="warn-box reveal"><div class="label">⚠ FOUND IN ' + fmtCount(count) + ' BREACH' + (count === 1 ? '' : 'ES') + '</div>' +
           '<p>This exact password has shown up in known data breaches ' + fmtCount(count) + ' time' + (count === 1 ? '' : 's') + '. If you use it anywhere, change it now — attackers run lists of exactly these leaked passwords against other sites automatically. Try the <a href="password-coach.html" style="color:var(--orange);">Password Coach</a> for a real replacement.</p></div>';
       } else {
         resultsEl.innerHTML =
-          '<div class="quiz-result-badge" style="background:rgba(63,207,142,0.15); color:var(--green); border:1px solid var(--green);">NOT FOUND</div>' +
-          '<p style="color:var(--cream-dim); font-size:14.5px; margin-top:14px;">This password wasn\'t found in the breach database checked. That\'s reassuring, but it\'s not a strength score — a password can be un-breached and still be weak or reused. Worth a spin through the <a href="password-coach.html" style="color:var(--orange);">Password Coach</a> either way.</p>';
+          '<div class="reveal"><div class="quiz-result-badge" style="background:rgba(63,207,142,0.15); color:var(--green); border:1px solid var(--green);">NOT FOUND</div>' +
+          '<p style="color:var(--cream-dim); font-size:14.5px; margin-top:14px;">This password wasn\'t found in the breach database checked. That\'s reassuring, but it\'s not a strength score — a password can be un-breached and still be weak or reused. Worth a spin through the <a href="password-coach.html" style="color:var(--orange);">Password Coach</a> either way.</p></div>';
       }
     } catch (err) {
       resultsEl.innerHTML =
-        '<div class="warn-box reveal is-visible" style="border-color:var(--pink);"><div class="label" style="color:var(--pink);">⚠ COULDN\'T COMPLETE THE CHECK</div><p>' + escapeHTML(err.message) + ' — your password was never sent anywhere in this failed attempt either way.</p></div>';
+        '<div class="warn-box reveal" style="border-color:var(--pink);"><div class="label" style="color:var(--pink);">⚠ COULDN\'T COMPLETE THE CHECK</div><p>' + escapeHTML(err.message) + ' — your password was never sent anywhere in this failed attempt either way.</p></div>';
     }
+    initScrollReveal();
     input.value = '';
   }
 

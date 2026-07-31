@@ -172,14 +172,22 @@ body::after{
    <div id="heroIcon"> SVG icon (.hero-logo) is the default state regardless
    and is never hidden by this, so nothing here can leave the hero blank.
    Sits behind .hero-inner (z-index 0 vs 2) so the wordmark/CTA text and the
-   terminal mock both stay perfectly readable on top of it. Desktop-only by
-   design — same reasoning as .cursor-glow below: no hover concept on touch,
-   and it's exactly the audience most at risk from an unnecessary WebGL
-   payload/perf hit, so it's skipped outright rather than attempted. */
+   terminal mock both stay perfectly readable on top of it. Gated on real
+   capability (WebGL support + a live frame-rate sample) in initHero3D(),
+   not on pointer type or viewport width -- a capable phone gets to try it
+   too, same as desktop. */
 .hero-3d-stage{position:absolute; z-index:0; top:50%; right:10px; transform:translateY(-50%); width:400px; height:400px; opacity:0; transition:opacity 1.1s ease; pointer-events:none;}
 .hero-3d-stage.is-ready{opacity:1;}
 .hero-3d-stage canvas{width:100%; height:100%; display:block;}
-@media (max-width:960px), (pointer:coarse), (prefers-reduced-motion: reduce){ .hero-3d-stage{display:none;} }
+/* Below 960px the grid collapses to a single stacked column (see
+   .hero-inner's own max-width:960px rule), so absolute top/bottom
+   positioning has nothing meaningful to pin against -- it was landing
+   behind .hero-terminal's opaque glass card (z-index 1 vs this z-index 0)
+   and never actually visible. Switching to position:relative lets it take
+   its natural place in the stack, between the hero text and the terminal
+   card, instead of overlapping either. */
+@media (max-width:960px){ .hero-3d-stage{position:relative; z-index:1; width:220px; height:220px; top:auto; right:auto; left:auto; transform:none; margin:4px auto 0;} }
+@media (prefers-reduced-motion: reduce){ .hero-3d-stage{display:none;} }
 
 /* recent-files infinite carousel — content is rendered twice back-to-back
    by initRecentCarousel() and this keyframe scrolls exactly 50% of the
