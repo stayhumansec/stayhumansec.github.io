@@ -394,6 +394,18 @@ function initHero3D() {
   var stage = document.getElementById('hero3dStage');
   if (!stage) return;
 
+  // "Request Desktop Site" spoofs the reported layout viewport (window.innerWidth)
+  // so our >960px CSS branch kicks in, but it can't spoof window.screen.width --
+  // the real physical screen. On an actual narrow phone forced into that wide
+  // desktop layout, the 400px absolute-positioned stage sitting behind the
+  // terminal card's backdrop-filter blur renders as a smeared, illegible blob
+  // (confirmed on a real device) even though the exact same composition is
+  // crisp on an actual desktop screen. Tagging the real hardware here lets
+  // style.css apply the compact mobile layout regardless of what viewport
+  // width the page currently claims to have.
+  var isPhysicallyNarrow = Math.min(window.screen.width || 9999, window.screen.height || 9999) <= 600;
+  if (isPhysicallyNarrow) document.documentElement.classList.add('force-mobile-hero3d');
+
   var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReduced) return;
 
