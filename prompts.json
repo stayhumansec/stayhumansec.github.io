@@ -1,12 +1,84 @@
 {
   "prompts": [
     {
-      "slug": "placeholder-example-entry",
-      "title": "PLACEHOLDER — example entry (replace me)",
+      "slug": "recover-locked-email-account",
+      "title": "Recover a locked email account",
+      "pillar": "stay-safe",
+      "pillarColor": "var(--orange)",
+      "promptText": "Act as a patient, step-by-step tech support guide helping me recover access to an email account I'm locked out of. Ask me one question at a time: which email provider it is (Gmail, Outlook, Yahoo, etc.), what specifically happens when I try to log in (wrong password error, 2FA code not arriving, account disabled notice, etc.), and what recovery options I still have access to (a backup email, a phone number, a recovery codes list). Based on my answers, walk me through the exact official recovery steps for that provider, one at a time, waiting for me to confirm each step worked before moving to the next. If at any point the official process asks for something you don't need to see, tell me to enter it directly on the provider's real site, not here in this chat.",
+      "checkNote": "Never type an actual password, one-time verification code, or recovery code into this chat — no legitimate account recovery process needs an AI to see it, and doing so could hand your account to whoever might be reading this conversation. Only ever enter those directly on the provider's real login/recovery page."
+    },
+    {
+      "slug": "check-app-permission",
+      "title": "Check what a phone app permission actually does",
       "pillar": "cyber-basics",
       "pillarColor": "var(--green)",
-      "promptText": "This is a placeholder prompt so the Prompt Library page layout can be reviewed before real content is written. Replace promptText with the actual prompt someone should copy and paste into an AI chat. Keep it specific, step-by-step, and written so the AI asks the person clarifying questions about their own situation rather than guessing.",
-      "checkNote": "This is a placeholder checkNote. Every real entry must include one — this is where the actual safety guidance for that specific prompt lives, e.g. what never to paste into the AI chat, or what to verify through an official source before acting."
+      "promptText": "I'm about to grant a permission to an app on my phone and want to understand what it actually allows before I tap 'Allow'. I'll tell you the app name, the permission it's asking for (e.g. camera, contacts, location 'always' vs 'while using'), and what the app is supposed to do. Explain in plain language exactly what that permission lets the app access, whether it could keep working normally if I said no or picked a more limited option instead, and anything unusual about this specific app asking for this specific permission that I should be cautious about.",
+      "checkNote": "An AI can explain what a permission generally does on your phone's operating system, but it doesn't know this specific app's actual behavior or reputation — cross-check anything that surprises you against the app's real reviews or its listing on your phone's official app store before deciding."
+    },
+    {
+      "slug": "decode-privacy-policy-clause",
+      "title": "Decode a confusing privacy policy clause",
+      "pillar": "stay-safe",
+      "pillarColor": "var(--orange)",
+      "promptText": "I'm going to paste a specific clause from a privacy policy or terms of service that I don't fully understand. Explain what it actually means in plain language, what data or rights it covers, and whether it's a standard/common clause or something unusual worth being more cautious about. Ask me for more surrounding context from the document if the clause references defined terms you don't have in front of you.",
+      "checkNote": "This only explains what the text says — it can't confirm the company actually follows its own policy in practice. For anything involving deleting your data or exercising a legal privacy right, use the company's real official process (usually linked in the same policy), not this chat, to actually act on it."
+    },
+    {
+      "slug": "set-up-2fa-hidden-setting",
+      "title": "Find and turn on 2FA when it's hard to locate",
+      "pillar": "cyber-basics",
+      "pillarColor": "var(--green)",
+      "promptText": "Help me find and turn on two-factor authentication (2FA) for an account where the setting isn't obvious. I'll tell you the app or website name and, if I know it, roughly where I've already looked. Ask me to describe what I currently see in the account's settings menu, then guide me toward the right section step by step based on what I describe, rather than assuming a menu layout that might be outdated.",
+      "checkNote": "Menu layouts change often and an AI's knowledge of a specific app's current settings screen can be out of date — if its instructions don't match what you're actually seeing, stop and check that platform's own official help/support pages instead of guessing further."
+    },
+    {
+      "slug": "what-ai-chatbot-keeps",
+      "title": "Understand what an AI chatbot keeps from your conversations",
+      "pillar": "ai-watch",
+      "pillarColor": "var(--violet)",
+      "promptText": "I want to understand what happens to my conversations with you or another AI chatbot after I send them. Explain, as accurately as you can, whether conversations are used to train future models by default, how to find and turn off that setting if it exists, whether conversations are stored and for how long, and what 'deleting' a conversation actually does versus what it doesn't do. Be explicit about where your knowledge might be outdated and I should check the platform's current privacy settings directly instead.",
+      "checkNote": "AI companies change their data-retention and training policies over time, and an AI often can't reliably describe its own current settings. Always confirm the actual current answer in that platform's own privacy settings page or privacy policy, not just from what it tells you about itself in chat."
+    },
+    {
+      "slug": "myth-check-privacy-habit",
+      "title": "Fact-check a privacy or security 'tip' before trusting it",
+      "pillar": "myth-busting",
+      "pillarColor": "var(--gold)",
+      "promptText": "I heard a security or privacy tip and I'm not sure if it's actually true or just an old myth. I'll describe the tip (for example, something about incognito mode, VPNs, antivirus software, or phone settings). Tell me honestly whether it's accurate, outdated, a partial truth that's missing important context, or a myth — and explain what's actually true instead, in plain language.",
+      "checkNote": "Ask it to explain its reasoning, not just give a verdict — and if the tip involves a specific product or current feature (an app setting, a browser feature), verify against that product's own current documentation, since an AI's knowledge can lag behind recent changes."
+    },
+    {
+      "slug": "after-breach-notification",
+      "title": "What to actually do after a data breach notification",
+      "pillar": "case-file",
+      "pillarColor": "var(--pink)",
+      "promptText": "I just received an email or notice saying my data was involved in a data breach. Ask me which company it was, what kind of data was reportedly exposed (password, card number, email, physical address, government ID, etc.), and whether I've reused that account's password anywhere else. Based on my answers, give me a prioritized, step-by-step list of exactly what to do first, second, and third — not just a generic 'change your password' response.",
+      "checkNote": "Before doing anything the AI suggests, confirm the breach notice itself is real and not a phishing email impersonating one — check by going directly to the company's real website (typed manually, not a link in the email) rather than clicking anything in the notification."
+    },
+    {
+      "slug": "build-a-real-passphrase",
+      "title": "Build a genuinely strong, memorable passphrase",
+      "pillar": "cyber-basics",
+      "pillarColor": "var(--green)",
+      "promptText": "Teach me the method for building a strong, memorable passphrase myself, rather than generating one for me to copy. Explain the random-word passphrase approach (length beats complexity, use several unrelated random words, add a memorable personal twist), and then help me practice by having me come up with my own words while you tell me if the result is long and random enough.",
+      "checkNote": "Never use a password or passphrase an AI generated for you and displayed on screen — even a good one is now sitting in that chat's history. Use the method to build your own from words you pick yourself, and store the final result only in a real password manager, not in this conversation."
+    },
+    {
+      "slug": "opt-out-ai-training",
+      "title": "Find out how to opt out of a platform using your data for AI training",
+      "pillar": "ai-watch",
+      "pillarColor": "var(--violet)",
+      "promptText": "I want to find out whether a specific app or platform I use is allowed to use my content (photos, messages, documents, etc.) to train its AI features, and how to opt out if possible. I'll tell you the platform name. Walk me through what to look for in its settings (common places these toggles hide: privacy settings, AI features, data settings) and what questions to ask its support if I can't find a clear answer.",
+      "checkNote": "Whether opting out actually stops training on data already collected (versus only future data) varies by company and changes over time — treat the AI's answer as a starting point for where to look, and confirm the real current policy on that platform's own privacy or help pages."
+    },
+    {
+      "slug": "is-this-link-safe-to-click",
+      "title": "Decide whether a suspicious link or message is safe",
+      "pillar": "stay-safe",
+      "pillarColor": "var(--orange)",
+      "promptText": "I received a message or email with a link and I'm not sure if it's legitimate. Without me clicking the link, I'll describe exactly what the message says, who it claims to be from, and the visible link text or domain if I can see it without clicking. Walk me through the red flags to check (urgency/pressure language, mismatched sender domain, unexpected request) and help me figure out the safest way to verify it — usually by going directly to the real organization's site or app myself, not through the link.",
+      "checkNote": "Never paste the actual link into the chat expecting the AI to safely 'check' it for you — some AI tools may fetch the URL, which is not the same as a security scan and doesn't guarantee safety either way. Describe it in words instead, and when in doubt, don't click it — go to the real organization's official site or app directly."
     }
   ]
 }

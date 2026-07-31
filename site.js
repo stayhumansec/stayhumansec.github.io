@@ -404,6 +404,7 @@ function initCommandPalette() {
   var trigger = document.getElementById('cmdkTrigger');
   var staticPages = [
     { title: 'Home', sub: 'index.html', href: 'index.html', color: 'var(--orange)' },
+    { title: 'Posts', sub: 'posts.html — every post, browsable and filterable', href: 'posts.html', color: 'var(--green)' },
     { title: 'News', sub: 'news.html — Cyber News + AI News, straight from the source', href: 'news.html', color: 'var(--blue)' },
     { title: 'on(my).mind', sub: 'notes.html — freeform, personal writing', href: 'notes.html', color: 'var(--violet)' },
     { title: 'You, Check.', sub: 'index.html#youcheck — the quick gut-check quiz', href: 'index.html#youcheck', color: 'var(--pink)' },

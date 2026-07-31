@@ -16,7 +16,7 @@
     <span>stay<span class="b-accent">(human)</span>.sec</span>
   </a>
   <div class="nav-links">
-    <a href="index.html#posts">Posts</a>
+    <a href="posts.html">Posts</a>
     <a href="news.html">News</a>
     <a href="notes.html">on(my).mind</a>
     <a href="toolkit.html">Toolkit</a>
@@ -54,10 +54,6 @@
     <h2 class="reveal">Don't know the fix? Ask AI the right way.</h2>
     <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:640px;">Same philosophy as Password Coach: we'd rather teach you the method than hand you a one-time answer. There are more specific situations than any one site can write a guide for — so instead, here's a library of pre-written prompts you can copy straight into ChatGPT, Claude, Gemini, or any other AI chat, and walk yourself through the situation step by step.</p>
 
-    <div class="tabs reveal" id="pillarTabs">
-      <button class="tab-btn active" data-pillar="all">All</button>
-    </div>
-
     <div class="listing-label reveal" id="promptCount">loading prompts…</div>
     <div class="prompt-grid" id="promptGrid">
       <div class="skeleton">
@@ -77,7 +73,7 @@
     <div class="footer-col">
       <h4>Explore</h4>
       <a href="index.html#intro">What we are</a>
-      <a href="index.html#posts">All posts</a>
+      <a href="posts.html">All posts</a>
       <a href="glossary.html">Glossary</a>
     </div>
     <div class="footer-col">
@@ -101,7 +97,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=20"></script>
+<script src="site.js?v=21"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
@@ -121,33 +117,23 @@
 
   // Same 9 pillars/colors as CLAUDE.md's table -- kept here rather than in
   // prompts.json per-entry (schema only carries the pillar slug + its own
-  // color) so the label text has one source of truth on this page.
-  var PILLARS = [
-    { slug: 'cyber-news', label: 'Cyber News' },
-    { slug: 'ai-news', label: 'AI News' },
-    { slug: 'stay-safe', label: 'Stay Safe' },
-    { slug: 'cyber-basics', label: 'Cyber Basics' },
-    { slug: 'ai-watch', label: 'AI Watch' },
-    { slug: 'myth-busting', label: 'Myth Busting' },
-    { slug: 'case-file', label: 'Case File' },
-    { slug: 'deep-dive', label: 'Deep Dive' },
-    { slug: 'story-time', label: 'Story Time' }
-  ];
-  var PILLAR_LABEL = {};
-  PILLARS.forEach(function (p) { PILLAR_LABEL[p.slug] = p.label; });
-
-  var tabsEl = document.getElementById('pillarTabs');
-  PILLARS.forEach(function (p) {
-    var b = document.createElement('button');
-    b.className = 'tab-btn';
-    b.setAttribute('data-pillar', p.slug);
-    b.textContent = p.label;
-    tabsEl.appendChild(b);
-  });
+  // color) so the label text has one source of truth on this page. No
+  // filter tabs here (removed per request) -- with a short, fixed-size
+  // library, one flat list is easier to scan than a tab bar.
+  var PILLAR_LABEL = {
+    'cyber-news': 'Cyber News',
+    'ai-news': 'AI News',
+    'stay-safe': 'Stay Safe',
+    'cyber-basics': 'Cyber Basics',
+    'ai-watch': 'AI Watch',
+    'myth-busting': 'Myth Busting',
+    'case-file': 'Case File',
+    'deep-dive': 'Deep Dive',
+    'story-time': 'Story Time'
+  };
 
   var gridEl = document.getElementById('promptGrid');
   var countEl = document.getElementById('promptCount');
-  var currentPillar = 'all';
   var entries = [];
 
   function cardHTML(p, i) {
@@ -163,28 +149,18 @@
   }
 
   function render() {
-    var visible = currentPillar === 'all' ? entries : entries.filter(function (p) { return p.pillar === currentPillar; });
-    countEl.textContent = 'total ' + visible.length + ' prompt' + (visible.length === 1 ? '' : 's');
-    if (!visible.length) {
-      gridEl.innerHTML = '<div class="prompt-empty">No prompts in this pillar yet — check back soon.</div>';
+    countEl.textContent = 'total ' + entries.length + ' prompt' + (entries.length === 1 ? '' : 's');
+    if (!entries.length) {
+      gridEl.innerHTML = '<div class="prompt-empty">No prompts yet — check back soon.</div>';
       return;
     }
-    gridEl.innerHTML = visible.map(cardHTML).join('');
+    gridEl.innerHTML = entries.map(cardHTML).join('');
     gridEl.querySelectorAll('.copy-md-btn').forEach(function (btn) {
-      var entry = visible[Number(btn.getAttribute('data-copy-idx'))];
+      var entry = entries[Number(btn.getAttribute('data-copy-idx'))];
       setupCopyButton(btn, function () { return entry.promptText; });
     });
     initScrollReveal({ stagger: true });
   }
-
-  tabsEl.addEventListener('click', function (e) {
-    var btn = e.target.closest('.tab-btn');
-    if (!btn) return;
-    tabsEl.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-    currentPillar = btn.getAttribute('data-pillar');
-    render();
-  });
 
   loadPrompts().then(function (data) {
     entries = data.prompts || [];
