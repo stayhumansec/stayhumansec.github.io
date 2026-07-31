@@ -17,7 +17,7 @@
     <span>stay<span class="b-accent">(human)</span>.sec</span>
   </a>
   <div class="nav-links">
-    <a href="#posts">Posts</a>
+    <a href="posts.html">Posts</a>
     <a href="news.html">News</a>
     <a href="notes.html">on(my).mind</a>
     <a href="toolkit.html">Toolkit</a>
@@ -44,7 +44,7 @@
       <div class="hero-tagline reveal">USE <b>AI</b>. REMAIN <b>HUMAN</b>. <b>PRIVACY</b> MATTERS.</div>
       <p class="hero-sub reveal">The full write-up for every post — real steps, not just a 60-second summary. If the carousel made you curious, this is where it actually explains itself.</p>
       <div class="hero-cta-row reveal">
-        <a href="#posts" class="btn-primary">Start reading →</a>
+        <a href="posts.html" class="btn-primary">Start reading →</a>
         <a href="#pillars" class="btn-secondary">What we're building</a>
       </div>
       <p class="reveal" style="margin-top:18px; font-size:13px; color:var(--cream-dim); font-family:'JetBrains Mono', monospace;">No jargon. No fear-mongering. Just what actually helps.</p>
@@ -93,7 +93,7 @@
         <p>Every piece of jargon on this site, explained like a friend would.</p>
         <span class="router-arrow">→</span>
       </a>
-      <a href="#posts" class="router-card declass" style="--router-color:var(--green);">
+      <a href="posts.html" class="router-card declass" style="--router-color:var(--green);">
         <div class="router-icon" aria-hidden="true">🗂️</div>
         <h3>Show me the files</h3>
         <p>Browse every post, filterable by how often it drops.</p>
@@ -181,27 +181,6 @@
   </div>
 </section>
 
-<section class="section" id="posts">
-  <div class="section-inner">
-    <div class="section-eyebrow reveal">// FILE SYSTEM</div>
-    <h2 class="reveal">Every file, browsable.</h2>
-    <div class="tabs reveal" id="tabBar">
-      <button class="tab-btn active" data-tab="all">All posts</button>
-      <button class="tab-btn" data-tab="daily">Daily</button>
-      <button class="tab-btn" data-tab="weekly">Weekly</button>
-      <button class="tab-btn" data-tab="occasional">Occasional</button>
-    </div>
-
-    <div class="listing-label reveal" id="listingCount">loading files…</div>
-    <div class="listing-grid" id="fileList">
-      <div class="skeleton">
-        <div class="skel-line" style="width:40%;"></div>
-        <div class="skel-line" style="width:70%; height:56px; border-radius:14px;"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <section class="recent-carousel-section" aria-label="Recently added files">
   <div class="carousel-viewport">
     <div class="carousel-track" id="recentCarouselTrack" aria-hidden="true"></div>
@@ -218,7 +197,7 @@
       <h4>Explore</h4>
       <a href="#intro">What we are</a>
       <a href="#pillars">Content pillars</a>
-      <a href="#posts">All posts</a>
+      <a href="posts.html">All posts</a>
     </div>
     <div class="footer-col">
       <h4>Follow</h4>
@@ -241,7 +220,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=20"></script>
+<script src="site.js?v=21"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML =
@@ -266,8 +245,19 @@
   initMobileNav();
   highlightActiveNav();
   initScrambleReveal('.section-eyebrow');
+  initScrollReveal({ stagger: true });
+  initDeclassify({ stagger: true });
 
-  var STRIPE_MAP = { 'var(--orange)':'orange', 'var(--blue)':'blue', 'var(--violet)':'violet', 'var(--green)':'green', 'var(--pink)':'pink', 'var(--gold)':'gold' };
+  // Pillar cards now hand off to posts.html?pillar=<slug> instead of
+  // filtering an in-page listing -- the full browsable file list moved to
+  // its own page, so "browse this pillar's posts" means "go look at the
+  // page that browses posts," not "reveal a hidden section down here."
+  document.querySelectorAll('.pillar-card').forEach(function (card) {
+    card.addEventListener('click', function () {
+      var pillar = card.getAttribute('data-pillar');
+      window.location.href = 'posts.html?pillar=' + encodeURIComponent(pillar);
+    });
+  });
 
   loadPosts().then(function (data) {
     var posts = data.posts;
@@ -277,93 +267,10 @@
       .then(function (briefData) { initNewsTicker(posts, briefData.briefs); });
 
     initRecentCarousel(posts);
-
-    // render file list
-    var listEl = document.getElementById('fileList');
-    listEl.innerHTML = '';
-    posts.forEach(function (post) {
-      var row = document.createElement('a');
-      row.href = 'post.html?slug=' + post.slug;
-      row.className = 'file-row declass';
-      row.setAttribute('data-freq', post.freq);
-      row.setAttribute('data-pillar', post.pillar || '');
-      if (post.badge !== 'live') {
-        row.style.setProperty('--target-opacity', '0.55');
-        row.style.pointerEvents = 'none';
-      }
-      row.innerHTML =
-        '<div>' +
-          '<div class="file-top">' +
-            '<div class="stripe-dot" style="background:' + post.stripeColor + ';"></div>' +
-            '<span class="badge ' + post.badge + '">' + post.badge.toUpperCase() + '</span>' +
-          '</div>' +
-          '<div class="meta">' +
-            '<div class="filename">' + escapeHTML(post.filename) + '</div>' +
-            '<div class="title">' + escapeHTML(post.title) + '</div>' +
-            '<div class="desc">' + escapeHTML(post.listDesc) + '</div>' +
-            '<div class="file-meta-row">' +
-              '<span class="tag-chip" style="--chip-color:' + post.pillarColor + ';"><span class="chip-dot"></span>' + escapeHTML(post.pillarLabel || '') + '</span>' +
-              '<span class="read-time">' + (post.readMinutes || 3) + ' min read</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="file-bottom"><span class="arrow-label">Read file <span>→</span></span></div>';
-      listEl.appendChild(row);
-    });
-
-    document.getElementById('listingCount').textContent = 'total ' + posts.length + ' files';
-
-    // now that rows exist, wire up reveal + tab filtering
-    initScrollReveal({ stagger: true });
-    initDeclassify({ stagger: true });
-    setupTabs();
     initYouCheck(posts);
   }).catch(function (err) {
-    document.getElementById('fileList').innerHTML =
-      '<p style="color:var(--pink); font-family:\'JetBrains Mono\',monospace; font-size:13px;">Could not load posts.json — ' + escapeHTML(err.message) +
-      '. If you opened this file directly (file://), most browsers block local fetch() calls — run a local server (see hosting guide) or view it via GitHub Pages.</p>';
+    console.error('Could not load posts.json', err);
   });
-
-  function setupTabs() {
-    var tabBar = document.getElementById('tabBar');
-    var rows = document.querySelectorAll('.file-row');
-    var countEl = document.getElementById('listingCount');
-    var currentFreq = 'all';
-    var currentPillar = null;
-
-    function applyFilters() {
-      var visibleCount = 0;
-      rows.forEach(function (row) {
-        var freqMatch = (currentFreq === 'all') || (row.getAttribute('data-freq') === currentFreq);
-        var pillarMatch = !currentPillar || (row.getAttribute('data-pillar') === currentPillar);
-        var matches = freqMatch && pillarMatch;
-        row.classList.toggle('hidden-row', !matches);
-        if (matches) visibleCount++;
-      });
-      countEl.textContent = 'total ' + visibleCount + ' file' + (visibleCount === 1 ? '' : 's');
-    }
-
-    tabBar.addEventListener('click', function (e) {
-      var btn = e.target.closest('.tab-btn');
-      if (!btn) return;
-      tabBar.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      currentFreq = btn.getAttribute('data-tab');
-      applyFilters();
-    });
-
-    document.querySelectorAll('.pillar-card').forEach(function (card) {
-      card.addEventListener('click', function () {
-        var pillar = card.getAttribute('data-pillar');
-        var alreadyActive = card.classList.contains('active');
-        document.querySelectorAll('.pillar-card').forEach(function (c) { c.classList.remove('active'); });
-        currentPillar = alreadyActive ? null : pillar;
-        if (!alreadyActive) card.classList.add('active');
-        applyFilters();
-        document.getElementById('posts').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    });
-  }
 
   // "You, Check." — one question per pillar, driven by the first live post in that pillar
   // carrying a `quiz` field in posts.json. Answering "risky" recommends every live post in

@@ -16,7 +16,7 @@
     <span>stay<span class="b-accent">(human)</span>.sec</span>
   </a>
   <div class="nav-links">
-    <a href="index.html#posts">Posts</a>
+    <a href="posts.html">Posts</a>
     <a href="news.html">News</a>
     <a href="notes.html">on(my).mind</a>
     <a href="toolkit.html">Toolkit</a>
@@ -66,7 +66,7 @@
     <div class="footer-col">
       <h4>Explore</h4>
       <a href="index.html#intro">What we are</a>
-      <a href="index.html#posts">All posts</a>
+      <a href="posts.html">All posts</a>
       <a href="tools.html">All tools</a>
     </div>
     <div class="footer-col">
@@ -90,7 +90,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=20"></script>
+<script src="site.js?v=21"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
@@ -175,7 +175,7 @@
       html += '<div class="listing-label" style="margin-bottom:14px;">$ ' + results.length + ' match' + (results.length === 1 ? '' : 'es') + ' found</div>' +
         results.map(renderResultCard).join('');
     } else {
-      html += '<p style="color:var(--cream-dim); font-size:14.5px;">Nothing directly matches that yet on this site. Browse <a href="index.html#posts" style="color:var(--orange);">all posts</a> or the <a href="glossary.html" style="color:var(--orange);">glossary</a> — or try the AI deep-dive below for a broader answer.</p>';
+      html += '<p style="color:var(--cream-dim); font-size:14.5px;">Nothing directly matches that yet on this site. Browse <a href="posts.html" style="color:var(--orange);">all posts</a> or the <a href="glossary.html" style="color:var(--orange);">glossary</a> — or try the AI deep-dive below for a broader answer.</p>';
     }
     html += '<div id="askAiSection"></div>';
     document.getElementById('askResults').innerHTML = html;
