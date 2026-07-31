@@ -190,6 +190,13 @@ body::after{
    lower portion, echoing the desktop layout where the icon sits behind the
    terminal (z-index 0 vs 1) rather than floating in its own separate block. */
 @media (max-width:960px){ .hero-3d-stage{position:relative; z-index:0; width:220px; height:220px; top:auto; right:auto; left:auto; transform:none; margin:4px auto -70px;} }
+/* Same compact layout as the max-width:960px rule above, but keyed off real
+   screen size (see initHero3D() in site.js) instead of reported viewport --
+   "Request Desktop Site" on a phone spoofs window.innerWidth past 960px, so
+   the plain media query alone misses it, leaving the 400px desktop stage
+   rendering as a smeared blob behind the terminal card's backdrop-blur on
+   an actual narrow screen. */
+html.force-mobile-hero3d .hero-3d-stage{position:relative; z-index:0; width:220px; height:220px; top:auto; right:auto; left:auto; transform:none; margin:4px auto -70px;}
 @media (prefers-reduced-motion: reduce){ .hero-3d-stage{display:none;} }
 
 /* recent-files infinite carousel — content is rendered twice back-to-back
@@ -246,6 +253,17 @@ body::after{
   .hero-sub{margin-left:auto; margin-right:auto;}
   .hero-cta-row{justify-content:center;}
 }
+/* Mirrors the max-width:960px block above for a real narrow screen that's
+   reporting a wider viewport via "Request Desktop Site" -- see the
+   force-mobile-hero3d rule earlier in this file for why a plain media
+   query can't catch this case alone. Without collapsing the grid too, the
+   3D stage's own compact sizing would still get auto-placed into the
+   two-column desktop grid instead of stacking the way it's meant to. */
+html.force-mobile-hero3d .hero-inner{grid-template-columns:1fr; gap:48px;}
+html.force-mobile-hero3d .hero-text{text-align:center;}
+html.force-mobile-hero3d .hero-motto{margin-left:auto; margin-right:auto;}
+html.force-mobile-hero3d .hero-sub{margin-left:auto; margin-right:auto;}
+html.force-mobile-hero3d .hero-cta-row{justify-content:center;}
 @media (max-width:600px){
   .hero-section{padding:56px 20px 70px;}
   .wordmark{font-size:36px;}
