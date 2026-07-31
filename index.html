@@ -64,10 +64,6 @@
   </div>
 </section>
 
-<section class="recent-carousel-section" aria-label="Recently added files">
-  <div class="carousel-track" id="recentCarouselTrack" aria-hidden="true"></div>
-</section>
-
 <div class="news-ticker-bar" id="newsTicker" style="display:none;">
   <a href="news.html" class="news-ticker-link">
     <span class="news-ticker-prompt">$ tail -f news.log</span>
@@ -205,6 +201,12 @@
   </div>
 </section>
 
+<section class="recent-carousel-section" aria-label="Recently added files">
+  <div class="carousel-viewport">
+    <div class="carousel-track" id="recentCarouselTrack" aria-hidden="true"></div>
+  </div>
+</section>
+
 <footer class="site-footer">
   <div class="footer-inner">
     <div class="footer-brand-col">
@@ -238,7 +240,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=18"></script>
+<script src="site.js?v=19"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML =

@@ -318,12 +318,8 @@ function highlightActiveNav() {
 }
 
 /**
- * Ambient cursor glow that softly follows the mouse on dark sections, plus
- * a small ring that tracks the same position and snaps larger/brighter over
- * clickable elements -- a lightweight "this is interactive" cue instead of
- * relying on the browser's default pointer cursor alone. Both share the
- * same --mx/--my position (one mousemove listener, not two), and both are
- * skipped entirely on touch devices and under prefers-reduced-motion --
+ * Ambient cursor glow that softly follows the mouse on dark sections.
+ * Skipped entirely on touch devices and under prefers-reduced-motion --
  * there's no hover concept on touch, so nothing here is even created for
  * it rather than attempting a faked equivalent.
  */
@@ -336,35 +332,14 @@ function initCursorFX() {
   glow.className = 'cursor-glow';
   document.body.appendChild(glow);
 
-  var ring = document.createElement('div');
-  ring.className = 'cursor-ring';
-  document.body.appendChild(ring);
-
   function onMove(e) {
     glow.classList.add('active');
-    ring.classList.add('active');
     document.documentElement.style.setProperty('--mx', e.clientX + 'px');
     document.documentElement.style.setProperty('--my', e.clientY + 'px');
   }
   window.addEventListener('mousemove', onMove, { passive: true });
   window.addEventListener('mouseleave', function () {
     glow.classList.remove('active');
-    ring.classList.remove('active');
-  });
-
-  var HOVER_SELECTOR = 'a, button, .pillar-card, .router-card, .file-row, .about-card, ' +
-    '.gloss-term, .tab-btn, .carousel-card, input, select, textarea, [role="button"]';
-
-  // Delegated on document instead of one listener per element -- cheap
-  // regardless of how many interactive elements a given page has, and
-  // automatically covers anything rendered after this runs (post cards,
-  // the file listing, etc.) with no re-binding needed.
-  document.addEventListener('mouseover', function (e) {
-    if (e.target.closest && e.target.closest(HOVER_SELECTOR)) ring.classList.add('hovering');
-  });
-  document.addEventListener('mouseout', function (e) {
-    var next = e.relatedTarget;
-    if (!next || !(next.closest && next.closest(HOVER_SELECTOR))) ring.classList.remove('hovering');
   });
 }
 
@@ -753,19 +728,28 @@ function initNewsTicker(posts, briefs) {
 }
 
 /**
- * Builds the homepage's "recent files" infinite carousel: the content is
- * rendered twice back-to-back and a CSS keyframe scrolls the whole track
- * left by exactly 50% of its width on a loop, so the seam between the two
- * copies is invisible -- no JS repositioning math needed to fake the loop.
- * Pauses on hover/focus (CSS :hover/:focus-within) and on touch (JS, since
- * touch has no :hover). Under prefers-reduced-motion the content renders
- * once, unanimated, as a plain static row -- same bailout standard as
- * every other animation on the site.
+ * Builds the homepage's "recent files" infinite carousel. The content is
+ * rendered twice back-to-back and a requestAnimationFrame loop drives the
+ * track's translateX (wrapping by exactly half its width), so the seam
+ * between the two copies is invisible with no visible jump. The same loop
+ * gives every card a 3D coverflow transform (perspective + rotateY + scale
+ * + fade) based on its live distance from the viewport's horizontal
+ * center, so cards visibly turn in 3D space as they drift through rather
+ * than sliding flat -- and .carousel-viewport's mask-image fades cards out
+ * well before the actual edge instead of hard-clipping them.
+ *
+ * Pauses on hover/focus (real pointer events, since the motion is now
+ * JS-driven rather than a CSS animation) and on touch. Stops entirely
+ * (via IntersectionObserver) once the section scrolls out of view, so it
+ * never spends a frame animating something nobody can see. Under
+ * prefers-reduced-motion the content renders once, unanimated, flat (no
+ * 3D transforms) -- same bailout standard as every other animation here.
  */
 function initRecentCarousel(posts) {
   var track = document.getElementById('recentCarouselTrack');
   if (!track) return;
   var section = track.closest('.recent-carousel-section');
+  var viewport = track.closest('.carousel-viewport');
 
   var recent = posts.filter(function (p) { return p.badge === 'live'; }).slice(-10).reverse();
   if (recent.length < 4) { if (section) section.style.display = 'none'; return; }
@@ -779,11 +763,64 @@ function initRecentCarousel(posts) {
   var cardsHTML = recent.map(cardHTML).join('');
   var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   track.innerHTML = prefersReduced ? cardsHTML : cardsHTML + cardsHTML;
-  if (prefersReduced || !section) return;
+  if (prefersReduced || !section || !viewport) return;
 
-  section.addEventListener('touchstart', function () { track.classList.add('paused'); }, { passive: true });
+  var cards = track.querySelectorAll('.carousel-card');
+  var SPEED = 30; // px/sec -- a calm, easily-readable drift
+  var offset = 0;
+  var halfWidth = track.scrollWidth / 2;
+  var paused = false;
+  var lastT = null;
+  var rafId = null;
+
+  window.addEventListener('resize', function () { halfWidth = track.scrollWidth / 2; });
+
+  function applyCoverflow() {
+    var vpRect = viewport.getBoundingClientRect();
+    var centerX = vpRect.left + vpRect.width / 2;
+    var halfVp = vpRect.width / 2 || 1;
+    cards.forEach(function (card) {
+      var r = card.getBoundingClientRect();
+      var dist = Math.max(-1.4, Math.min(1.4, ((r.left + r.width / 2) - centerX) / halfVp));
+      var abs = Math.min(Math.abs(dist), 1);
+      var rotateY = (dist * -22).toFixed(2);
+      var scale = (1 - abs * 0.14).toFixed(3);
+      var translateZ = (-abs * 40).toFixed(1);
+      card.style.transform = 'perspective(1000px) rotateY(' + rotateY + 'deg) scale(' + scale + ') translateZ(' + translateZ + 'px)';
+      card.style.opacity = (1 - abs * 0.35).toFixed(2);
+    });
+  }
+
+  function tick(t) {
+    rafId = requestAnimationFrame(tick);
+    if (lastT === null) lastT = t;
+    var dt = (t - lastT) / 1000;
+    lastT = t;
+    if (!paused) {
+      offset -= SPEED * dt;
+      if (-offset >= halfWidth) offset += halfWidth;
+      track.style.transform = 'translateX(' + offset + 'px)';
+    }
+    applyCoverflow();
+  }
+
+  var io = new IntersectionObserver(function (entries) {
+    if (entries[0].isIntersecting) {
+      if (rafId === null) { lastT = null; rafId = requestAnimationFrame(tick); }
+    } else if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+  }, { threshold: 0 });
+  io.observe(section);
+
+  section.addEventListener('mouseenter', function () { paused = true; });
+  section.addEventListener('mouseleave', function () { paused = false; });
+  section.addEventListener('focusin', function () { paused = true; });
+  section.addEventListener('focusout', function () { paused = false; });
+  section.addEventListener('touchstart', function () { paused = true; }, { passive: true });
   section.addEventListener('touchend', function () {
-    setTimeout(function () { track.classList.remove('paused'); }, 1500);
+    setTimeout(function () { paused = false; }, 1500);
   }, { passive: true });
 }
 

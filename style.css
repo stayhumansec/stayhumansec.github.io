@@ -71,11 +71,6 @@ body::after{
 .cursor-glow.active{opacity:1;}
 @media (pointer:coarse), (prefers-reduced-motion: reduce){ .cursor-glow{display:none;} }
 
-.cursor-ring{position:fixed; top:0; left:0; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; border:1.5px solid var(--orange); pointer-events:none; z-index:2; opacity:0; background:rgba(255,122,61,0.05); transform:translate(calc(var(--mx, 50vw) - 50%), calc(var(--my, 50vh) - 50%)) scale(1); transition:opacity .3s ease, transform .18s var(--ease), border-color .18s ease, background .18s ease; will-change:transform;}
-.cursor-ring.active{opacity:1;}
-.cursor-ring.hovering{transform:translate(calc(var(--mx, 50vw) - 50%), calc(var(--my, 50vh) - 50%)) scale(1.7); border-color:var(--cream); background:rgba(255,122,61,0.1);}
-@media (pointer:coarse), (prefers-reduced-motion: reduce){ .cursor-ring{display:none;} }
-
 /* ============ NAV PROMPT (command-palette trigger, styled as a live terminal prompt) ============ */
 .nav-prompt-btn{display:flex; align-items:center; gap:7px; background:transparent; border:1px solid var(--line); color:var(--cream-dim); padding:9px 16px; border-radius:10px; cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:12.5px; transition:border-color .2s ease, color .2s ease;}
 .nav-prompt-btn:hover{border-color:var(--orange); color:var(--cream);}
@@ -189,15 +184,18 @@ body::after{
 /* recent-files infinite carousel — content is rendered twice back-to-back
    by initRecentCarousel() and this keyframe scrolls exactly 50% of the
    track's width on a loop, so the seam between the two copies never shows. */
-.recent-carousel-section{overflow:hidden; padding:22px 0; border-top:1px dashed var(--line); border-bottom:1px dashed var(--line); background:rgba(244,241,232,0.02);}
-.carousel-track{display:flex; gap:16px; width:max-content; animation:carouselScroll 42s linear infinite;}
-.recent-carousel-section:hover .carousel-track, .recent-carousel-section:focus-within .carousel-track, .carousel-track.paused{animation-play-state:paused;}
-@keyframes carouselScroll{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
-.carousel-card{flex:0 0 auto; width:230px; padding:14px 18px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); text-decoration:none; color:inherit; display:block; transition:border-color .2s ease, transform .25s var(--ease);}
-.carousel-card:hover{border-color:var(--pillar-color, var(--orange)); transform:translateY(-3px);}
+.recent-carousel-section{overflow:hidden; padding:34px 0 40px; border-top:1px dashed var(--line); background:rgba(244,241,232,0.02);}
+/* .carousel-viewport carries the perspective for the 3D coverflow effect
+   and the edge fade mask, so cards visibly recede/rotate in 3D as they
+   approach the edges instead of just sliding flat, and never look
+   hard-clipped -- they fade out smoothly well before the actual edge. */
+.carousel-viewport{-webkit-mask-image:linear-gradient(to right, transparent, black 16%, black 84%, transparent); mask-image:linear-gradient(to right, transparent, black 16%, black 84%, transparent);}
+.carousel-track{display:flex; gap:28px; width:max-content; will-change:transform;}
+.carousel-card{flex:0 0 auto; width:230px; padding:14px 18px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); text-decoration:none; color:inherit; display:block; transition:border-color .2s ease; will-change:transform, opacity;}
+.carousel-card:hover{border-color:var(--pillar-color, var(--orange));}
 .carousel-card .cc-tag{display:block; font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; color:var(--pillar-color, var(--orange)); margin-bottom:8px;}
 .carousel-card .cc-title{display:block; font-size:14px; font-weight:600; color:var(--cream); line-height:1.4;}
-@media (prefers-reduced-motion: reduce){ .carousel-track{animation:none; flex-wrap:wrap; width:auto;} }
+@media (prefers-reduced-motion: reduce){ .carousel-track{flex-wrap:wrap; width:auto;} .carousel-card{transform:none !important;} .carousel-viewport{-webkit-mask-image:none; mask-image:none;} }
 @media (max-width:600px){ .carousel-card{width:200px;} }
 
 /* dashed "story connector" between homepage sections — reuses the existing
