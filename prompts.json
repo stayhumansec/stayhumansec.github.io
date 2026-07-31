@@ -1,0 +1,12 @@
+{
+  "prompts": [
+    {
+      "slug": "placeholder-example-entry",
+      "title": "PLACEHOLDER — example entry (replace me)",
+      "pillar": "cyber-basics",
+      "pillarColor": "var(--green)",
+      "promptText": "This is a placeholder prompt so the Prompt Library page layout can be reviewed before real content is written. Replace promptText with the actual prompt someone should copy and paste into an AI chat. Keep it specific, step-by-step, and written so the AI asks the person clarifying questions about their own situation rather than guessing.",
+      "checkNote": "This is a placeholder checkNote. Every real entry must include one — this is where the actual safety guidance for that specific prompt lives, e.g. what never to paste into the AI chat, or what to verify through an official source before acting."
+    }
+  ]
+}

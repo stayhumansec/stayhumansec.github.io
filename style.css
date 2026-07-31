@@ -433,6 +433,28 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 .warn-box{background:rgba(232,90,130,0.08); border:1px solid var(--pink); border-radius:16px; padding:24px 26px; margin:30px 0;}
 .warn-box .label{font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700; color:var(--pink); letter-spacing:1px; margin-bottom:10px;}
 .warn-box p{color:var(--cream-dim); font-size:15px;}
+
+/* ============ PROMPT LIBRARY ============ */
+/* Page-level disclaimer -- deliberately styled as chrome (full-width, sits
+   right under the nav, bolder than .warn-box) rather than inline content,
+   so it reads as a structural fact about the whole page, not a footnote. */
+.prompt-disclaimer{background:rgba(232,90,130,0.12); border-bottom:1px solid var(--pink);}
+.prompt-disclaimer-inner{max-width:var(--content-max); margin:0 auto; padding:14px 48px; display:flex; align-items:center; gap:12px; font-size:14px; color:var(--cream);}
+.prompt-disclaimer-icon{flex-shrink:0; color:var(--pink); font-family:'JetBrains Mono', monospace; font-weight:700;}
+.prompt-disclaimer b{color:var(--pink);}
+@media (max-width:640px){ .prompt-disclaimer-inner{padding:14px 20px; font-size:13px;} }
+
+.prompt-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:22px; margin-top:32px;}
+.prompt-card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px 26px 24px; transition:border-color .2s ease;}
+.prompt-card:hover{border-color:var(--pillar-color, var(--orange));}
+.prompt-card .pc-pillar{display:inline-block; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--pillar-color, var(--orange)); margin-bottom:10px;}
+.prompt-card h3{font-size:19px; margin-bottom:16px; line-height:1.35;}
+.prompt-code{position:relative; background:#0a0908; border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:14px;}
+.prompt-code pre{margin:0; white-space:pre-wrap; word-break:break-word; font-family:'JetBrains Mono', monospace; font-size:13px; line-height:1.6; color:var(--cream-dim); max-height:220px; overflow-y:auto;}
+.prompt-check{display:flex; gap:10px; align-items:flex-start; background:rgba(232,90,130,0.06); border:1px solid rgba(232,90,130,0.35); border-radius:10px; padding:12px 14px; margin-top:14px;}
+.prompt-check .pchk-label{flex-shrink:0; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:700; letter-spacing:.5px; color:var(--pink); text-transform:uppercase;}
+.prompt-check p{color:var(--cream-dim); font-size:13.5px; line-height:1.55; margin:0;}
+.prompt-empty{grid-column:1/-1; text-align:center; padding:50px 20px; color:var(--cream-dim); font-family:'JetBrains Mono', monospace; font-size:14px;}
 .checklist{list-style:none; margin:0 0 32px;}
 .checklist li{display:flex; gap:12px; align-items:flex-start; color:var(--cream-dim); font-size:15.5px; margin-bottom:12px;}
 .checklist li::before{content:"✓"; color:var(--green); font-weight:700; flex-shrink:0; margin-top:1px;}

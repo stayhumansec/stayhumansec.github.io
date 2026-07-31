@@ -155,6 +155,13 @@ async function loadPosts() {
   return res.json();
 }
 
+/** Fetches and parses prompts.json, for the Prompt Library page. */
+async function loadPrompts() {
+  var res = await fetch('prompts.json');
+  if (!res.ok) throw new Error('Could not load prompts.json (' + res.status + ')');
+  return res.json();
+}
+
 /** Brand icon + wordmark SVG, so it's defined once instead of pasted into every HTML file. */
 function brandIconSVG(size) {
   size = size || 64;
@@ -402,6 +409,7 @@ function initCommandPalette() {
     { title: 'You, Check.', sub: 'index.html#youcheck — the quick gut-check quiz', href: 'index.html#youcheck', color: 'var(--pink)' },
     { title: 'Toolkit', sub: 'toolkit.html — recommended tools', href: 'toolkit.html', color: 'var(--gold)' },
     { title: 'Utilities', sub: 'tools.html — every small tool in one place', href: 'tools.html', color: 'var(--violet)' },
+    { title: 'Prompt Library', sub: 'prompts.html — pre-written prompts to walk yourself through a situation with AI', href: 'prompts.html', color: 'var(--pink)' },
     { title: 'Password Coach', sub: 'password-coach.html — memorable, genuinely strong passwords', href: 'password-coach.html', color: 'var(--violet)' },
     { title: '2FA Recovery Kit Builder', sub: 'recovery-kit.html — build a printable recovery plan', href: 'recovery-kit.html', color: 'var(--green)' },
     { title: 'Breach Exposure Check', sub: 'breach-check.html — check if a password has already leaked', href: 'breach-check.html', color: 'var(--gold)' },
@@ -525,26 +533,40 @@ function generateMarkdown(post) {
   return lines.join('\n');
 }
 
-/** Wires up a "Copy as .md" button: copies markdown to clipboard with a brief confirmation state. */
-function setupCopyMdButton(btn, post) {
+/**
+ * Generic "click to copy some text" wiring, shared by every copy button on
+ * the site -- the post "Copy as .md" button and every Prompt Library
+ * card's "Copy prompt" button both use this. `getText` is called fresh on
+ * each click (not passed a fixed string) so the same button always copies
+ * current data even if it's re-rendered. Shows a brief "Copied!"
+ * confirmation on the button's label span, then reverts.
+ */
+function setupCopyButton(btn, getText) {
   if (!btn) return;
+  var label = btn.querySelector('.copy-label') || btn.querySelector('span');
+  if (!label) return;
   btn.addEventListener('click', function () {
-    var md = generateMarkdown(post);
+    var text = getText();
+    var original = label.textContent;
     var done = function () {
       btn.classList.add('copied');
-      var original = btn.querySelector('span').textContent;
-      btn.querySelector('span').textContent = 'Copied!';
+      label.textContent = 'Copied!';
       setTimeout(function () {
         btn.classList.remove('copied');
-        btn.querySelector('span').textContent = original;
+        label.textContent = original;
       }, 1800);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(md).then(done).catch(function () { fallbackCopy(md, done); });
+      navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text, done); });
     } else {
-      fallbackCopy(md, done);
+      fallbackCopy(text, done);
     }
   });
+}
+
+/** Wires up a "Copy as .md" button: copies markdown to clipboard with a brief confirmation state. */
+function setupCopyMdButton(btn, post) {
+  setupCopyButton(btn, function () { return generateMarkdown(post); });
 }
 
 function fallbackCopy(text, done) {
