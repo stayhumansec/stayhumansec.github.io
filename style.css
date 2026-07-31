@@ -227,8 +227,17 @@ html.force-mobile-hero3d .hero-3d-stage{position:relative; z-index:0; width:220p
 .story-connector.is-visible .story-connector-dot{opacity:1;}
 @media (prefers-reduced-motion: reduce){ .story-connector{transform:scaleY(1); transition:none;} .story-connector-dot{opacity:1; transition:none;} }
 
-/* hero terminal mock — CSS-only entrance, no JS needed */
-.hero-terminal{position:relative; z-index:1; background:linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015)); backdrop-filter:blur(9px) saturate(180%); -webkit-backdrop-filter:blur(9px) saturate(180%); border:1px solid rgba(255,255,255,0.12); border-radius:18px; overflow:hidden; box-shadow:0 40px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08); opacity:0; animation:termIn .7s var(--ease) .15s forwards;}
+/* hero terminal mock — CSS-only entrance, no JS needed.
+   No backdrop-filter here on purpose (previously blur(9px) saturate(180%)):
+   this card sits directly over the animating .hero-3d-stage WebGL canvas,
+   and live-blurring an animating canvas through backdrop-filter produced a
+   smeared, illegible artifact on real devices under certain viewport/DPR
+   combinations (confirmed on an actual phone) even though it looked fine
+   in most desktop testing -- an unreliable, hard-to-detect-for combination
+   to special-case around. The translucent gradient + border + shadow alone
+   already reads as a glass panel with the icon visible behind it, without
+   the risk of live-sampling a WebGL canvas every frame. */
+.hero-terminal{position:relative; z-index:1; background:linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015)); border:1px solid rgba(255,255,255,0.12); border-radius:18px; overflow:hidden; box-shadow:0 40px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08); opacity:0; animation:termIn .7s var(--ease) .15s forwards;}
 @keyframes termIn{ from{opacity:0; transform:translateY(18px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);} }
 .hero-terminal .term-bar{display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px dashed var(--line);}
 .term-bar-label{font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--cream-dim);}
