@@ -390,6 +390,35 @@ function initCursorFX() {
  * technically supports WebGL but chokes on it doesn't get stuck with
  * something janky -- it just quietly becomes the flat icon again.
  */
+/**
+ * Sizes and positions .hero-3d-stage as a proportion of .hero-terminal's own
+ * live rendered box -- not fixed per-breakpoint px values -- so the icon
+ * reads as one big soft glow living inside the terminal card at any
+ * viewport width, matching how it looks on desktop, instead of shrinking
+ * into a small separate icon floating above the card on narrow screens.
+ * Sibling-of-.hero-terminal is a hard requirement here, not a DOM
+ * convenience: backdrop-filter only blurs whatever's rendered behind an
+ * element, never its own descendants, so the icon can't become a child of
+ * the terminal card just to get percentage sizing "for free" without
+ * breaking the frosted-glass look entirely.
+ */
+function positionHero3DStage() {
+  var stage = document.getElementById('hero3dStage');
+  var terminal = document.querySelector('.hero-terminal');
+  var heroInner = document.querySelector('.hero-inner');
+  if (!stage || !terminal || !heroInner) return;
+
+  var termRect = terminal.getBoundingClientRect();
+  var innerRect = heroInner.getBoundingClientRect();
+  if (!termRect.width || !termRect.height) return;
+
+  var size = termRect.width * 0.85;
+  stage.style.width = size + 'px';
+  stage.style.height = size + 'px';
+  stage.style.left = (termRect.left - innerRect.left + (termRect.width - size) / 2) + 'px';
+  stage.style.top = (termRect.top - innerRect.top + (termRect.height - size) / 2) + 'px';
+}
+
 function initHero3D() {
   var stage = document.getElementById('hero3dStage');
   if (!stage) return;
@@ -397,14 +426,23 @@ function initHero3D() {
   // "Request Desktop Site" spoofs the reported layout viewport (window.innerWidth)
   // so our >960px CSS branch kicks in, but it can't spoof window.screen.width --
   // the real physical screen. On an actual narrow phone forced into that wide
-  // desktop layout, the 400px absolute-positioned stage sitting behind the
-  // terminal card's backdrop-filter blur renders as a smeared, illegible blob
-  // (confirmed on a real device) even though the exact same composition is
-  // crisp on an actual desktop screen. Tagging the real hardware here lets
-  // style.css apply the compact mobile layout regardless of what viewport
-  // width the page currently claims to have.
+  // desktop layout, the terminal card (and therefore the icon sized against it)
+  // would still render at its full desktop-column width without this. Tagging
+  // the real hardware here lets style.css collapse the hero grid to a single
+  // column regardless of what viewport width the page currently claims to have.
   var isPhysicallyNarrow = Math.min(window.screen.width || 9999, window.screen.height || 9999) <= 600;
   if (isPhysicallyNarrow) document.documentElement.classList.add('force-mobile-hero3d');
+
+  // Not debounced, deliberately: hero3d.js's own resize() (registered later,
+  // once its dynamic import resolves) reads the container's clientWidth/
+  // clientHeight on every resize event with no debounce of its own, so this
+  // has to run in lockstep with it -- registered first, it always fires
+  // first on a given resize event, updating the container's real size just
+  // before hero3d.js's handler reads it. A debounce here would leave the
+  // canvas rendering at a stale size for however long the debounce delays.
+  positionHero3DStage();
+  window.addEventListener('load', positionHero3DStage);
+  window.addEventListener('resize', positionHero3DStage);
 
   var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReduced) return;
