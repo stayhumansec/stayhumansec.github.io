@@ -358,22 +358,26 @@ function initCursorFX() {
  * ever hides it; hero3d.js only adds a canvas on top of it once a frame has
  * actually rendered successfully.
  *
- * Every check below has to pass before the ~150KB (gzipped) Three.js module
- * is even requested, so devices that would never benefit don't pay for it:
- * no hover concept (touch/tablet, same pointer:fine gate as initCursorFX),
- * prefers-reduced-motion, a metered/Save-Data connection, or a browser that
- * can't actually create a WebGL context. hero3d.js itself additionally
- * tears the scene down (reverting to the flat icon) if a live frame-rate
- * sample comes back too low, so a device that technically supports WebGL
- * but chokes on it doesn't get stuck with something janky.
+ * Deliberately NOT gated on pointer type or viewport width -- a phone in
+ * "desktop site" mode still reports pointer:coarse (that mode only changes
+ * the reported viewport/user-agent, not the actual hardware), so an
+ * earlier pointer:fine-only gate silently disabled this on every phone
+ * with no way around it. Real capability is what actually matters here:
+ * every check below has to pass before the ~150KB (gzipped) Three.js
+ * module is even requested, so devices that would never benefit don't pay
+ * for it -- prefers-reduced-motion, a metered/Save-Data connection, or a
+ * browser that can't actually create a WebGL context. hero3d.js itself
+ * additionally tears the scene down (reverting to the flat icon) if a
+ * live frame-rate sample comes back too low once running, so a phone that
+ * technically supports WebGL but chokes on it doesn't get stuck with
+ * something janky -- it just quietly becomes the flat icon again.
  */
 function initHero3D() {
   var stage = document.getElementById('hero3dStage');
   if (!stage) return;
 
-  var isFine = window.matchMedia('(pointer: fine)').matches;
   var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!isFine || prefersReduced) return;
+  if (prefersReduced) return;
 
   if (navigator.connection && navigator.connection.saveData) return;
 

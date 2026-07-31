@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Search the Archive — stay(human).sec</title>
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
 
@@ -90,7 +90,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=21"></script>
+<script src="site.js?v=22"></script>
 <script>
   if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
@@ -206,14 +206,16 @@
     try {
       var reply = await callClaude(apiKey, systemPrompt, question, { maxTokens: 500 });
       actionEl.innerHTML =
-        '<div class="ai-result-box reveal is-visible"><div class="label">🧠 AI ANSWER</div><p>' + escapeHTML(reply) + '</p></div>' +
+        '<div class="ai-result-box reveal"><div class="label">🧠 AI ANSWER</div><p>' + escapeHTML(reply) + '</p></div>' +
         '<button class="btn-secondary" id="askAiBtn" style="cursor:pointer; margin-top:14px;">↻ Ask again</button>';
       document.getElementById('askAiBtn').addEventListener('click', function () { runAiAnswer(question, apiKey); });
+      initScrollReveal();
     } catch (err) {
       actionEl.innerHTML =
-        '<div class="ai-result-box reveal is-visible" style="border-color:var(--pink); background:rgba(232,90,130,0.08);"><div class="label" style="color:var(--pink);">⚠ AI REQUEST FAILED</div><p>' + escapeHTML(err.message) + '</p></div>' +
+        '<div class="ai-result-box reveal" style="border-color:var(--pink); background:rgba(232,90,130,0.08);"><div class="label" style="color:var(--pink);">⚠ AI REQUEST FAILED</div><p>' + escapeHTML(err.message) + '</p></div>' +
         '<button class="btn-secondary" id="askAiBtn" style="cursor:pointer; margin-top:14px;">↻ Try again</button>';
       document.getElementById('askAiBtn').addEventListener('click', function () { runAiAnswer(question, apiKey); });
+      initScrollReveal();
     }
   }
 
