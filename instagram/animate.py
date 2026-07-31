@@ -1734,10 +1734,9 @@ def animate_debut_video(out_dir, video_path, fps=60):
         site's own dark/cream/orange terminal language (the exact same
         base_card() grid+border, the same window-control glyph style as
         draw_terminal_chrome(), a terminal-style "$ open
-        stayhumansec.github.io" prompt) steps through six real screens,
-        each closed with a mouse click on the window's own close button
-        before the next one opens (see the click-to-close loop below) --
-        the homepage hero (wordmark/motto/tagline plus the boot
+        stayhumansec.github.io" prompt) fast-crossfades through six real
+        screens (see the crossfade loop below) -- the homepage
+        hero (wordmark/motto/tagline plus the boot
         sequence's real "0 trackers / 0 ad scripts / 0 cookies" checkup
         line), the 9-pillar grid (exact labels/colors from CLAUDE.md's
         pillar table), the Utilities list (its real eyebrow/heading from
@@ -1991,11 +1990,10 @@ def animate_debut_video(out_dir, video_path, fps=60):
         chrome bar/blank content fill -- identical across every screen,
         so it's built once and reused. Compositing a screen's own content
         overlay on top of this makes up that screen's complete 'window'
-        image, used as a single scale/fade unit by the mouse-click close/
-        open transition between screens (see the click-to-close loop
-        below) -- unlike the grid+card border behind it, this needs to be
-        its own transparent layer so it can shrink into the close button
-        without dragging the static background along with it."""
+        image, used as a single fade unit by the crossfade loop below --
+        unlike the grid+card border behind it, this needs to be its own
+        transparent layer so it can fade independently without dragging
+        the static background along with it."""
         img = Image.new('RGBA', (1080, 1080), (0, 0, 0, 0))
         d = ImageDraw.Draw(img)
         d.rounded_rectangle([BW_X0, BW_Y0, BW_X1, BW_Y1], radius=18, outline=cream3, width=3)
@@ -2223,19 +2221,15 @@ def animate_debut_video(out_dir, video_path, fps=60):
     overlays = [screen_hero(), screen_pillars(), screen_utilities(), screen_article(), screen_news(), screen_toolkit()]
 
     # Each screen's complete "window" (chrome + that screen's own content,
-    # composited once) is treated as a single scalable/fadeable image --
-    # what moves between screens isn't a slide, it's a mouse pointer
-    # clicking the window's own close button, the window shrinking away
-    # into that click, and the next one growing back in, the way an
-    # actual window close/open reads. static_bg (grid + card border) never
-    # changes and sits underneath every frame.
+    # composited once) plain-crossfades into the next -- no drift, and
+    # fast (0.45s) specifically to keep the moment where both screens are
+    # partially visible as brief as possible, since two busy screens'
+    # text does visibly double-expose for an instant on a slower fade.
+    # static_bg (grid + card border) never changes and sits underneath
+    # every frame.
     window_chrome = render_window_chrome()
     windows = [Image.alpha_composite(window_chrome, ov) for ov in overlays]
     static_bg = rec.img.convert('RGBA')
-
-    WIN_CX, WIN_CY = (BW_X0 + BW_X1) / 2, (BW_Y0 + BW_Y1) / 2
-    CLOSE_X, CLOSE_Y = (BW_X1 - 44) + 7, BW_Y0 + CHROME_H / 2
-    CURSOR_TIP = (14, 3)  # offset from the drawn arrow's own origin to its hotspot/tip
 
     def compose(*layers):
         frame = static_bg.copy()
@@ -2247,110 +2241,25 @@ def animate_debut_video(out_dir, video_path, fps=60):
         frame.convert('RGB').save(os.path.join(rec.out_dir, f"frame_{rec.index:04d}.png"))
         rec.index += 1
 
-    def scaled(layer, scale, anchor, alpha=1.0):
-        """`layer` (full-canvas RGBA) scaled by `scale` around the fixed
-        point `anchor`=(ax,ay), with overall opacity multiplied by
-        `alpha` -- the shrink-into-the-close-button / grow-back-out
-        mechanic for the window open/close beats below."""
-        if scale <= 0.01 or alpha <= 0.01:
-            return Image.new('RGBA', layer.size, (0, 0, 0, 0))
-        w, h = layer.size
-        if scale >= 0.999:
-            resized = layer
-        else:
-            new_w, new_h = max(1, round(w * scale)), max(1, round(h * scale))
-            resized = layer.resize((new_w, new_h), Image.LANCZOS)
-        if alpha < 1.0:
-            resized = resized.copy()
-            resized.putalpha(resized.split()[3].point(lambda a, m=alpha: int(a * m)))
-        if scale >= 0.999:
-            return resized
-        ax, ay = anchor
-        dest = (int(round(ax - ax * scale)), int(round(ay - ay * scale)))
-        canvas = Image.new('RGBA', layer.size, (0, 0, 0, 0))
-        canvas.alpha_composite(resized, dest)
-        return canvas
+    def fade_alpha(layer, mult):
+        faded = layer.copy()
+        faded.putalpha(faded.split()[3].point(lambda a, m=mult: int(a * m)))
+        return faded
 
-    def cursor_overlay(pos, scale=1.0, alpha=1.0):
-        """A simple arrow pointer, tip at `pos`, used to visibly click
-        the close button between screens rather than sliding past it."""
-        tx, ty = CURSOR_TIP
-        pts = [(0, 0), (0, 23), (6, 18), (10, 26), (14, 24), (9, 16), (17, 16)]
-        cx, cy = pos
-        a = max(0, min(255, int(255 * alpha)))
-        overlay = Image.new('RGBA', (1080, 1080), (0, 0, 0, 0))
-        d = ImageDraw.Draw(overlay)
-        scaled_pts = [(cx - tx * scale + px * scale, cy - ty * scale + py * scale) for px, py in pts]
-        d.polygon(scaled_pts, fill=cream3 + (a,), outline=(20, 18, 15) + (a,))
-        return overlay
-
-    def close_flash(alpha):
-        """Bright orange flash over the X glyph as click feedback."""
-        overlay = Image.new('RGBA', (1080, 1080), (0, 0, 0, 0))
-        d = ImageDraw.Draw(overlay)
-        a = max(0, min(255, int(255 * alpha)))
-        mx3 = BW_X1 - 44
-        icon_y = BW_Y0 + CHROME_H / 2
-        d.line([mx3, icon_y - 7, mx3 + 14, icon_y + 7], fill=orange3 + (a,), width=3)
-        d.line([mx3, icon_y + 7, mx3 + 14, icon_y - 7], fill=orange3 + (a,), width=3)
-        return overlay
-
-    CURSOR_REST = (WIN_CX, BW_Y1 + 110)  # below the window -- where the
-                                          # pointer starts before each click
-
-    # ---- screen 1 opens cold -- nothing to close yet, so it just grows
-    # in from its own center rather than being clicked open ----
-    n_open = sec_frames(0.5)
-    for step in range(1, n_open + 1):
-        t = ease(step / n_open)
-        save_frame(compose(scaled(windows[0], 0.05 + 0.95 * t, (WIN_CX, WIN_CY), alpha=t)))
-    rec.img = compose(windows[0]).convert('RGB')
-    rec.draw = ImageDraw.Draw(rec.img)
-    rec.hold_last_frame(sec_frames(3.0))
-
-    for i in range(len(windows) - 1):
-        cur_win, next_win = windows[i], windows[i + 1]
-
-        # cursor arrives from below and aims at the close button, fading
-        # in over the first third of the move
-        n_move = sec_frames(0.6)
-        for step in range(1, n_move + 1):
-            t = ease(step / n_move)
-            pos = (lerp(CURSOR_REST[0], CLOSE_X, t), lerp(CURSOR_REST[1], CLOSE_Y, t))
-            fade_in = min(1.0, step / max(1, n_move * 0.3))
-            save_frame(compose(cur_win, cursor_overlay(pos, alpha=fade_in)))
-
-        # click: a quick press-and-release with a bright flash on the X
-        n_click = sec_frames(0.18)
-        for step in range(1, n_click + 1):
-            t = step / n_click
-            press = 1.0 - 0.22 * math.sin(t * math.pi)
-            save_frame(compose(cur_win, close_flash(math.sin(t * math.pi)),
-                                cursor_overlay((CLOSE_X, CLOSE_Y), scale=press)))
-
-        # window closes -- shrinks and fades away into the clicked button
-        n_close = sec_frames(0.4)
-        for step in range(1, n_close + 1):
-            t = ease(step / n_close)
-            fade = 1.0 - t
-            save_frame(compose(scaled(cur_win, 1.0 - 0.97 * t, (CLOSE_X, CLOSE_Y), alpha=fade),
-                                cursor_overlay((CLOSE_X, CLOSE_Y), alpha=fade)))
-
-        # a brief empty beat -- just the grid, window fully closed
-        rec.img = static_bg.convert('RGB')
-        rec.draw = ImageDraw.Draw(rec.img)
-        for _ in range(sec_frames(0.12)):
-            save_frame(static_bg)
-
-        # next window opens -- grows and fades in from its own center
-        n_open2 = sec_frames(0.45)
-        for step in range(1, n_open2 + 1):
-            t = ease(step / n_open2)
-            save_frame(compose(scaled(next_win, 0.05 + 0.95 * t, (WIN_CX, WIN_CY), alpha=t)))
-
-        rec.img = compose(next_win).convert('RGB')
+    prev_win = None
+    for win in windows:
+        n_trans = sec_frames(0.45)
+        for step in range(1, n_trans + 1):
+            t = ease(step / n_trans)
+            layers = []
+            if prev_win is not None:
+                layers.append(fade_alpha(prev_win, 1 - t))
+            layers.append(fade_alpha(win, t))
+            save_frame(compose(*layers))
+        rec.img = compose(win).convert('RGB')
         rec.draw = ImageDraw.Draw(rec.img)
         rec.hold_last_frame(sec_frames(3.0))
+        prev_win = win
 
     # ================= Act 4: brand lockup, reprised =================
     _fade_to_clean_base(rec, sec_frames(1.3))
