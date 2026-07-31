@@ -143,7 +143,7 @@ body::after{
 
 /* ============ HERO ============ */
 .hero-section{position:relative; z-index:1; padding:88px 48px 110px; overflow:hidden;}
-.hero-inner{position:relative; z-index:2; max-width:var(--content-max); margin:0 auto; display:grid; grid-template-columns:1.15fr 0.85fr; gap:70px; align-items:center;}
+.hero-inner{position:relative; z-index:2; isolation:isolate; max-width:var(--content-max); margin:0 auto; display:grid; grid-template-columns:1.15fr 0.85fr; gap:70px; align-items:center;}
 .hero-text{text-align:left;}
 .hero-motto{display:inline-flex; align-items:center; gap:8px; font-family:'JetBrains Mono', monospace; font-size:12.5px; letter-spacing:1px; color:var(--cream-dim); border:1px solid var(--line); padding:8px 16px; border-radius:20px; margin-bottom:26px;}
 .hero-logo{width:76px; height:auto; margin-bottom:22px;}
@@ -236,9 +236,21 @@ html.force-mobile-hero3d .hero-3d-stage{position:relative; z-index:0; width:220p
    in most desktop testing -- an unreliable, hard-to-detect-for combination
    to special-case around. The translucent gradient + border + shadow alone
    already reads as a glass panel with the icon visible behind it, without
-   the risk of live-sampling a WebGL canvas every frame. */
-.hero-terminal{position:relative; z-index:1; background:linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015)); border:1px solid rgba(255,255,255,0.12); border-radius:18px; overflow:hidden; box-shadow:0 40px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08); opacity:0; animation:termIn .7s var(--ease) .15s forwards;}
-@keyframes termIn{ from{opacity:0; transform:translateY(18px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);} }
+   the risk of live-sampling a WebGL canvas every frame.
+   translateZ(0) forces this card onto its own explicit GPU compositing
+   layer -- on some real mobile GPUs, an animating WebGL <canvas> gets
+   promoted to a hardware overlay surface that renders above every other
+   layer regardless of CSS z-index (this doesn't reproduce with software
+   WebGL rendering, only real hardware acceleration, which is why it only
+   showed up on an actual phone). Putting the terminal card on an equally
+   explicit layer keeps it competing for stacking order on the same terms
+   as the canvas instead of being silently overlaid by it. */
+.hero-terminal{position:relative; z-index:1; transform:translateZ(0); background:linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015)); border:1px solid rgba(255,255,255,0.12); border-radius:18px; overflow:hidden; box-shadow:0 40px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08); opacity:0; animation:termIn .7s var(--ease) .15s forwards;}
+/* translateZ(0) is folded into both keyframe steps -- the animation's own
+   transform property fully replaces the base rule's value while running,
+   so without it here the layer promotion above would vanish the instant
+   this entrance animation starts, right when it's needed. */
+@keyframes termIn{ from{opacity:0; transform:translateY(18px) scale(.98) translateZ(0);} to{opacity:1; transform:translateY(0) scale(1) translateZ(0);} }
 .hero-terminal .term-bar{display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px dashed var(--line);}
 .term-bar-label{font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--cream-dim);}
 
