@@ -185,7 +185,7 @@ This is separate from — and doesn't replace — the page-level disclaimer at t
 - **Copy-as-markdown**: `post.html` includes a "Copy as .md" button; `generateMarkdown()` in `site.js` reconstructs a markdown version of a post straight from its JSON shape, so any post added to `posts.json` gets this for free with no extra work.
 - **Download as PDF — removed.** This existed through four implementations (html2canvas/html2pdf.js rasterizing a DOM clone, `window.print()` + a print stylesheet, and two rounds of native jsPDF drawing chasing dark/grid/glass fidelity against the live site) before being removed entirely at the user's request. Every version, `generatePostPdf()`/`drawPdf*()` helpers, the CDN font-fetch code, and the `.download-pdf-btn` CSS are gone from `site.js`/`post.html`/`style.css`. If asked to rebuild this feature, don't assume any prior version's approach was "the answer" — html2canvas silently produced blank PDFs for real visitors, `window.print()` depended on the visitor's OS print pipeline (one real machine rasterized the whole page through a "Print to PDF" driver instead of producing real text), and native jsPDF drawing required several rounds of fixing color/font/layout fidelity bugs against the actual site CSS. Ask what's wanted (light standalone document vs. dark/grid/glass site match) before building, and verify any PDF output with PyMuPDF (`page.get_text()`, `page.get_fonts()`, `page.get_images()`) rather than assuming it looks right.
 - **Escaping**: all post-derived text is passed through `escapeHTML()` before insertion, *except* `step` block `paragraphs`, which are treated as trusted raw HTML (so `<code>` tags work) — never put user-supplied or untrusted content there.
-- **Platform adaptation**: one fact/fix, four packages. The underlying content — the actual fact, the actual fix — never changes between platforms; only tone and format do. Instagram gets the 4-slide carousel with a punchy hook-style caption; Facebook reuses those exact same slides with a warmer, community/family-oriented caption; LinkedIn combines those same slides into a single PDF carousel with a narrative, first-person, professionally-framed caption; X gets a numbered thread instead of any images at all. See "Platform-specific packaging" under Automated Post Generation Workflow for the exact spec per platform.
+- **Platform adaptation**: one fact/fix, five packages. The underlying content — the actual fact, the actual fix — never changes between platforms; only tone and format do. Instagram gets the 4-slide carousel with a punchy hook-style caption; Facebook reuses those exact same slides with a warmer, community/family-oriented caption; LinkedIn combines those same slides into a single PDF carousel with a narrative, first-person, professionally-framed caption; X gets a numbered thread instead of any images at all; Reels gets a separately-written voiceover script turned into a captioned, hook-overlaid vertical video via `instagram/generate_reel.py`. See "Platform-specific packaging" under Automated Post Generation Workflow for the exact spec per platform.
 
 ## on(my).mind (`notes.html` / `notes.json`) — a deliberately different voice
 
@@ -205,8 +205,8 @@ on(my).mind is a separate, freeform writing section — **not** part of the post
 ## Automated Post Generation Workflow
 
 The full standard process for generating a day's post — the website
-article, the Instagram carousel, and the Facebook/LinkedIn/X packages built
-from it, including the exact 4-slide structure, the platform-packaging
+article, the Instagram carousel, and the Facebook/LinkedIn/X/Reel packages
+built from it, including the exact 4-slide structure, the platform-packaging
 spec, the numbered standard steps, the Cyber News/AI News sourcing
 criteria, and the auto-merge verification checklist — lives in
 **[`AUTOMATED-WORKFLOW.md`](./AUTOMATED-WORKFLOW.md)**, not in this file.
@@ -215,5 +215,5 @@ just points to it so it isn't missed.
 
 The short version: the website grows automatically as posts are added, as
 long as automated verification passes. Social packaging (Instagram,
-Facebook, LinkedIn, X) is always manual — **this workflow never posts to
-any social platform under any circumstances.**
+Facebook, LinkedIn, X, Reels) is always manual — **this workflow never
+posts to any social platform under any circumstances.**

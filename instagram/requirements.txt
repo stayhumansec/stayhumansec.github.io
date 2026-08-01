@@ -1,0 +1,13 @@
+# For generate_post.py (carousel slides / LinkedIn PDF)
+pillow>=10.0.0
+pymupdf>=1.24.0   # verify_pdf_carousel()
+
+# For generate_reel.py (Reels) -- system dependency, not pip-installable:
+#   ffmpeg (with libass) must be on PATH
+faster-whisper>=1.0.0
+piper-tts>=1.2.0
+
+# Optional -- only needed for the non-default synthesize_voiceover_elevenlabs()
+# upgrade path in generate_reel.py (see its docstring: not the default, revisit
+# once the account has revenue):
+# elevenlabs>=1.0.0
