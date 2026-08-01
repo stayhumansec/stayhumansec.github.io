@@ -66,9 +66,9 @@ which tag color (`tag_pill(bg=...)`) matches which pillar.
 
 ## Platform-specific packaging
 
-Every day's post produces **four** platform variants from the same
+Every day's post produces **five** platform variants from the same
 underlying fact/fix — the content itself never changes, only tone and
-format do. All four land in the same `instagram/posts/day_NN_<topic-slug>/`
+format do. All five land in the same `instagram/posts/day_NN_<topic-slug>/`
 folder alongside the slides, regardless of which platform they're for —
 there's no per-platform subdirectory.
 
@@ -98,6 +98,28 @@ there's no per-platform subdirectory.
   the website article for the full write-up. `slide1.png` can optionally be
   suggested as the hook tweet's attached image, but nothing new is rendered
   for it.
+
+- **Reel** — a fifth artifact, built by `instagram/generate_reel.py`
+  (`from generate_reel import *`, mirrors `generate_post.py`'s calling
+  convention). A separate, deliberately hand-written voiceover script
+  (`reel_script.txt` — the exact line-for-line narration, not auto-generated)
+  becomes a 1080×1920 vertical video: `synthesize_voiceover_piper()` turns
+  the script into audio (Piper TTS — free, local, no API key, no monthly
+  quota; this is the default and only supported path right now, not a
+  preference — `synthesize_voiceover_elevenlabs()` exists as an optional
+  paid upgrade to revisit once the account has revenue, never the default),
+  `transcribe_words()` gets word-level timing off that same audio,
+  `chunk_words()` + `write_ass_captions()` burn in short 2-3 word karaoke-style
+  caption bursts styled with the site's actual brand fonts (IBM Plex Mono)
+  and colors (`cream3`, per `CLAUDE.md`'s Brand system table), and
+  `make_hook_overlay_png()` renders a hook overlay for the first ~2 seconds
+  that reads as the same voice/pacing as the carousel's Slide 1 hook (a
+  `tag_pill()`-style sticker plus one short attention-grabbing line — see
+  "Standard workflow" above). `build_reel()` composites everything over a
+  background clip into `reel.mp4`. `reel_caption.txt` is the Instagram
+  caption for the Reel post itself, written for a Reel's own caption
+  conventions (hook-first, same tone as `caption.txt`) rather than copied
+  from the carousel caption.
 
 ## Standard steps
 
@@ -150,7 +172,11 @@ there's no per-platform subdirectory.
    (paths relative to the repo root). In that same folder, write
    `caption.txt` (Instagram), `facebook_caption.txt`, build `linkedin.pdf`
    from the same 4 slides via `save_pdf_carousel()`, write
-   `linkedin_caption.txt`, and write `x_thread.txt`.
+   `linkedin_caption.txt`, and write `x_thread.txt`. Also write
+   `reel_script.txt` (the Reel's voiceover, hand-written per the
+   "Standard workflow" Reel entry above), build `reel.mp4` via
+   `build_reel_from_script()` in `instagram/generate_reel.py`, and write
+   `reel_caption.txt`.
 
 4. **Verify every slide** with `verify_slide()` before considering the post
    done — checks correct size (1080×1080) and confirms the image isn't
@@ -164,6 +190,11 @@ there's no per-platform subdirectory.
    run `verify_pdf_carousel(path, 4)` on `linkedin.pdf` to confirm it has
    exactly 4 pages, each 1080×1080, and confirm `facebook_caption.txt`,
    `linkedin_caption.txt`, and `x_thread.txt` all exist and are non-empty.
+   Run `verify_reel(path)` on `reel.mp4` — same non-negotiable discipline,
+   not a weaker check just because it's a newer format: confirms 1080×1920,
+   confirms the file isn't zero-length/corrupt, confirms an audio track
+   exists and its duration roughly matches the video's. Confirm
+   `reel_caption.txt` exists and is non-empty.
 
 5. **Write the matching website article** as a new entry in `posts.json`
    (repo root — this is a flat static site, there's no `website/`
@@ -197,6 +228,9 @@ there's no per-platform subdirectory.
    - `linkedin.pdf` passes `verify_pdf_carousel()` (4 pages, each 1080×1080)
    - `facebook_caption.txt`, `linkedin_caption.txt`, and `x_thread.txt` all
      exist in the day's folder and are non-empty
+   - `reel.mp4` passes `verify_reel()` (1080×1920, non-zero-length, has an
+     audio track whose duration roughly matches the video's) and
+     `reel_caption.txt` exists and is non-empty
    - `post.html?slug=<new-slug>` actually loads and renders without a
      JavaScript console error (serve locally and check — this is the exact
      class of bug that's bitten this project before, e.g. a missing schema
@@ -415,9 +449,10 @@ The owner will typically trigger this with something like:
 > "Generate today's post — check CALENDAR.md for the next pending day, check
 > whether today is a Cyber News day or an AI News day (they alternate
 > daily), and search for a real current story following the matching
-> sourcing criteria in AUTOMATED-WORKFLOW.md, write the carousel copy plus all four platform
-> captions/thread, generate all 4 slides, build the LinkedIn PDF, verify
-> none of the slides are blank and the PDF/captions/thread all check out,
+> sourcing criteria in AUTOMATED-WORKFLOW.md, write the carousel copy plus all five platform
+> captions/thread/script, generate all 4 slides, build the LinkedIn PDF and
+> the Reel, verify none of the slides are blank, the PDF/captions/thread all
+> check out, and the Reel passes verify_reel(),
 > write the matching posts.json entry (with sourceUrl/sourceName/date if
 > it's a news post), update CALENDAR.md, run all verification checks, and
 > merge to main automatically if everything passes. If anything fails, open
