@@ -19,7 +19,7 @@ glossary.html         Full glossary, rendered from the GLOSSARY_TERMS array in s
 404.html              Not-found page, styled as a failed `cat` command
 style.css             All styles for every page (one shared stylesheet, no per-page CSS files)
 site.js               All shared JS: data loading, rendering helpers, animations, nav, command palette
-fonts/                Self-hosted Poppins + JetBrains Mono woff2 files (@font-face'd from style.css) plus their OFL LICENSE.txt — no Google Fonts request, keeping the "0 trackers" boot-sequence claim literally true
+fonts/                Self-hosted Sora + IBM Plex Mono woff2 files (@font-face'd from style.css) plus their OFL LICENSE.txt — no Google Fonts request, keeping the "0 trackers" boot-sequence claim literally true
 news.html             News page — every Cyber News/AI News post in one feed, plus the "Also today" curated headline strip below it
 notes.html             on(my).mind — freeform personal writing (technical/philosophy/concerns), separate from posts/News, see "on(my).mind" section below
 posts.json            All post content — the only content data file; index.html and post.html both read it
@@ -95,7 +95,7 @@ The calendar was rebalanced in response — see `CALENDAR.md`, which now runs ro
 
 **Identity**: "stay(human).sec" — wordmark always styled as `stay` + `(human)` in accent orange + `.sec`, reused verbatim (with parens colored) in the nav, hero, and footer. Framed persona: "Not a company. Not a bot. Just one person explaining this properly."
 
-**Motto vs. tagline**: "For human. For privacy." is the short-form motto — shown as a pill badge above the wordmark in the hero (`.hero-motto` in `index.html`), `HUMAN`/`PRIVACY` bold orange, rest cream-dim, `JetBrains Mono`. "Use AI. Remain human. Privacy matters." is the full canonical tagline — originally written for day_01's social captions/thread (`instagram/posts/day_01_launch/`) but not ported to the website until this line was added; now lives directly under the wordmark in the hero (`.hero-tagline`), all-caps, bold: `AI`/`HUMAN`/`PRIVACY` orange, rest cream (not cream-dim — unlike the motto pill, the tagline uses full-brightness cream), `JetBrains Mono`. Both are canonical and both stay — the motto is the compact badge version, the tagline is the fuller line underneath it, not a replacement for one another.
+**Motto vs. tagline**: "For human. For privacy." is the short-form motto — shown as a pill badge above the wordmark in the hero (`.hero-motto` in `index.html`), `HUMAN`/`PRIVACY` bold orange, rest cream-dim, `IBM Plex Mono`. "Use AI. Remain human. Privacy matters." is the full canonical tagline — originally written for day_01's social captions/thread (`instagram/posts/day_01_launch/`) but not ported to the website until this line was added; now lives directly under the wordmark in the hero (`.hero-tagline`), all-caps, bold: `AI`/`HUMAN`/`PRIVACY` orange, rest cream (not cream-dim — unlike the motto pill, the tagline uses full-brightness cream), `IBM Plex Mono`. Both are canonical and both stay — the motto is the compact badge version, the tagline is the fuller line underneath it, not a replacement for one another.
 
 **Visual language**: dark terminal/hacker aesthetic softened with warm color and rounded corners — the site imitates a file system / CLI (`ls ./posts`, `cat FILE_001.md`, boot sequences, `$` prompts) without being cold or intimidating. Cards are labeled like files (`FILE_001.md`), sections are numbered like a manual (`01`, `02`), and copy leans "explain it like a helpful friend," not corporate or fear-based.
 
@@ -115,7 +115,7 @@ The calendar was rebalanced in response — see `CALENDAR.md`, which now runs ro
 ```
 Orange is the single primary accent (CTAs, active states, hover borders). Green = positive/live/good. Pink = warning/danger/bad. The other four (blue, violet, gold, and the one-off `#ff8a6a`) are used purely as pillar-identity colors, not semantic ones.
 
-**Typography**: `Poppins` for body/headings (loaded from Google Fonts), `JetBrains Mono` for anything meant to read as "terminal output" — nav links, badges, filenames, code, eyebrows, stat lines. This split is consistent everywhere: if it should feel typed/technical, it's mono; if it's prose, it's Poppins.
+**Typography**: `Sora` for body/headings (self-hosted, see fonts/), `IBM Plex Mono` for anything meant to read as "terminal output" — nav links, badges, filenames, code, eyebrows, stat lines. This split is consistent everywhere: if it should feel typed/technical, it's mono; if it's prose, it's Sora.
 
 **Texture**: a faint fixed grid background (`--grid`), an SVG noise/grain overlay via `body::after`, and an ambient cursor-glow effect on desktop (skipped on touch and under `prefers-reduced-motion`). Sections alternate plain vs. `.section-alt` (a translucent card-tinted background with dashed top/bottom borders) to break up long vertical scroll.
 
