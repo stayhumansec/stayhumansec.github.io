@@ -348,6 +348,32 @@ function highlightActiveNav() {
  * there's no hover concept on touch, so nothing here is even created for
  * it rather than attempting a faked equivalent.
  */
+var TILT_CARD_SELECTOR = '.about-card, .carousel-card, .glossary-card, .news-card, .pillar-card, .prompt-card, .router-card, .tool-card, .note-card';
+
+function initTiltCards(root) {
+  var isFine = window.matchMedia('(pointer: fine)').matches;
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!isFine || prefersReduced) return;
+
+  var cards = (root || document).querySelectorAll(TILT_CARD_SELECTOR);
+  cards.forEach(function (card) {
+    if (card.dataset.tiltBound) return;
+    card.dataset.tiltBound = '1';
+
+    card.addEventListener('mousemove', function (e) {
+      var r = card.getBoundingClientRect();
+      var px = (e.clientX - r.left) / r.width - 0.5;
+      var py = (e.clientY - r.top) / r.height - 0.5;
+      card.style.setProperty('--tilt-y', (px * 6).toFixed(2) + 'deg');
+      card.style.setProperty('--tilt-x', (py * -6).toFixed(2) + 'deg');
+    });
+    card.addEventListener('mouseleave', function () {
+      card.style.setProperty('--tilt-x', '0deg');
+      card.style.setProperty('--tilt-y', '0deg');
+    });
+  });
+}
+
 function initCursorFX() {
   var isFine = window.matchMedia('(pointer: fine)').matches;
   var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -869,6 +895,7 @@ function initRecentCarousel(posts) {
   var cardsHTML = recent.map(cardHTML).join('');
   var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   track.innerHTML = prefersReduced ? cardsHTML : cardsHTML + cardsHTML;
+  initTiltCards(track);
   if (prefersReduced || !section || !viewport) return;
 
   var cards = track.querySelectorAll('.carousel-card');
