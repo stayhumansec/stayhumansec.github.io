@@ -307,6 +307,14 @@ html.force-mobile-hero3d .hero-cta-row{justify-content:center;}
 .section-inner{max-width:var(--content-max); margin:0 auto; position:relative;}
 .section-eyebrow{font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--orange); letter-spacing:1.5px; margin-bottom:14px; text-align:center;}
 .about-grid{display:grid; grid-template-columns:1.3fr 0.9fr; gap:64px; align-items:center; margin-top:6px;}
+/* This is a split text+card layout, not a single centered column like the
+   rest of the site's sections -- centering the eyebrow/heading/paragraph
+   here just reads as misaligned against the card sitting next to them, so
+   this block opts back out of the site-wide section-centering rules. */
+.about-text{text-align:left;}
+.about-text .section-eyebrow{text-align:left;}
+.about-text h2{margin-left:0; margin-right:0; text-align:left;}
+.about-text p{margin-left:0; margin-right:0; text-align:left; text-align-last:auto;}
 .about-card{background:var(--card); border:1px solid var(--line); border-radius:16px; overflow:hidden; transition:border-color .2s ease, transform .25s var(--ease);}
 .about-card:hover{border-color:var(--orange); transform:translateY(-4px);}
 .about-card-head{display:flex; align-items:center; justify-content:space-between; font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--cream-dim); padding:16px 22px; border-bottom:1px dashed var(--line);}
