@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>stay(human).sec</title>
+    <link>https://stayhumansec.github.io/</link>
+    <description>Cybersecurity, AI, and privacy explained properly — one fact, one fix, every day.</description>
+    <language>en-us</language>
+    <atom:link href="https://stayhumansec.github.io/feed.xml" rel="self" type="application/rss+xml"/>
+    <lastBuildDate>Sat, 01 Aug 2026 05:29:51 GMT</lastBuildDate>
+    <item>
+      <title>Is someone already inside your phone?</title>
+      <link>https://stayhumansec.github.io/post.html?slug=file_001</link>
+      <guid isPermaLink="true">https://stayhumansec.github.io/post.html?slug=file_001</guid>
+      <description>The 5-minute check that tells you for sure — session lists, unknown devices, and what to do if you find something.</description>
+    </item>
+    <item>
+      <title>The password mistake nobody thinks is a big deal</title>
+      <link>https://stayhumansec.github.io/post.html?slug=file_002</link>
+      <guid isPermaLink="true">https://stayhumansec.github.io/post.html?slug=file_002</guid>
+      <description>Why reusing one password anywhere is worse than you think, and how a password manager actually fixes it.</description>
+    </item>
+    <item>
+      <title>What is smishing?</title>
+      <link>https://stayhumansec.github.io/post.html?slug=file_003</link>
+      <guid isPermaLink="true">https://stayhumansec.github.io/post.html?slug=file_003</guid>
+      <description>The exact texts scammers send, why they work, and how to tell a real message from a fake one in seconds.</description>
+    </item>
+    <item>
+      <title>Incognito mode doesn't make you anonymous</title>
+      <link>https://stayhumansec.github.io/post.html?slug=file_004</link>
+      <guid isPermaLink="true">https://stayhumansec.github.io/post.html?slug=file_004</guid>
+      <description>It hides your history from the next person on this computer. It was never designed to hide you from anyone else.</description>
+    </item>
+    <item>
+      <title>The AI phone call that sounds exactly like your kid</title>
+      <link>https://stayhumansec.github.io/post.html?slug=file_005</link>
+      <guid isPermaLink="true">https://stayhumansec.github.io/post.html?slug=file_005</guid>
+      <description>It only takes a few seconds of audio from a social media video to clone a voice convincingly enough to fool a parent.</description>
+    </item>
+    <item>
+      <title>Turn on 2FA — here's what it actually protects</title>
+      <link>https://stayhumansec.github.io/post.html?slug=file_006</link>
+      <guid isPermaLink="true">https://stayhumansec.github.io/post.html?slug=file_006</guid>
+      <description>A stolen password alone stops working the moment 2FA is on. It's the single biggest upgrade available to you, and it takes about five minutes.</description>
+    </item>
+    <item>
+      <title>Anatomy of a phishing email, line by line</title>
+      <link>https://stayhumansec.github.io/post.html?slug=file_007</link>
+      <guid isPermaLink="true">https://stayhumansec.github.io/post.html?slug=file_007</guid>
+      <description>Every part of a phishing email is doing a specific job. Once you know what to look for, most of them fall apart in seconds.</description>
+    </item>
+    <item>
+      <title>How to spot a deepfake in 2026</title>
+      <link>https://stayhumansec.github.io/post.html?slug=file_008</link>
+      <guid isPermaLink="true">https://stayhumansec.github.io/post.html?slug=file_008</guid>
+      <description>The obvious tells from a few years ago mostly don't work anymore. Here's what actually still catches a fake.</description>
+    </item>
+    <item>
+      <title>Chick-fil-A's loyalty accounts just got hit by credential stuffing</title>
+      <link>https://stayhumansec.github.io/post.html?slug=file_009</link>
+      <guid isPermaLink="true">https://stayhumansec.github.io/post.html?slug=file_009</guid>
+      <description>Chick-fil-A didn't get hacked directly — attackers just tried stolen passwords from other breaches until some of them worked.</description>
+      <pubDate>Mon, 27 Jul 2026 00:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>
