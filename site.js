@@ -880,6 +880,51 @@ function initRecentCarousel(posts) {
 
   window.addEventListener('resize', function () { halfWidth = track.scrollWidth / 2; });
 
+  // Drag-to-scroll (mouse + touch) layered on top of the auto-drift -- dragging just
+  // repositions the same `offset` the animation loop already reads, and the loop keeps
+  // wrapping it (now in both directions) so the strip still loops seamlessly either way.
+  var dragging = false;
+  var dragStartX = 0;
+  var dragStartOffset = 0;
+  var dragMoved = false;
+  viewport.classList.add('is-draggable');
+
+  function pointerX(e) { return (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX); }
+
+  function onDragStart(e) {
+    dragging = true;
+    paused = true;
+    dragMoved = false;
+    dragStartX = pointerX(e);
+    dragStartOffset = offset;
+    viewport.classList.add('is-dragging');
+  }
+  function onDragMove(e) {
+    if (!dragging) return;
+    var delta = pointerX(e) - dragStartX;
+    if (Math.abs(delta) > 4) dragMoved = true;
+    offset = dragStartOffset + delta;
+    if (e.type === 'mousemove') e.preventDefault();
+  }
+  function onDragEnd() {
+    if (!dragging) return;
+    dragging = false;
+    viewport.classList.remove('is-dragging');
+    setTimeout(function () { paused = false; }, 1200);
+  }
+  // A card is an <a> -- suppress the click it would otherwise fire right after a drag
+  // so dragging the strip doesn't also navigate to whatever card the pointer lifted over.
+  track.addEventListener('click', function (e) {
+    if (dragMoved) { e.preventDefault(); e.stopPropagation(); dragMoved = false; }
+  }, true);
+
+  viewport.addEventListener('mousedown', onDragStart);
+  window.addEventListener('mousemove', onDragMove);
+  window.addEventListener('mouseup', onDragEnd);
+  viewport.addEventListener('touchstart', onDragStart, { passive: true });
+  viewport.addEventListener('touchmove', onDragMove, { passive: true });
+  viewport.addEventListener('touchend', onDragEnd);
+
   function applyCoverflow() {
     var vpRect = viewport.getBoundingClientRect();
     var centerX = vpRect.left + vpRect.width / 2;
@@ -901,11 +946,12 @@ function initRecentCarousel(posts) {
     if (lastT === null) lastT = t;
     var dt = (t - lastT) / 1000;
     lastT = t;
-    if (!paused) {
-      offset -= SPEED * dt;
-      if (-offset >= halfWidth) offset += halfWidth;
-      track.style.transform = 'translateX(' + offset + 'px)';
-    }
+    if (!paused && !dragging) offset -= SPEED * dt;
+    // Wrap both directions so a manual drag past either edge of the doubled
+    // track loops seamlessly, same as the auto-drift already did leftward.
+    if (-offset >= halfWidth) offset += halfWidth;
+    if (offset > 0) offset -= halfWidth;
+    track.style.transform = 'translateX(' + offset + 'px)';
     applyCoverflow();
   }
 
@@ -920,13 +966,11 @@ function initRecentCarousel(posts) {
   io.observe(section);
 
   section.addEventListener('mouseenter', function () { paused = true; });
-  section.addEventListener('mouseleave', function () { paused = false; });
+  section.addEventListener('mouseleave', function () { if (!dragging) paused = false; });
   section.addEventListener('focusin', function () { paused = true; });
-  section.addEventListener('focusout', function () { paused = false; });
-  section.addEventListener('touchstart', function () { paused = true; }, { passive: true });
-  section.addEventListener('touchend', function () {
-    setTimeout(function () { paused = false; }, 1500);
-  }, { passive: true });
+  section.addEventListener('focusout', function () { if (!dragging) paused = false; });
+  // Touch pause/resume is handled by the drag handlers above (onDragStart/onDragEnd) --
+  // no separate touchstart/touchend pair needed here.
 }
 
 /** Escapes text before it's inserted as HTML, since post content comes from a JSON data file. */

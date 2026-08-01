@@ -209,8 +209,11 @@ body::after{
    approach the edges instead of just sliding flat, and never look
    hard-clipped -- they fade out smoothly well before the actual edge. */
 .carousel-viewport{-webkit-mask-image:linear-gradient(to right, transparent, black 16%, black 84%, transparent); mask-image:linear-gradient(to right, transparent, black 16%, black 84%, transparent);}
+.carousel-viewport.is-draggable{cursor:grab;}
+.carousel-viewport.is-dragging{cursor:grabbing;}
+.carousel-viewport.is-dragging .carousel-track{user-select:none;}
 .carousel-track{display:flex; gap:28px; width:max-content; will-change:transform;}
-.carousel-card{flex:0 0 auto; width:230px; padding:14px 18px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); text-decoration:none; color:inherit; display:block; transition:border-color .2s ease; will-change:transform, opacity;}
+.carousel-card{flex:0 0 auto; width:230px; padding:14px 18px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); text-decoration:none; color:inherit; display:block; transition:border-color .2s ease; will-change:transform, opacity; -webkit-user-drag:none;}
 .carousel-card:hover{border-color:var(--pillar-color, var(--orange));}
 .carousel-card .cc-tag{display:block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; color:var(--pillar-color, var(--orange)); margin-bottom:8px;}
 .carousel-card .cc-title{display:block; font-size:14px; font-weight:600; color:var(--cream); line-height:1.4;}
