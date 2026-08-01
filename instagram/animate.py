@@ -2332,21 +2332,6 @@ def animate_debut_video(out_dir, video_path, fps=60):
     windows = [Image.alpha_composite(window_chrome, ov) for ov in overlays]
     static_bg = rec.img.convert('RGBA')
 
-    # Soft ambient glow behind the whole window/box mockup -- a blurred,
-    # slightly-oversized rounded rect in the brand orange, baked once into
-    # static_bg (not animated, since it never needs to move or pulse) so
-    # every screen's window reads as gently lit from behind rather than
-    # sitting flat against the grid background.
-    GLOW_PAD = 46
-    glow_layer = Image.new('RGBA', (1080, 1080), (0, 0, 0, 0))
-    glow_draw = ImageDraw.Draw(glow_layer)
-    glow_draw.rounded_rectangle(
-        [BW_X0 - GLOW_PAD, BW_Y0 - GLOW_PAD, BW_X1 + GLOW_PAD, BW_Y1 + GLOW_PAD],
-        radius=18 + GLOW_PAD, fill=(*orange3, 110),
-    )
-    glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(radius=55))
-    static_bg = Image.alpha_composite(static_bg, glow_layer)
-
     def compose(*layers):
         frame = static_bg.copy()
         for layer in layers:
