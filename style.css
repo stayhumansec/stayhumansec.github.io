@@ -351,7 +351,9 @@ html.force-mobile-hero3d .hero-cta-row{justify-content:center;}
 .pillar-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 20px 18px; cursor:pointer; transition:border-color .2s ease, transform .25s var(--ease), box-shadow .25s var(--ease);}
 .pillar-card:hover{border-color:var(--pillar-color, var(--orange)); transform:translateY(-4px); box-shadow:0 16px 28px rgba(0,0,0,0.35);}
 .pillar-card.active{border-color:var(--pillar-color, var(--orange)); background:rgba(255,122,61,0.06);}
-.pillar-card .dot{width:9px; height:9px; border-radius:50%; background:var(--pillar-color, var(--orange)); margin-bottom:12px;}
+.pillar-card .picon-row{display:flex; align-items:center; gap:8px; margin-bottom:12px;}
+.pillar-card .picon{font-size:19px; line-height:1;}
+.pillar-card .dot{width:9px; height:9px; border-radius:50%; background:var(--pillar-color, var(--orange));}
 .pillar-card .pname{font-weight:700; font-size:15px; margin-bottom:3px;}
 .pillar-card .pfreq{font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase; color:var(--pillar-color, var(--orange));}
 @media (max-width:900px){ .pillar-grid{grid-template-columns:repeat(2, 1fr);} }
@@ -514,7 +516,7 @@ footer.article-footer a:hover{color:var(--orange);}
   .toc-mobile[open] summary::after{transform:rotate(180deg);}
   .toc-mobile-count{color:var(--cream-dim); font-weight:400; margin-left:auto; margin-right:10px;}
   .toc-mobile-list{border-top:1px dashed var(--line); padding:6px 8px;}
-  .toc-mobile-list a{display:block; padding:10px; border-radius:8px; color:var(--cream-dim); text-decoration:none; font-size:13px; font-family:'IBM Plex Mono', monospace; transition:background .15s ease, color .15s ease;}
+  .toc-mobile-list a{display:block; padding:10px; border-radius:8px; color:var(--cream-dim); text-decoration:none; font-size:13px; font-family:'IBM Plex Mono', monospace; transition:background .2s ease, color .2s ease;}
   .toc-mobile-list a:hover, .toc-mobile-list a:active{background:rgba(255,122,61,0.08); color:var(--cream);}
 }
 main.article{max-width:var(--read-max); margin:0 auto; padding-top:0;}
@@ -536,6 +538,13 @@ main.article h2 .num{font-family:'IBM Plex Mono', monospace; font-size:15px; col
 .warn-box{background:rgba(232,90,130,0.08); border:1px solid var(--pink); border-radius:16px; padding:24px 26px; margin:30px 0;}
 .warn-box .label{font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:700; color:var(--pink); letter-spacing:1px; margin-bottom:10px;}
 .warn-box p{color:var(--cream-dim); font-size:15px; text-align:justify; text-align-last:left;}
+
+/* Shared fetch-failure state (posts.json/notes.json/newsBriefs.json failing to load) --
+   same pink-alert visual language as .warn-box, so a failed load reads as a designed
+   state instead of a raw, unstyled error dump. */
+.fetch-error-box{background:rgba(232,90,130,0.08); border:1px solid var(--pink); border-radius:16px; padding:22px 24px; margin-top:20px;}
+.fetch-error-box .label{font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:700; color:var(--pink); letter-spacing:1px; margin-bottom:10px; text-transform:uppercase;}
+.fetch-error-box p{color:var(--cream-dim); font-size:13.5px; line-height:1.65; margin:0;}
 
 /* ============ PROMPT LIBRARY ============ */
 /* Page-level disclaimer -- deliberately styled as chrome (full-width, sits
@@ -761,6 +770,30 @@ main.article h2 .num{font-family:'IBM Plex Mono', monospace; font-size:15px; col
 .note-body p:last-child{margin-bottom:0;}
 .note-body strong{color:var(--cream); font-weight:700;}
 .note-body em{font-style:italic;}
+
+/* ============ PRESS/ACTIVE FEEDBACK ============
+   Nearly every interactive element had a hover lift but nothing for the actual moment
+   of clicking/tapping -- this gives buttons, cards, and nav chrome a consistent, subtle
+   "give" on press (scale down slightly) instead of just snapping straight from hover to
+   whatever comes next. Comes after every :hover rule above so it wins the tie on
+   pointer-down, overriding any hover lift with a press-down feel instead of stacking. */
+.btn-primary:active, .btn-secondary:active, .nav-cta:active, .tab-btn:active,
+.file-row:active, .router-card:active, .pillar-card:active, .about-card:active,
+.next-box:active, .glossary-card:active, .carousel-card:active, .prompt-card:active,
+.tool-card:active, .social-row a:active, .copy-md-btn:active, .palette-item:active,
+.quiz-opt:active {
+  transform:scale(0.97);
+  transition:transform .1s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary:active, .btn-secondary:active, .nav-cta:active, .tab-btn:active,
+  .file-row:active, .router-card:active, .pillar-card:active, .about-card:active,
+  .next-box:active, .glossary-card:active, .carousel-card:active, .prompt-card:active,
+  .tool-card:active, .social-row a:active, .copy-md-btn:active, .palette-item:active,
+  .quiz-opt:active {
+    transform:none;
+  }
+}
 
 /* ============ RESPONSIVE (mobile stays mobile — this is what desktop no longer inherits) ============ */
 @media (max-width:600px){
