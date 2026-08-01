@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>News — stay(human).sec</title>
-<link rel="stylesheet" href="style.css?v=39"></head><body><div class="scroll-progress" id="scrollProgress"></div><nav class="topnav" id="topnav">  <a href="index.html" class="nav-brand">
+<link rel="stylesheet" href="style.css?v=40"></head><body><div class="scroll-progress" id="scrollProgress"></div><nav class="topnav" id="topnav">  <a href="index.html" class="nav-brand">
     <span id="navIcon"></span>
     <span>stay<span class="b-accent">(human)</span>.sec</span>
   </a>
@@ -41,7 +41,11 @@
     <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:700px;">Every Cyber News and AI News post, in one feed — newest first. Each one is a real, current story, never invented, always linked back to where it actually came from. Our write-up explains what it means for you; the original story is one click away if you want it straight from the source.</p>
 
     <div class="listing-label reveal" id="newsCount">loading feed…</div>
-    <div class="news-grid" id="newsGrid"></div>
+    <div class="news-grid" id="newsGrid">
+      <div class="skeleton"><div class="skel-line" style="width:40%;"></div><div class="skel-line" style="width:90%; height:80px; border-radius:12px;"></div></div>
+      <div class="skeleton"><div class="skel-line" style="width:35%;"></div><div class="skel-line" style="width:85%; height:80px; border-radius:12px;"></div></div>
+      <div class="skeleton"><div class="skel-line" style="width:45%;"></div><div class="skel-line" style="width:80%; height:80px; border-radius:12px;"></div></div>
+    </div>
   </div>
 </section>
 
@@ -52,7 +56,11 @@
     <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:700px;">Just headlines we found and linked, pulled from multiple outlets — we didn't write any commentary on these, unlike the full stories above. We aim for roughly half cybersecurity, half AI-privacy each day; on days there isn't enough AI-privacy news that actually clears our bar, this list runs shorter instead of getting padded with off-topic stories.</p>
 
     <div class="listing-label reveal" id="briefsCount">loading headlines…</div>
-    <div class="briefs-list" id="briefsList"></div>
+    <div class="briefs-list" id="briefsList">
+      <div class="skeleton"><div class="skel-line" style="width:70%;"></div></div>
+      <div class="skeleton"><div class="skel-line" style="width:55%;"></div></div>
+      <div class="skeleton"><div class="skel-line" style="width:62%;"></div></div>
+    </div>
   </div>
 </section>
 
@@ -89,7 +97,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=30"></script><script>  if (typeof brandIconSVG !== 'function') {
+<script src="site.js?v=31"></script><script>  if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
     throw new Error('site.js not loaded.');
   }

@@ -860,8 +860,9 @@ function initRecentCarousel(posts) {
   if (recent.length < 4) { if (section) section.style.display = 'none'; return; }
 
   function cardHTML(p) {
+    var readMark = isPostRead(p.slug) ? '<span class="cc-read" title="Already read">✓ read</span>' : '';
     return '<a class="carousel-card" href="post.html?slug=' + encodeURIComponent(p.slug) + '" style="--pillar-color:' + p.pillarColor + ';">' +
-      '<span class="cc-tag">' + escapeHTML(p.pillarLabel || '') + '</span>' +
+      '<span class="cc-tag">' + escapeHTML(p.pillarLabel || '') + '</span>' + readMark +
       '<span class="cc-title">' + escapeHTML(p.title) + '</span></a>';
   }
 
@@ -1015,6 +1016,29 @@ function setStoredApiKey(key) {
   try {
     if (key) localStorage.setItem('shs_ai_key', key);
     else localStorage.removeItem('shs_ai_key');
+  } catch (e) {}
+}
+
+/**
+ * Tracks which posts a visitor has opened, purely client-side (localStorage only, same
+ * "nothing leaves the browser" posture as the AI key above) -- lets listing pages show a
+ * quiet "already read" marker so someone working through the archive can see where they
+ * left off, with no account, no server, and nothing to opt out of sending anywhere.
+ */
+function getReadPosts() {
+  try { return JSON.parse(localStorage.getItem('shs_read_posts') || '[]'); } catch (e) { return []; }
+}
+function isPostRead(slug) {
+  return getReadPosts().indexOf(slug) !== -1;
+}
+function markPostRead(slug) {
+  if (!slug) return;
+  try {
+    var read = getReadPosts();
+    if (read.indexOf(slug) === -1) {
+      read.push(slug);
+      localStorage.setItem('shs_read_posts', JSON.stringify(read));
+    }
   } catch (e) {}
 }
 
