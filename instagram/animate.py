@@ -1910,6 +1910,14 @@ def animate_debut_video(out_dir, video_path, fps=60):
     LINE_COLOR = (58, 53, 44)  # matches --line
 
     base_img, base_draw = base_card()
+    # Erase base_card()'s 24px grid for this video only (drawn back over
+    # in solid black, leaving the rounded cream border intact) -- shared
+    # base_card() itself stays untouched since every other still/animation
+    # on the site relies on that grid. Flat black lets the Matrix rain
+    # overlay (applied later, in apply_matrix_rain()) read cleanly instead
+    # of fighting the grid lines for attention.
+    base_draw.rectangle((16, 16, 1080 - 16, 1080 - 16), fill=(0, 0, 0))
+    base_draw.rounded_rectangle((10, 10, 1080 - 10, 1080 - 10), radius=46, outline=cream3, width=6)
     rec = FrameRecorder(base_img, base_draw, out_dir)
 
     FPS_SCALE = fps / 20.0
@@ -1938,7 +1946,8 @@ def animate_debut_video(out_dir, video_path, fps=60):
                            scroll_px_per_sec=95):
         """Post-processing pass (run once, after every frame is already
         saved) that composites a subtle scrolling Matrix-style digital
-        rain -- falling green glyph trails -- over every frame in
+        rain -- falling glyph trails in the brand orange (not the
+        traditional movie green, to stay on-palette) -- over every frame in
         frame_dir, for the "mystery/curious hacker" look this video was
         asked for. Built as one tall texture strip (3x the frame height)
         and cropped with a growing vertical offset per frame rather than
@@ -1973,7 +1982,8 @@ def animate_debut_video(out_dir, video_path, fps=60):
                 else:
                     continue
                 ch = random.choice(glyphs)
-                col = (0, int(bright), int(bright * 0.35), int(bright))
+                frac = bright / 255
+                col = (int(255 * frac), int(122 * frac), int(61 * frac), int(bright))
                 sd.text((x, r * row_h), ch, font=rain_font, fill=col)
 
         for i in range(1, total + 1):
