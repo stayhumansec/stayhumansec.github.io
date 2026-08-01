@@ -818,6 +818,59 @@ def synthesize_sound_track(keyboard_audio_path, click_frames, blink_frames, fps,
     return out_wav
 
 
+def synth_ambient_wind_track(duration_sec, out_wav, sample_rate=44100, seed=7):
+    """Renders a continuous, quiet wind/space ambience bed as a WAV -- no
+    stock audio asset needed, same pure-stdlib (wave/struct/math/random)
+    synthesis approach as _synth_blink_tick_samples() above. Three layers:
+
+      1. Brown noise (a random walk, leaked back toward zero each sample
+         so it doesn't drift) for the airy "wind" texture -- brown noise
+         reads as soft/rushing rather than harsh the way white noise does.
+      2. A slow, irregular gust envelope (two off-beat sine LFOs summed)
+         modulating that noise's amplitude, so it swells and falls instead
+         of sitting at one flat, fatiguing level.
+      3. A very low sine drone (60Hz, itself slowly swelling) mixed in
+         quietly underneath for a "space/deep hum" undertone.
+
+    Deliberately mixed low (peak ~0.5 before final normalize) since this
+    is meant to sit as a background bed under the whole video, not compete
+    with anything -- there's no dialogue/SFX elsewhere in this video to
+    duck under, but a loud ambience would still fight the on-screen text
+    for attention.
+    """
+    random.seed(seed)
+    n = int(duration_sec * sample_rate)
+
+    walk = 0.0
+    noise = [0.0] * n
+    for i in range(n):
+        walk += random.uniform(-1, 1) * 0.02
+        walk *= 0.999
+        noise[i] = walk
+    peak_n = max((abs(x) for x in noise), default=1.0) or 1.0
+    noise = [x / peak_n for x in noise]
+
+    out = [0.0] * n
+    for i in range(n):
+        t = i / sample_rate
+        gust = 0.55 + 0.45 * (0.6 * math.sin(2 * math.pi * 0.07 * t) +
+                               0.4 * math.sin(2 * math.pi * 0.023 * t + 1.3))
+        gust = max(0.15, gust)
+        drone = 0.12 * math.sin(2 * math.pi * 60 * t) * (0.5 + 0.5 * math.sin(2 * math.pi * 0.05 * t))
+        out[i] = noise[i] * gust * 0.5 + drone
+
+    peak = max((abs(x) for x in out), default=1.0) or 1.0
+    scale = 0.5 / peak
+    int_samples = [max(-32768, min(32767, int(x * scale * 32767))) for x in out]
+
+    with wave.open(out_wav, 'w') as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sample_rate)
+        w.writeframes(struct.pack(f'<{len(int_samples)}h', *int_samples))
+    return out_wav
+
+
 def mux_audio(video_path, audio_path, output_path):
     """Combines a (silent) video and a WAV audio track into one MP4 --
     video re-encoded to nothing new (stream-copied), audio encoded to AAC.
@@ -1771,9 +1824,10 @@ def animate_debut_video(out_dir, video_path, fps=60):
     instead -- every beat runs as long as it genuinely needs to read
     comfortably, not compressed toward a fixed total.
 
-    No audio track: nothing in this brief asked for sound design beyond
-    what Act 1 already doesn't have, so this returns a silent MP4, same
-    as the approved silhouette.
+    Audio: a continuous, quiet synthesized wind/space ambience bed
+    (synth_ambient_wind_track()) runs under the whole video -- no dialogue
+    or SFX elsewhere in this cut to duck under, so it's mixed low and left
+    running start to finish rather than gated to specific acts.
     """
     from generate_post import (base_card, gray_light, blue, green, gold, pink, violet,
                                 font, BOLD, REG, MONO_BOLD, MONO_REG,
@@ -2218,7 +2272,54 @@ def animate_debut_video(out_dir, video_path, fps=60):
         caption_below(d, "real tools, picked for what they actually protect -- never sponsored")
         return img
 
-    overlays = [screen_hero(), screen_pillars(), screen_utilities(), screen_article(), screen_news(), screen_toolkit()]
+    def screen_prompts():
+        img, d = new_overlay()
+        eyebrow_f = font(MONO_BOLD, 20)
+        d.text((CX0 + 50, CY0 + 40), "// PROMPT LIBRARY", font=eyebrow_f, fill=orange3)
+        head_f = font(BOLD, 30)
+        d.text((CX0 + 50, CY0 + 84), "Copy a prompt. Ask AI the right way.", font=head_f, fill=cream3)
+        prompts = [
+            ("RECOVER A LOCKED EMAIL ACCOUNT", orange3),
+            ("CHECK WHAT AN APP PERMISSION DOES", green),
+            ("UNDERSTAND WHAT AN AI CHATBOT KEEPS", violet),
+            ("FACT-CHECK A PRIVACY \"TIP\"", gold),
+        ]
+        label_f = font(MONO_BOLD, 17)
+        py = CY0 + 150
+        row_h = 96
+        for label, color in prompts:
+            d.rounded_rectangle([CX0 + 50, py, CX1 - 50, py + row_h - 20], radius=12, outline=LINE_COLOR, width=2)
+            d.rounded_rectangle([CX0 + 68, py + 18, CX0 + 68 + 10, py + row_h - 38], radius=4, fill=color)
+            d.text((CX0 + 96, py + 24), label, font=label_f, fill=cream3)
+            py += row_h
+        caption_below(d, "pre-written prompts to paste into any AI chat you already use")
+        return img
+
+    def screen_notes():
+        img, d = new_overlay()
+        eyebrow_f = font(MONO_BOLD, 20)
+        d.text((CX0 + 50, CY0 + 40), "// ON(MY).MIND", font=eyebrow_f, fill=orange3)
+        head_f = font(BOLD, 30)
+        d.text((CX0 + 50, CY0 + 84), "Freeform, first-person, unfiltered.", font=head_f, fill=cream3)
+        rows = [
+            ("TECHNICAL", blue, "Builds, fixes, and the occasional dead end."),
+            ("PHILOSOPHY", violet, "The thinking behind why this project exists."),
+            ("CONCERNS", pink, "Honest doubts -- including ones without a tidy resolution."),
+        ]
+        label_f = font(MONO_BOLD, 19)
+        sub_f = font(REG, 18)
+        py = CY0 + 160
+        row_h = 130
+        for label, color, sub in rows:
+            d.ellipse([CX0 + 50, py + 4, CX0 + 66, py + 20], fill=color)
+            d.text((CX0 + 84, py - 2), label, font=label_f, fill=color)
+            d.text((CX0 + 50, py + 34), sub, font=sub_f, fill=gray_light)
+            py += row_h
+        caption_below(d, "a separate, rougher voice -- not the teaching format the posts use")
+        return img
+
+    overlays = [screen_hero(), screen_pillars(), screen_utilities(), screen_prompts(), screen_article(),
+                screen_news(), screen_toolkit(), screen_notes()]
 
     # Each screen's complete "window" (chrome + that screen's own content,
     # composited once) plain-crossfades into the next -- no drift, and
@@ -2230,6 +2331,21 @@ def animate_debut_video(out_dir, video_path, fps=60):
     window_chrome = render_window_chrome()
     windows = [Image.alpha_composite(window_chrome, ov) for ov in overlays]
     static_bg = rec.img.convert('RGBA')
+
+    # Soft ambient glow behind the whole window/box mockup -- a blurred,
+    # slightly-oversized rounded rect in the brand orange, baked once into
+    # static_bg (not animated, since it never needs to move or pulse) so
+    # every screen's window reads as gently lit from behind rather than
+    # sitting flat against the grid background.
+    GLOW_PAD = 46
+    glow_layer = Image.new('RGBA', (1080, 1080), (0, 0, 0, 0))
+    glow_draw = ImageDraw.Draw(glow_layer)
+    glow_draw.rounded_rectangle(
+        [BW_X0 - GLOW_PAD, BW_Y0 - GLOW_PAD, BW_X1 + GLOW_PAD, BW_Y1 + GLOW_PAD],
+        radius=18 + GLOW_PAD, fill=(*orange3, 110),
+    )
+    glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(radius=55))
+    static_bg = Image.alpha_composite(static_bg, glow_layer)
 
     def compose(*layers):
         frame = static_bg.copy()
@@ -2312,7 +2428,12 @@ def animate_debut_video(out_dir, video_path, fps=60):
     rec.hold_last_frame(sec_frames(3.2))
 
     total_frames = rec.index - 1
-    assemble_video(out_dir, video_path, fps=fps)
+    silent_path = video_path + ".silent.mp4"
+    assemble_video(out_dir, silent_path, fps=fps)
+    ambient_wav = os.path.join(out_dir, "_ambient.wav")
+    synth_ambient_wind_track(total_frames / fps, ambient_wav)
+    mux_audio(silent_path, ambient_wav, video_path)
+    os.remove(silent_path)
     return total_frames
 
 
