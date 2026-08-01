@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prompt Library — stay(human).sec</title>
-<link rel="stylesheet" href="style.css?v=38"></head><body><div class="scroll-progress" id="scrollProgress"></div><nav class="topnav" id="topnav">  <a href="index.html" class="nav-brand">
+<link rel="stylesheet" href="style.css?v=39"></head><body><div class="scroll-progress" id="scrollProgress"></div><nav class="topnav" id="topnav">  <a href="index.html" class="nav-brand">
     <span id="navIcon"></span>
     <span>stay<span class="b-accent">(human)</span>.sec</span>
   </a>
@@ -43,11 +43,11 @@
 
 <section class="section">
   <div class="section-inner">
-    <div class="section-eyebrow reveal">// PROMPT LIBRARY</div>
-    <h2 class="reveal">Don't know the fix? Ask AI the right way.</h2>
-    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:640px;">Same philosophy as Password Coach: we'd rather teach you the method than hand you a one-time answer. There are more specific situations than any one site can write a guide for — so instead, here's a library of pre-written prompts you can copy straight into ChatGPT, Claude, Gemini, or any other AI chat, and walk yourself through the situation step by step.</p>
+    <div class="section-eyebrow">// PROMPT LIBRARY</div>
+    <h2>Don't know the fix? Ask AI the right way.</h2>
+    <p style="color:var(--cream-dim); font-size:16px; max-width:640px;">Same philosophy as Password Coach: we'd rather teach you the method than hand you a one-time answer. There are more specific situations than any one site can write a guide for — so instead, here's a library of pre-written prompts you can copy straight into ChatGPT, Claude, Gemini, or any other AI chat, and walk yourself through the situation step by step.</p>
 
-    <div class="listing-label reveal" id="promptCount">loading prompts…</div>
+    <div class="listing-label" id="promptCount">loading prompts…</div>
     <div class="prompt-grid" id="promptGrid">
       <div class="skeleton">
         <div class="skel-line" style="width:30%;"></div>
@@ -104,7 +104,6 @@
   initCommandPalette();
   initMobileNav();
   highlightActiveNav();
-  initScrambleReveal('.section-eyebrow');
 
   // Same 9 pillars/colors as CLAUDE.md's table -- kept here rather than in
   // prompts.json per-entry (schema only carries the pillar slug + its own
@@ -130,7 +129,7 @@
   function cardHTML(p, i) {
     var label = PILLAR_LABEL[p.pillar] || p.pillar;
     return '' +
-      '<div class="prompt-card declass" data-pillar="' + escapeHTML(p.pillar) + '" style="--pillar-color:' + p.pillarColor + ';">' +
+      '<div class="prompt-card" data-pillar="' + escapeHTML(p.pillar) + '" style="--pillar-color:' + p.pillarColor + ';">' +
         '<span class="pc-pillar">' + escapeHTML(label) + '</span>' +
         '<h3>' + escapeHTML(p.title) + '</h3>' +
         '<div class="prompt-code"><pre>' + escapeHTML(p.promptText) + '</pre></div>' +
@@ -150,7 +149,6 @@
       var entry = entries[Number(btn.getAttribute('data-copy-idx'))];
       setupCopyButton(btn, function () { return entry.promptText; });
     });
-    initDeclassify({ stagger: true });
   }
 
   loadPrompts().then(function (data) {
