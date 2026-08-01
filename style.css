@@ -24,7 +24,7 @@
   --violet:#9670e6;
   --gold:#e8a700;
   --pink:#e85a82;
-  --content-max:1240px;
+  --content-max:clamp(1240px, 86vw, 1520px);
   --read-max:720px;
   --nav-h:74px;
   --ease:cubic-bezier(.22,.61,.36,1);
