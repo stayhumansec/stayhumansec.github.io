@@ -154,9 +154,14 @@ body::after{
 /* ============ HERO ============ */
 .hero-section{position:relative; z-index:1; padding:88px 48px 110px; overflow:hidden;}
 .hero-inner{position:relative; z-index:2; isolation:isolate; max-width:var(--content-max); margin:0 auto; display:grid; grid-template-columns:1.15fr 0.85fr; gap:70px; align-items:center;}
-.hero-text{text-align:center;}
-.hero-motto{display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:1px; color:var(--cream-dim); border:1px solid var(--line); padding:8px 16px; border-radius:20px; margin-bottom:26px; margin-left:auto; margin-right:auto;}
-.hero-logo{width:76px; height:auto; margin-bottom:22px; margin-left:auto; margin-right:auto;}
+/* Left-aligned by default -- the hero is the same asymmetric text+card
+   split as the "What we are" section (see .about-text below), and
+   centering text next to a paired visual reads as imbalanced/off-center
+   rather than tidy. Centered only on mobile (media query further down),
+   where the two columns stack into one and centering is the right call. */
+.hero-text{text-align:left;}
+.hero-motto{display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:1px; color:var(--cream-dim); border:1px solid var(--line); padding:8px 16px; border-radius:20px; margin-bottom:26px;}
+.hero-logo{width:76px; height:auto; margin-bottom:22px;}
 .hero-logo svg{width:100%; height:auto;}
 .hero-motto b{color:var(--orange); font-weight:700;}
 .hero-motto .dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex-shrink:0;}
@@ -164,8 +169,8 @@ body::after{
 .wordmark span{color:var(--orange);}
 .hero-tagline{font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:0.5px; color:var(--cream); font-weight:700; margin-top:16px;}
 .hero-tagline b{color:var(--orange); font-weight:700;}
-.hero-sub{max-width:520px; margin:24px auto 38px; color:var(--cream-dim); font-size:17px; line-height:1.7;}
-.hero-cta-row{display:flex; gap:16px; flex-wrap:wrap; justify-content:center;}
+.hero-sub{max-width:520px; margin:24px 0 38px; color:var(--cream-dim); font-size:17px; line-height:1.7;}
+.hero-cta-row{display:flex; gap:16px; flex-wrap:wrap;}
 .btn-primary{background:var(--orange); color:#000; font-weight:700; padding:15px 30px; border-radius:12px; text-decoration:none; font-size:15px; display:inline-block; transition:transform .25s var(--ease), box-shadow .25s var(--ease);}
 .btn-primary:hover{transform:translateY(-3px); box-shadow:0 14px 30px rgba(255,122,61,0.32);}
 .btn-secondary{border:1px solid var(--line); color:var(--cream-dim); padding:15px 30px; border-radius:12px; text-decoration:none; font-family:'IBM Plex Mono', monospace; font-size:13px; display:inline-block; transition:border-color .2s ease, color .2s ease, transform .25s var(--ease);}
@@ -312,9 +317,9 @@ html.force-mobile-hero3d .hero-cta-row{justify-content:center;}
    here just reads as misaligned against the card sitting next to them, so
    this block opts back out of the site-wide section-centering rules. */
 .about-text{text-align:left;}
-.about-text .section-eyebrow{text-align:left;}
-.about-text h2{margin-left:0; margin-right:0; text-align:left;}
-.about-text p{margin-left:0; margin-right:0; text-align:left; text-align-last:auto;}
+.about-grid .about-text .section-eyebrow{text-align:left;}
+.about-grid .about-text h2{margin-left:0; margin-right:0; text-align:left;}
+.about-grid .about-text p{margin-left:0; margin-right:0; text-align:left; text-align-last:auto;}
 .about-card{background:var(--card); border:1px solid var(--line); border-radius:16px; overflow:hidden; transition:border-color .2s ease, transform .25s var(--ease);}
 .about-card:hover{border-color:var(--orange); transform:translateY(-4px);}
 .about-card-head{display:flex; align-items:center; justify-content:space-between; font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--cream-dim); padding:16px 22px; border-bottom:1px dashed var(--line);}
