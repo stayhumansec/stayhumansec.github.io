@@ -307,7 +307,7 @@ html.force-mobile-hero3d .hero-cta-row{justify-content:center;}
 .about-facts li b{color:var(--cream); font-weight:700; font-size:15px;}
 @media (max-width:860px){ .about-grid{grid-template-columns:1fr; gap:36px;} }
 .section h2{font-size:clamp(26px,3vw,34px); font-weight:700; margin-bottom:18px; max-width:680px; margin-left:auto; margin-right:auto; text-align:center;}
-.section > .section-inner > p, .section-body p, .about-text p{color:var(--cream-dim); font-size:16px; max-width:560px; line-height:1.75; margin-left:auto; margin-right:auto; text-align:justify; text-align-last:left;}
+.section > .section-inner > p, .section-body p, .about-text p, #rkIntro p{color:var(--cream-dim); font-size:16px; max-width:560px; line-height:1.75; margin-left:auto; margin-right:auto; text-align:justify; text-align-last:left;}
 .not-a-bot{display:inline-block; margin-top:22px; font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--orange); border:1px solid var(--orange); padding:8px 18px; border-radius:20px;}
 
 .pillar-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-top:36px;}
