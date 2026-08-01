@@ -382,7 +382,7 @@ html.force-mobile-hero3d .hero-cta-row{justify-content:center;}
 
 /* ============ DECLASSIFY WIPE (clip-path reveal for file/tool/glossary card grids) ============ */
 .declass{clip-path:inset(0 100% 0 0); transition:clip-path .7s var(--ease);}
-.declass.is-visible{clip-path:inset(0 0 0 0);}
+.declass.is-visible{clip-path:inset(-80px);}
 @media (prefers-reduced-motion: reduce){ .declass{clip-path:none !important; transition:none !important;} }
 
 /* ============ TABS ============ */
