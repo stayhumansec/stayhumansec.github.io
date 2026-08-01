@@ -66,6 +66,11 @@ body::after{
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* ============ MATRIX RAIN (side gutters only, ambient, JS-driven canvas) ============ */
+.matrix-rain{position:fixed; top:0; z-index:0; display:none; opacity:0.4; pointer-events:none;}
+.matrix-rain-left{left:0;}
+.matrix-rain-right{right:0;}
+
 /* ============ CURSOR GLOW + TRAILING BLOCK (desktop, fine pointer only) ============ */
 .cursor-glow{position:fixed; top:0; left:0; width:520px; height:520px; border-radius:50%; pointer-events:none; z-index:1; background:radial-gradient(circle, rgba(255,122,61,0.05), transparent 70%); transform:translate(calc(var(--mx, 50vw) - 50%), calc(var(--my, 50vh) - 50%)); will-change:transform; opacity:0; transition:opacity .4s ease;}
 .cursor-glow.active{opacity:1;}
