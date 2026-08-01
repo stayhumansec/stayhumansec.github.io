@@ -307,7 +307,7 @@ html.force-mobile-hero3d .hero-cta-row{justify-content:center;}
 .about-facts li b{color:var(--cream); font-weight:700; font-size:15px;}
 @media (max-width:860px){ .about-grid{grid-template-columns:1fr; gap:36px;} }
 .section h2{font-size:clamp(26px,3vw,34px); font-weight:700; margin-bottom:18px; max-width:680px; margin-left:auto; margin-right:auto; text-align:center;}
-.section > .section-inner > p, .section-body p, .about-text p{color:var(--cream-dim); font-size:16px; max-width:560px; line-height:1.75;}
+.section > .section-inner > p, .section-body p, .about-text p{color:var(--cream-dim); font-size:16px; max-width:560px; line-height:1.75; margin-left:auto; margin-right:auto; text-align:justify; text-align-last:left;}
 .not-a-bot{display:inline-block; margin-top:22px; font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--orange); border:1px solid var(--orange); padding:8px 18px; border-radius:20px;}
 
 .pillar-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-top:36px;}
@@ -466,7 +466,7 @@ main.article{max-width:var(--read-max); margin:0 auto; padding-top:0;}
 .tag{display:table; font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700; letter-spacing:1px; padding:5px 12px; border-radius:20px; margin:0 auto 22px; transform:rotate(-1.5deg);}
 main.article h1{font-size:clamp(28px, 4.5vw, 42px); font-weight:800; letter-spacing:-0.5px; margin-bottom:16px; line-height:1.15; text-align:center;}
 main.article h1 .accent{color:var(--orange);}
-.intro{color:var(--cream-dim); font-size:17px; max-width:560px; margin-bottom:30px;}
+.intro{color:var(--cream-dim); font-size:17px; max-width:560px; margin:0 auto 30px; text-align:justify; text-align-last:left;}
 .divider{border:none; border-top:1px dashed var(--line); margin:36px 0;}
 .stat-line{font-family:'JetBrains Mono', monospace; font-size:14px; color:var(--cream-dim); margin-bottom:36px; text-align:center;}
 .stat-line b{color:var(--orange);}
@@ -474,13 +474,13 @@ main.article h2{font-size:22px; font-weight:700; margin-bottom:18px; display:fle
 main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; color:var(--orange); border:1.5px solid var(--orange); width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
 .step{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px 28px; margin-bottom:20px; transition:border-color .2s ease;}
 .step:hover{border-color:var(--line);}
-.step p{color:var(--cream-dim); font-size:15.5px; margin-bottom:10px;}
+.step p{color:var(--cream-dim); font-size:15.5px; margin-bottom:10px; text-align:justify; text-align-last:left;}
 .step p:last-child{margin-bottom:0;}
 .step .platform{font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--green); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;}
 .step code{font-family:'JetBrains Mono', monospace; background:rgba(255,122,61,0.12); color:var(--orange); padding:2px 7px; border-radius:5px; font-size:14px;}
 .warn-box{background:rgba(232,90,130,0.08); border:1px solid var(--pink); border-radius:16px; padding:24px 26px; margin:30px 0;}
 .warn-box .label{font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700; color:var(--pink); letter-spacing:1px; margin-bottom:10px;}
-.warn-box p{color:var(--cream-dim); font-size:15px;}
+.warn-box p{color:var(--cream-dim); font-size:15px; text-align:justify; text-align-last:left;}
 
 /* ============ PROMPT LIBRARY ============ */
 /* Page-level disclaimer -- deliberately styled as chrome (full-width, sits
@@ -515,7 +515,7 @@ main.article h2 .num{font-family:'JetBrains Mono', monospace; font-size:15px; co
 /* ============ TL;DR STRIP ============ */
 .tldr-box{background:rgba(76,141,255,0.08); border:1px solid var(--blue); border-radius:16px; padding:20px 24px; margin:0 0 28px;}
 .tldr-box .label{font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px;}
-.tldr-box p{color:var(--cream-dim); font-size:15px; line-height:1.65;}
+.tldr-box p{color:var(--cream-dim); font-size:15px; line-height:1.65; text-align:justify; text-align-last:left;}
 
 /* ============ GLOSSARY NUDGE (inline, per-article) ============ */
 .glossary-nudge{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:var(--card); border:1px dashed var(--line); border-radius:12px; padding:14px 18px; margin:0 0 30px; font-size:13.5px; color:var(--cream-dim);}
