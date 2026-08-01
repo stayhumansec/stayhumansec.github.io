@@ -348,7 +348,7 @@ function highlightActiveNav() {
  * there's no hover concept on touch, so nothing here is even created for
  * it rather than attempting a faked equivalent.
  */
-var TILT_CARD_SELECTOR = '.about-card, .carousel-card, .glossary-card, .news-card, .pillar-card, .prompt-card, .router-card, .tool-card, .note-card';
+var TILT_CARD_SELECTOR = '.about-card, .carousel-card, .file-row, .glossary-card, .news-card, .pillar-card, .prompt-card, .router-card, .tool-card, .note-card';
 
 function initTiltCards(root) {
   var isFine = window.matchMedia('(pointer: fine)').matches;
