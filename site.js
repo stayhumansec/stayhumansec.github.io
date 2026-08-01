@@ -348,7 +348,7 @@ function highlightActiveNav() {
  * there's no hover concept on touch, so nothing here is even created for
  * it rather than attempting a faked equivalent.
  */
-var TILT_CARD_SELECTOR = '.about-card, .carousel-card, .file-row, .glossary-card, .news-card, .pillar-card, .prompt-card, .router-card, .tool-card, .note-card';
+var TILT_CARD_SELECTOR = '.about-card, .ai-key-box, .ai-result-box, .carousel-card, .fetch-error-box, .file-row, .glossary-card, .glossary-nudge, .hero-terminal, .news-card, .news-empty, .next-box, .pillar-card, .prompt-card, .prompt-check, .pw-display, .quiz-card, .router-card, .step, .tldr-box, .tool-card, .note-card, .warn-box';
 
 function initTiltCards(root) {
   var isFine = window.matchMedia('(pointer: fine)').matches;
@@ -1126,6 +1126,7 @@ function renderApiKeyBox(containerEl, onSaved) {
       '</div>' +
       '<p class="ai-key-note">Stored only in this browser — never sent anywhere except directly from your browser to Anthropic when you use the AI deep-dive. Don\'t have one? <a href="https://console.anthropic.com/" target="_blank" rel="noopener">Get a key here</a>. Everything on this page works fine without one, just with less depth.</p>' +
     '</div>';
+  initTiltCards(containerEl);
 
   document.getElementById('aiKeySaveBtn').addEventListener('click', function () {
     var val = document.getElementById('aiKeyInput').value.trim();

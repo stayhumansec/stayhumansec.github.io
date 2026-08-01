@@ -21,7 +21,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
-<link rel="stylesheet" href="style.css?v=46"><style>  @media print {    .topnav, .path-bar, .site-footer, .scroll-progress, #rkForm, #rkIntro, #rkEducation, .btn-secondary { display:none !important; }    body{ background:#fff; color:#000; }    .rk-print-title{ display:block !important; }    .rk-item{ border-color:#999 !important; color:#000 !important; }    .rk-item b, .rk-item span{ color:#000 !important; }
+<link rel="stylesheet" href="style.css?v=47"><style>  @media print {    .topnav, .path-bar, .site-footer, .scroll-progress, #rkForm, #rkIntro, #rkEducation, .btn-secondary { display:none !important; }    body{ background:#fff; color:#000; }    .rk-print-title{ display:block !important; }    .rk-item{ border-color:#999 !important; color:#000 !important; }    .rk-item b, .rk-item span{ color:#000 !important; }
   }
   .rk-print-title{ display:none; }
 </style>
@@ -145,7 +145,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=33"></script><script>  if (typeof brandIconSVG !== 'function') {
+<script src="site.js?v=34"></script><script>  if (typeof brandIconSVG !== 'function') {
     document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;padding:24px;font-family:monospace;color:#e85a82;text-align:center;">site.js failed to load — make sure all site files are in the same folder.</div>';
     throw new Error('site.js not loaded.');
   }
@@ -161,6 +161,7 @@
   highlightActiveNav();
   initScrambleReveal('.section-eyebrow');
   initScrollReveal({ stagger: true });
+  initTiltCards();
 
   var STORAGE_KEY = 'shs_recovery_kit';
 
