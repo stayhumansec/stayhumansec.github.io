@@ -384,6 +384,7 @@ function initMatrixRain() {
   var FONT_SIZE = 15;
   var STEP_MS = 90;
   var CHARS = '01$#/\\<>{}[]_+-*='.split('');
+  var COLS = 5;
 
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -413,7 +414,7 @@ function initMatrixRain() {
 
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     var h = window.innerHeight;
-    var cols = Math.floor(gutter / FONT_SIZE);
+    var cols = COLS;
 
     sides.forEach(function (s) {
       s.canvas.width = Math.floor(gutter * dpr);
@@ -422,6 +423,7 @@ function initMatrixRain() {
       s.canvas.style.height = h + 'px';
       s.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       s.ctx.clearRect(0, 0, gutter, h);
+      s.colSpacing = gutter / cols;
       s.drops = [];
       for (var i = 0; i < cols; i++) s.drops.push(Math.random() * -40);
     });
@@ -436,12 +438,12 @@ function initMatrixRain() {
       s.ctx.font = FONT_SIZE + 'px "JetBrains Mono", monospace';
       for (var i = 0; i < s.drops.length; i++) {
         var ch = CHARS[Math.floor(Math.random() * CHARS.length)];
-        var x = i * FONT_SIZE;
+        var x = i * s.colSpacing + s.colSpacing / 2 - FONT_SIZE / 2;
         var y = s.drops[i] * FONT_SIZE;
-        s.ctx.fillStyle = 'rgba(63,207,142,0.5)';
+        s.ctx.fillStyle = 'rgba(255,122,61,0.5)';
         s.ctx.fillText(ch, x, y);
         if (y > 0 && y < FONT_SIZE * 1.5) {
-          s.ctx.fillStyle = 'rgba(244,241,232,0.45)';
+          s.ctx.fillStyle = 'rgba(255,178,138,0.85)';
           s.ctx.fillText(ch, x, y);
         }
         if (y > h && Math.random() > 0.975) s.drops[i] = 0;
