@@ -473,17 +473,26 @@ def draw_terminal_chrome(recorder, prompt_text="user@stayhumansec:~$ ./explore.s
     recorder.snapshot()
 
 
-def _fade_to_clean_base(recorder, num_frames=10):
+def _fade_to_clean_base(recorder, num_frames=10, grid=True):
     """Cross-dissolves from whatever's currently baked into recorder.img
     (e.g. draw_terminal_chrome()'s title bar) back to a freshly rendered,
     empty base_card() -- used to remove a persistent overlay before a
     differently-styled act begins (Act 3's brand lockup doesn't use the
     terminal-chrome look Acts 1-2 do), so the handoff is a fade rather
     than a hard cut. Updates recorder.img/draw to the clean base
-    afterward, same pattern as fade_in_segments."""
+    afterward, same pattern as fade_in_segments.
+
+    grid=False erases base_card()'s 24px grid from the fresh base (border
+    kept) -- used by animate_debut_video() so its Matrix-rain look stays
+    grid-free across every act reset, not just before the first one.
+    Every other caller keeps the default grid=True, unaffected."""
     from generate_post import base_card
 
     clean_img, clean_d = base_card()
+    if not grid:
+        clean_d.rectangle((16, 16, clean_img.width - 16, clean_img.height - 16), fill=(0, 0, 0))
+        clean_d.rounded_rectangle((10, 10, clean_img.width - 10, clean_img.height - 10),
+                                   radius=46, outline=cream3, width=6)
     start = recorder.img.convert('RGBA')
     end = clean_img.convert('RGBA')
     for step in range(1, num_frames + 1):
@@ -2126,7 +2135,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
     rec.hold_last_frame(fr(30))
 
     # ================= Act 2: more about us =================
-    _fade_to_clean_base(rec, sec_frames(1.2))
+    _fade_to_clean_base(rec, sec_frames(1.2), grid=False)
 
     about_head_font = font(BOLD, 42)
     about_body_font = font(REG, 36)
@@ -2161,7 +2170,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
     )
 
     # ================= Act 3: website showcase =================
-    _fade_to_clean_base(rec, sec_frames(1.2))
+    _fade_to_clean_base(rec, sec_frames(1.2), grid=False)
 
     BW_X0, BW_Y0, BW_X1, BW_Y1 = 110, 130, 970, 830
     CHROME_H = 50
@@ -2496,7 +2505,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
         prev_win = win
 
     # ================= Act 4: brand lockup, reprised =================
-    _fade_to_clean_base(rec, sec_frames(1.3))
+    _fade_to_clean_base(rec, sec_frames(1.3), grid=False)
 
     wordmark_font2 = font(BOLD, 76)
     wordmark_segments2 = [("stay", cream3), ("(human)", orange3), (".sec", cream3)]
@@ -2517,7 +2526,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
     rec.hold_last_frame(sec_frames(2.4))
 
     # ================= Act 5: CTA =================
-    _fade_to_clean_base(rec, sec_frames(1.2))
+    _fade_to_clean_base(rec, sec_frames(1.2), grid=False)
 
     cta_font = font(BOLD, 54)
     cta_segments = [("Like", orange3), (". ", cream3), ("Share", orange3), (". ", cream3),
@@ -2525,7 +2534,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
     fade_in_segments(rec, cta_segments, cta_font, x='center', y=470, num_frames=sec_frames(1.3))
     rec.hold_last_frame(sec_frames(2.2))
 
-    _fade_to_clean_base(rec, sec_frames(1.0))
+    _fade_to_clean_base(rec, sec_frames(1.0), grid=False)
 
     closer_font = font(BOLD, 50)
     closer_segments = [("Trust me, it's worth it.", orange3)]
@@ -2534,7 +2543,7 @@ def animate_debut_video(out_dir, video_path, fps=60):
 
     # ---- final beat: the actual site link, plain and legible, the same
     # "$ " terminal-prompt convention used throughout Act 3 ----
-    _fade_to_clean_base(rec, sec_frames(1.0))
+    _fade_to_clean_base(rec, sec_frames(1.0), grid=False)
 
     link_label_font = font(MONO_BOLD, 24)
     link_label_segments = [("$ open ", gray_light)]
