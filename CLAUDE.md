@@ -19,6 +19,7 @@ glossary.html         Full glossary, rendered from the GLOSSARY_TERMS array in s
 404.html              Not-found page, styled as a failed `cat` command
 style.css             All styles for every page (one shared stylesheet, no per-page CSS files)
 site.js               All shared JS: data loading, rendering helpers, animations, nav, command palette
+fonts/                Self-hosted Poppins + JetBrains Mono woff2 files (@font-face'd from style.css) plus their OFL LICENSE.txt — no Google Fonts request, keeping the "0 trackers" boot-sequence claim literally true
 news.html             News page — every Cyber News/AI News post in one feed, plus the "Also today" curated headline strip below it
 notes.html             on(my).mind — freeform personal writing (technical/philosophy/concerns), separate from posts/News, see "on(my).mind" section below
 posts.json            All post content — the only content data file; index.html and post.html both read it
