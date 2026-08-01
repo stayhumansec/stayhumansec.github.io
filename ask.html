@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Search the Archive — stay(human).sec</title>
-<link rel="stylesheet" href="style.css?v=32"></head><body><div class="scroll-progress" id="scrollProgress"></div><nav class="topnav" id="topnav">  <a href="index.html" class="nav-brand">
+<link rel="stylesheet" href="style.css?v=33"></head><body><div class="scroll-progress" id="scrollProgress"></div><nav class="topnav" id="topnav">  <a href="index.html" class="nav-brand">
     <span id="navIcon"></span>
     <span>stay<span class="b-accent">(human)</span>.sec</span>
   </a>
@@ -38,7 +38,7 @@
   <div class="section-inner">
     <div class="section-eyebrow reveal">// SEARCH THE ARCHIVE</div>
     <h2 class="reveal">Search what's actually written here.</h2>
-    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:860px;">Search for anything about cybersecurity, privacy, or AI safety — matched against this site's own posts and glossary. Nothing turns up? Try different words, or browse everything directly.</p>
+    <p class="reveal" style="color:var(--cream-dim); font-size:16px; max-width:860px;">Search for anything about cybersecurity, privacy, or AI safety — matched against this site's own posts and glossary. Add your own API key (optional) and it'll also synthesize a direct answer that actually cites and quotes the posts it matched, not just a generic take. Nothing turns up? Try different words, or browse everything directly.</p>
 
     <div style="max-width:860px; margin-top:32px;">
       <div style="display:flex; gap:10px;">
@@ -100,10 +100,11 @@
   initScrambleReveal('.section-eyebrow');
   initScrollReveal();
 
-  // Local search always works with zero setup — the AI deep-dive (below) is an optional
+  // Local search always works with zero setup — the AI synthesis (below) is an optional
   // enhancement on top, same pattern as every other tool here. Without this, a visitor with
   // no API key would see nothing but an empty input box, which is what got reported as
-  // "incomplete."
+  // "incomplete." When a key is already saved, the synthesis auto-runs (no extra click)
+  // and is grounded in the actual matched posts/glossary terms, not the whole site.
   var STOPWORDS = ['is', 'a', 'an', 'the', 'to', 'of', 'and', 'it', 'in', 'on', 'for', 'my', 'i', 'do', 'does', 'was', 'are', 'be', 'can', 'how', 'what', 'should', 'this', 'that', 'with', 'me'];
   var sitePosts = [];
   var systemPrompt = '';
@@ -120,9 +121,50 @@
       return '- ' + t.term + ': ' + t.def;
     }).join('\n');
     return 'You are the plain-language security assistant for stay(human).sec, a cybersecurity/privacy/AI-safety education site with a calm, non-alarmist, no-jargon tone. ' +
-      'Answer in 3-6 short sentences. When a question is directly covered by one of the posts below, mention it by filename (e.g. "covered in FILE_001.md") so the person can read the full walkthrough. ' +
-      'Never invent a post that isn\'t in this list. If a question is outside cybersecurity/privacy/AI, say so briefly and redirect to what this site covers.\n\n' +
-      'Posts on this site:\n' + postSummaries + '\n\nGlossary terms already defined here:\n' + glossarySummaries;
+      'Every question comes with a "Matched posts" and/or "Matched glossary terms" block already pulled from this site\'s own keyword search -- ground your answer in that material specifically: cite the exact filename(s) (e.g. "covered in FILE_001.md") and reference or quote a concrete detail from the excerpt given, so it\'s clear you actually used it rather than answering generically. ' +
+      'Answer in 3-6 short sentences. If the matched-content block says nothing matched, say plainly that this exact topic isn\'t covered here yet, then answer briefly from general knowledge within cybersecurity/privacy/AI-safety scope. ' +
+      'Never invent a post that isn\'t in the full list below or in the matched-content block. If a question is outside cybersecurity/privacy/AI, say so briefly and redirect to what this site covers.\n\n' +
+      'Full list of posts on this site (for awareness only -- the matched-content block in each question is what to actually cite from):\n' + postSummaries + '\n\nGlossary terms already defined here:\n' + glossarySummaries;
+  }
+
+  // Pulls a real, quotable snippet out of a post's first section so the AI has something
+  // concrete to cite beyond the one-line intro -- this is what makes the synthesis feel
+  // grounded in the specific matched post rather than a generic restatement.
+  function postSnippet(p) {
+    var sec = p.sections && p.sections[0];
+    var block = sec && sec.blocks && sec.blocks[0];
+    if (block && block.type === 'step' && block.paragraphs && block.paragraphs[0]) {
+      return block.paragraphs[0].replace(/<[^>]+>/g, '');
+    }
+    return '';
+  }
+
+  // Builds the per-question grounding block: the actual matched posts/glossary terms
+  // (not the whole site) so the AI's answer is a synthesis of what was actually found,
+  // with something specific to quote -- rather than a generic restatement of the topic.
+  function buildSynthesisMessage(question, results) {
+    var postMatches = results.filter(function (r) { return r.type === 'post'; });
+    var glossMatches = results.filter(function (r) { return r.type === 'glossary'; });
+    var context = '';
+    if (postMatches.length) {
+      context += 'Matched posts (cite these by filename and quote a specific detail from them):\n\n' +
+        postMatches.map(function (r) {
+          var p = r.item;
+          var snippet = postSnippet(p);
+          return p.filename + ' ("' + p.title + '", slug=' + p.slug + '):\nIntro: ' + p.intro +
+            (snippet ? '\nOpens with: "' + snippet + '"' : '') +
+            '\nChecklist: ' + p.checklist.join('; ');
+        }).join('\n\n') + '\n\n';
+    }
+    if (glossMatches.length) {
+      context += 'Matched glossary terms:\n' + glossMatches.map(function (r) {
+        return r.item.term + ': ' + r.item.def;
+      }).join('\n') + '\n\n';
+    }
+    if (!postMatches.length && !glossMatches.length) {
+      context = '(Nothing matched this question directly by keyword search. Say so plainly, then answer briefly from general knowledge if it\'s in scope.)\n\n';
+    }
+    return context + 'Question: ' + question;
   }
 
   function searchArchive(question) {
@@ -166,46 +208,58 @@
       html += '<div class="listing-label" style="margin-bottom:14px;">$ ' + results.length + ' match' + (results.length === 1 ? '' : 'es') + ' found</div>' +
         results.map(renderResultCard).join('');
     } else {
-      html += '<p style="color:var(--cream-dim); font-size:14.5px;">Nothing directly matches that yet on this site. Browse <a href="posts.html" style="color:var(--orange);">all posts</a> or the <a href="glossary.html" style="color:var(--orange);">glossary</a> — or try the AI deep-dive below for a broader answer.</p>';
+      html += '<p style="color:var(--cream-dim); font-size:14.5px;">Nothing directly matches that yet on this site. Browse <a href="posts.html" style="color:var(--orange);">all posts</a> or the <a href="glossary.html" style="color:var(--orange);">glossary</a> — or try the AI synthesis below for a broader answer.</p>';
     }
     html += '<div id="askAiSection"></div>';
     document.getElementById('askResults').innerHTML = html;
-    setupAiSection(question);
+    setupAiSection(question, results);
   }
 
-  function setupAiSection(question) {
+  function setupAiSection(question, results) {
     var section = document.getElementById('askAiSection');
     var boxEl = document.createElement('div');
     section.appendChild(boxEl);
     var actionEl = document.createElement('div');
+    actionEl.id = 'askAiAction';
     section.appendChild(actionEl);
 
-    function refreshAction(key) {
-      if (!key) { actionEl.innerHTML = ''; return; }
-      actionEl.innerHTML = '<button class="btn-secondary" id="askAiBtn" style="cursor:pointer; margin-top:14px;">🧠 Get the AI\'s take</button>';
-      document.getElementById('askAiBtn').addEventListener('click', function () { runAiAnswer(question, key); });
+    var key = getStoredApiKey();
+
+    function refreshAction(newKey) {
+      if (!newKey) { actionEl.innerHTML = ''; return; }
+      runAiAnswer(question, results, newKey);
     }
 
     renderApiKeyBox(boxEl, refreshAction);
-    refreshAction(getStoredApiKey());
+
+    if (key) {
+      // A key is already saved -- the synthesized answer is the point of this page for a
+      // keyed visitor, so it runs immediately rather than waiting on an extra click.
+      runAiAnswer(question, results, key);
+    } else {
+      actionEl.innerHTML =
+        '<div class="ai-key-nudge">Add your key above to get a synthesized answer that actually cites and quotes the ' +
+        (results.length || 'matched') + ' result' + (results.length === 1 ? '' : 's') + ' above.</div>';
+    }
   }
 
-  async function runAiAnswer(question, apiKey) {
-    var actionEl = document.getElementById('askAiBtn').parentElement;
-    actionEl.innerHTML = '<div class="ai-loading">Thinking it through<span class="dots-anim"></span></div>';
+  async function runAiAnswer(question, results, apiKey) {
+    var actionEl = document.getElementById('askAiAction');
+    actionEl.innerHTML = '<div class="ai-loading">Synthesizing an answer from the matched posts<span class="dots-anim"></span></div>';
 
     try {
-      var reply = await callClaude(apiKey, systemPrompt, question, { maxTokens: 500 });
+      var userMessage = buildSynthesisMessage(question, results);
+      var reply = await callClaude(apiKey, systemPrompt, userMessage, { maxTokens: 500 });
       actionEl.innerHTML =
-        '<div class="ai-result-box reveal"><div class="label">🧠 AI ANSWER</div><p>' + escapeHTML(reply) + '</p></div>' +
-        '<button class="btn-secondary" id="askAiBtn" style="cursor:pointer; margin-top:14px;">↻ Ask again</button>';
-      document.getElementById('askAiBtn').addEventListener('click', function () { runAiAnswer(question, apiKey); });
+        '<div class="ai-result-box reveal"><div class="label">🧠 SYNTHESIZED ANSWER</div><p>' + escapeHTML(reply) + '</p></div>' +
+        '<button class="btn-secondary" id="askAiBtn" style="cursor:pointer; margin-top:14px;">↻ Regenerate</button>';
+      document.getElementById('askAiBtn').addEventListener('click', function () { runAiAnswer(question, results, apiKey); });
       initScrollReveal();
     } catch (err) {
       actionEl.innerHTML =
         '<div class="ai-result-box reveal" style="border-color:var(--pink); background:rgba(232,90,130,0.08);"><div class="label" style="color:var(--pink);">⚠ AI REQUEST FAILED</div><p>' + escapeHTML(err.message) + '</p></div>' +
         '<button class="btn-secondary" id="askAiBtn" style="cursor:pointer; margin-top:14px;">↻ Try again</button>';
-      document.getElementById('askAiBtn').addEventListener('click', function () { runAiAnswer(question, apiKey); });
+      document.getElementById('askAiBtn').addEventListener('click', function () { runAiAnswer(question, results, apiKey); });
       initScrollReveal();
     }
   }
