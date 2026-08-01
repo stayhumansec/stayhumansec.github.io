@@ -117,8 +117,8 @@ body::after{
 .nav-brand svg{width:32px; height:auto;}
 .nav-brand .b-accent{color:var(--orange);}
 .nav-links{display:flex; gap:8px; font-family:'IBM Plex Mono', monospace; font-size:12.5px;}
-.nav-links a{position:relative; color:var(--cream-dim); text-decoration:none; padding:8px 14px; border:1px solid transparent; border-radius:20px; transition:color .2s ease, border-color .2s ease, background .2s ease;}
-.nav-links a:hover{color:var(--cream); border-color:var(--line); background:rgba(244,241,232,0.04);}
+.nav-links a{position:relative; color:var(--cream-dim); text-decoration:none; padding:8px 14px; border:1px solid transparent; border-radius:20px; transition:color .2s ease, border-color .2s ease, background .2s ease, box-shadow .25s ease;}
+.nav-links a:hover{color:var(--cream); border-color:var(--orange); background:rgba(244,241,232,0.04); box-shadow:0 0 16px 1px rgba(255,122,61,0.35), 0 0 30px 4px rgba(255,122,61,0.15);}
 .nav-links a.active{color:var(--cream);}
 .nav-links a.active::after{content:""; position:absolute; left:14px; right:14px; bottom:-1px; height:2px; background:var(--orange); border-radius:2px;}
 /* hover-only underline draw for non-active links, same geometry as the
