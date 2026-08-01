@@ -871,6 +871,71 @@ def synth_ambient_wind_track(duration_sec, out_wav, sample_rate=44100, seed=7):
     return out_wav
 
 
+def synth_matrix_score_track(duration_sec, out_wav, sample_rate=44100, seed=13):
+    """Renders an original, dark/tense synthesized score evoking the
+    Matrix films' digital-thriller mood -- NOT a reproduction of that
+    score, which is copyrighted. Three pure-stdlib layers, same synthesis
+    approach as synth_ambient_wind_track() above:
+
+      1. A low pulsing bass drone (D2, ~73Hz) with a slow rhythmic gate --
+         the "digital heartbeat" pulse under a lot of cyberpunk scoring --
+         plus a sub-harmonic an octave below for weight.
+      2. Sparse, semi-random high "digital blip" arpeggios in a minor
+         pentatonic-ish scale, short and fast-decaying, landing at
+         irregular intervals so it reads as data/code rather than melody.
+      3. Occasional short filtered-noise glitch bursts for texture.
+
+    Mixed quiet (peak ~0.6 before final normalize) -- meant to sit under
+    the whole video as tense atmosphere, not compete with it.
+    """
+    random.seed(seed)
+    n = int(duration_sec * sample_rate)
+    out = [0.0] * n
+
+    bass_freq = 73.42  # D2
+    for i in range(n):
+        t = i / sample_rate
+        gate = (0.5 + 0.5 * math.sin(2 * math.pi * 0.5 * t)) ** 3
+        bass = math.sin(2 * math.pi * bass_freq * t) * (0.5 + 0.5 * gate)
+        sub = math.sin(2 * math.pi * (bass_freq / 2) * t) * 0.3
+        out[i] += (bass * 0.5 + sub * 0.3) * 0.35
+
+    scale_freqs = [220.0, 261.63, 293.66, 349.23, 392.0, 440.0]  # A minor pentatonic-ish
+    t_cursor = 1.5
+    while t_cursor < duration_sec - 0.5:
+        freq = random.choice(scale_freqs) * random.choice([1, 1, 2])
+        start = int(t_cursor * sample_rate)
+        blen = int(0.12 * sample_rate)
+        for k in range(blen):
+            if start + k >= n:
+                break
+            tt = k / sample_rate
+            env = math.exp(-tt / 0.05)
+            out[start + k] += math.sin(2 * math.pi * freq * tt) * env * 0.14
+        t_cursor += random.uniform(0.6, 2.2)
+
+    t_cursor = 3.0
+    while t_cursor < duration_sec - 0.5:
+        start = int(t_cursor * sample_rate)
+        glen = int(0.03 * sample_rate)
+        for k in range(glen):
+            if start + k >= n:
+                break
+            out[start + k] += random.uniform(-1, 1) * 0.10 * math.exp(-k / (glen * 0.4))
+        t_cursor += random.uniform(4.0, 9.0)
+
+    peak = max((abs(x) for x in out), default=1.0) or 1.0
+    scale = 0.6 / peak
+    int_samples = [max(-32768, min(32767, int(x * scale * 32767))) for x in out]
+
+    with wave.open(out_wav, 'w') as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sample_rate)
+        w.writeframes(struct.pack(f'<{len(int_samples)}h', *int_samples))
+    return out_wav
+
+
 def mux_audio(video_path, audio_path, output_path):
     """Combines a (silent) video and a WAV audio track into one MP4 --
     video re-encoded to nothing new (stream-copied), audio encoded to AAC.
@@ -1824,10 +1889,17 @@ def animate_debut_video(out_dir, video_path, fps=60):
     instead -- every beat runs as long as it genuinely needs to read
     comfortably, not compressed toward a fixed total.
 
-    Audio: a continuous, quiet synthesized wind/space ambience bed
-    (synth_ambient_wind_track()) runs under the whole video -- no dialogue
-    or SFX elsewhere in this cut to duck under, so it's mixed low and left
-    running start to finish rather than gated to specific acts.
+    Look: a faint, continuously scrolling Matrix-style digital rain
+    (apply_matrix_rain()) is composited over every frame after rendering,
+    for a mystery/curious hacker-thriller feel without touching each
+    act's own drawing code.
+
+    Audio: an original, dark/tense synthesized score
+    (synth_matrix_score_track()) evoking that same digital-thriller mood
+    runs under the whole video -- not a reproduction of the actual film
+    score, which is copyrighted. No dialogue/SFX elsewhere in this cut to
+    duck under, so it's mixed low and left running start to finish rather
+    than gated to specific acts.
     """
     from generate_post import (base_card, gray_light, blue, green, gold, pink, violet,
                                 font, BOLD, REG, MONO_BOLD, MONO_REG,
@@ -1861,6 +1933,57 @@ def animate_debut_video(out_dir, video_path, fps=60):
 
     def ease(t):
         return _smoothstep(max(0.0, min(1.0, t)))
+
+    def apply_matrix_rain(frame_dir, total, size=(1080, 1080), max_alpha=34, seed=21,
+                           scroll_px_per_sec=95):
+        """Post-processing pass (run once, after every frame is already
+        saved) that composites a subtle scrolling Matrix-style digital
+        rain -- falling green glyph trails -- over every frame in
+        frame_dir, for the "mystery/curious hacker" look this video was
+        asked for. Built as one tall texture strip (3x the frame height)
+        and cropped with a growing vertical offset per frame rather than
+        redrawn from scratch each time, so the per-frame cost is a cheap
+        crop + alpha composite, not re-rendering text 4900+ times.
+
+        Kept deliberately faint (max_alpha default ~13% opacity): this is
+        meant to read as atmosphere behind the existing UI mockups and
+        text, never competing with them for legibility.
+        """
+        random.seed(seed)
+        W, H = size
+        col_w = 24
+        cols = W // col_w
+        strip_h = H * 3
+        strip = Image.new('RGBA', (W, strip_h), (0, 0, 0, 0))
+        sd = ImageDraw.Draw(strip)
+        glyphs = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ$#/\\"
+        rain_font = font(MONO_BOLD, 20)
+        row_h = 24
+        n_rows = strip_h // row_h
+        for c in range(cols):
+            x = c * col_w + 3
+            trail_start = random.randint(0, n_rows)
+            trail_len = random.randint(6, 20)
+            for r in range(n_rows):
+                dist = r - trail_start
+                if 0 <= dist < trail_len:
+                    bright = 255 * (1 - dist / trail_len)
+                elif -2 <= dist < 0:
+                    bright = 255
+                else:
+                    continue
+                ch = random.choice(glyphs)
+                col = (0, int(bright), int(bright * 0.35), int(bright))
+                sd.text((x, r * row_h), ch, font=rain_font, fill=col)
+
+        for i in range(1, total + 1):
+            path = os.path.join(frame_dir, f"frame_{i:04d}.png")
+            frame = Image.open(path).convert('RGBA')
+            offset = int((i / fps) * scroll_px_per_sec) % H
+            crop = strip.crop((0, offset, W, offset + H)).copy()
+            a = crop.split()[3].point(lambda v, m=max_alpha: int(v * (m / 255)))
+            crop.putalpha(a)
+            Image.alpha_composite(frame, crop).convert('RGB').save(path)
 
     # ================= Act 1: silhouette hook (unchanged) =================
     HEAD_CX = 540
@@ -2413,11 +2536,12 @@ def animate_debut_video(out_dir, video_path, fps=60):
     rec.hold_last_frame(sec_frames(3.2))
 
     total_frames = rec.index - 1
+    apply_matrix_rain(out_dir, total_frames)
     silent_path = video_path + ".silent.mp4"
     assemble_video(out_dir, silent_path, fps=fps)
-    ambient_wav = os.path.join(out_dir, "_ambient.wav")
-    synth_ambient_wind_track(total_frames / fps, ambient_wav)
-    mux_audio(silent_path, ambient_wav, video_path)
+    score_wav = os.path.join(out_dir, "_score.wav")
+    synth_matrix_score_track(total_frames / fps, score_wav)
+    mux_audio(silent_path, score_wav, video_path)
     os.remove(silent_path)
     return total_frames
 
